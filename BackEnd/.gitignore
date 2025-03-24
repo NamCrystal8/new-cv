@@ -11,3 +11,6 @@ venv.bak/
 __pycache__/
 
 .pytest_cache/
+
+.vscode/*
+.devcontainer/*
