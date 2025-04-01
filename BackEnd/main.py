@@ -1,14 +1,17 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from models import MsgPayload
 import os
-from google import genai
-from dotenv import load_dotenv
-import PyPDF2
+import re
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from models import CVInput, MsgPayload
 from services import gemini_service
+from services.latex_service import convert_to_latex_service
 
 app = FastAPI()
 messages_list: dict[int, MsgPayload] = {}
 gemini_service = gemini_service.GeminiService()
+
+LATEX_OUTPUT_DIR = "output_tex_files"
+os.makedirs(LATEX_OUTPUT_DIR, exist_ok=True)
+
 
 @app.get("/")
 def root() -> dict[str, str]:
@@ -42,3 +45,6 @@ async def extract_pdf(file: UploadFile = File(...)) -> dict:
         raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
     finally:
         await file.close()
+@app.post("/convert-to-latex/")
+def convert_to_latex(cv_input: CVInput) -> dict[str, str]:
+    return convert_to_latex_service(cv_input.data)
