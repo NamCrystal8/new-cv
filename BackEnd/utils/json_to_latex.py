@@ -59,7 +59,6 @@ def json_to_latex(json_data):
     if not isinstance(json_data, dict):
          raise TypeError("Input data must be a dictionary.")
 
-    # Use .get chaining safely
     cv_data = json_data.get("cv_template", {})
     if not isinstance(cv_data, dict): cv_data = {}
 
@@ -78,21 +77,10 @@ def json_to_latex(json_data):
 \usepackage{graphicx} % Required for inserting images
 \setlength{\parindent}{0pt}
 \usepackage{hyperref}
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue, % Or keep black if preferred
-    filecolor=magenta,
-    urlcolor=blue,   % Or cyan/blue
-    pdftitle={CV},
-    pdfpagemode=FullScreen,
-    }
 \usepackage{enumitem}
-\usepackage[utf8]{inputenc}
+\usepackage[utf8]{inputenc} 
 \usepackage[T1]{fontenc}
-% \usepackage[brazil]{babel} % Commented out unless specifically needed
-\usepackage{lipsum} % Keep if lipsum is used elsewhere, otherwise remove
 \usepackage[left=1.06cm,top=1.7cm,right=1.06cm,bottom=0.49cm]{geometry}
-\usepackage{url} % Better URL handling
 
 % --- Start Document ---
 \begin{document}
@@ -110,7 +98,6 @@ def json_to_latex(json_data):
         # --- Header Section ---
         if section_key == "header":
             name = escape_latex(section_content.get("name", "Firstname Lastname"))
-            title = escape_latex(section_content.get("title", ""))
             contact_info = section_content.get("contact_info", {})
             if not isinstance(contact_info, dict): contact_info = {}
 
@@ -121,34 +108,35 @@ def json_to_latex(json_data):
             location_info = contact_info.get("location", {})
             if not isinstance(location_info, dict): location_info = {}
 
+            email_val = escape_latex(email_info.get("value", "youremail@college.harvard.edu"))
+            phone_val = escape_latex(phone_info.get("value", "phone number"))
+            location_val = escape_latex(location_info.get("value", "Home or Campus Street Address, City, State Zip"))
 
-            email_val = escape_latex(email_info.get("value", ""))
-            email_link_target = email_info.get("value", "")
-            email_link = escape_latex(email_info.get("link", f"mailto:{email_link_target}" if isinstance(email_link_target, str) else ""))
-
-            phone_val = escape_latex(phone_info.get("value", ""))
-            phone_link_target = phone_info.get("value", "")
-            phone_link = escape_latex(phone_info.get("link", f"tel:{phone_link_target}" if isinstance(phone_link_target, str) else ""))
-
-            location_val = escape_latex(location_info.get("value", ""))
-
-            contact_parts = []
-            if location_val:
-                contact_parts.append(location_val)
-            if email_val and email_link:
-                 contact_parts.append(f"\\href{{{email_link}}}{{{email_val}}}")
-            if phone_val and phone_link:
-                 contact_parts.append(f"\\href{{{phone_link}}}{{{phone_val}}}")
-
+            # Harvard style format for header
             section_latex += "\\begin{center}\n"
-            section_latex += f"    \\textbf{{{name}}}\\\\[2pt] % Added title below name\n"
-            if title:
-                 section_latex += f"    {title}\\\\[2pt]\n"
+            section_latex += f"    \\textbf{{{name}}}\\\\ \n"
             section_latex += "    \\hrulefill\n"
-            section_latex += "\\end{center}\n"
-            section_latex += "\\begin{center}\n"
-            section_latex += "    " + " \\textbullet{} ".join(contact_parts) + "\n"
             section_latex += "\\end{center}\n\n"
+            
+            # Contact information line with bullets
+            section_latex += "\\begin{center}\n"
+            # Split location into address parts if comma separated
+            if location_val and "," in location_val:
+                loc_parts = location_val.split(",", 1)
+                if len(loc_parts) > 1:
+                    section_latex += f"    {loc_parts[0].strip()} \\textbullet{{}} {loc_parts[1].strip()}"
+                else:
+                    section_latex += f"    {location_val}"
+            else:
+                section_latex += f"    {location_val}"
+                
+            if email_val:
+                section_latex += f" \\textbullet{{}} {email_val}"
+            if phone_val:
+                section_latex += f" \\textbullet{{}} {phone_val}"
+                
+            section_latex += "\n\\end{center}\n\n"
+            section_latex += "\\vspace{0.5pt}\n\n"
             processed_sections.append(section_latex)
             continue
 
@@ -168,36 +156,52 @@ def json_to_latex(json_data):
             items = section_content.get("items", [])
             if not isinstance(items, list): items = []
             for item in items:
-                 if not isinstance(item, dict): continue
-                 institution = escape_latex(item.get("institution", ""))
-                 location = escape_latex(item.get("location", ""))
-                 degree = escape_latex(item.get("degree", ""))
-                 dates_str = format_dates(item.get("dates", {}))
-
-                 section_latex += f"\\textbf{{{institution}}} \\hfill {location}\n\n" # Removed extra newline
-                 section_latex += f"{degree} \\hfill {dates_str}\n"
-                 section_latex += "\\vspace{6pt}\n"
+                if not isinstance(item, dict): continue
+                institution = escape_latex(item.get("institution", "Harvard University"))
+                location = escape_latex(item.get("location", "Cambridge, MA"))
+                degree = escape_latex(item.get("degree", "Degree, Concentration"))
+                gpa = escape_latex(item.get("gpa", ""))
+                thesis = escape_latex(item.get("thesis", ""))
+                coursework = item.get("coursework", [])
+                dates_str = escape_latex(item.get("graduation_date", "Graduation Date"))
+                
+                # Harvard style for institution and location
+                section_latex += f"\\textbf{{{institution}}} \\hfill {location}\n\n"
+                
+                # Degree with optional GPA
+                degree_line = degree
+                if gpa:
+                    degree_line += f". GPA {gpa}"
+                section_latex += f"{degree_line} \\hfill {dates_str}\n"
+                
+                # Optional thesis
+                if thesis:
+                    section_latex += f"Thesis: {thesis}\n"
+                
+                # Optional relevant coursework
+                if coursework and isinstance(coursework, list) and len(coursework) > 0:
+                    coursework_str = ", ".join([escape_latex(course) for course in coursework if course])
+                    if coursework_str:
+                        section_latex += f"Relevant Coursework: {coursework_str}\n"
+                
+                section_latex += "\\vspace{12pt}\n"
 
         # --- Experience Section ---
         elif section_key == "experience":
             items = section_content.get("items", [])
             if not isinstance(items, list): items = []
             for item in items:
-                 if not isinstance(item, dict): continue
-                 company = escape_latex(item.get("company", ""))
-                 location = escape_latex(item.get("location", ""))
-                 title = escape_latex(item.get("title", ""))
-                 dates_str = format_dates(item.get("dates", {}))
-                 achievements = item.get("achievements", [])
-                 technologies = item.get("technologies", [])
-                 if not isinstance(technologies, list): technologies = [] # Ensure list
+                if not isinstance(item, dict): continue
+                company = escape_latex(item.get("company", "Organization"))
+                location = escape_latex(item.get("location", "City, State (or Remote)"))
+                title = escape_latex(item.get("title", "Position Title"))
+                dates_str = format_dates(item.get("dates", {}))
+                achievements = item.get("achievements", [])
 
-                 section_latex += f"\\textbf{{{company}}} \\hfill {location}\n\n" # Removed extra newline
-                 section_latex += f"\\textbf{{{title}}} \\hfill {dates_str}\n"
-                 section_latex += generate_latex_list(achievements)
-                 if technologies:
-                      section_latex += f"\\textit{{Technologies:}} {escape_latex(', '.join(filter(None, map(str, technologies))))}\n" # Ensure string join
-                 section_latex += "\\vspace{6pt}\n"
+                section_latex += f"\\textbf{{{company}}} \\hfill {location}\n\n"
+                section_latex += f"\\textbf{{{title}}} \\hfill {dates_str}\n"
+                section_latex += generate_latex_list(achievements)
+                section_latex += "\\vspace{12pt}\n"
 
         # --- Projects Section ---
         elif section_key == "projects":
@@ -220,23 +224,45 @@ def json_to_latex(json_data):
                       section_latex += f"\\textit{{Technologies:}} {escape_latex(', '.join(filter(None, map(str, technologies))))}\n" # Ensure string join
                  section_latex += "\\vspace{6pt}\n"
 
-        # --- Skills Section ---
+        # --- Leadership & Activities Section ---
+        elif section_key == "leadership" or section_key == "activities":
+            items = section_content.get("items", [])
+            if not isinstance(items, list): items = []
+            for item in items:
+                if not isinstance(item, dict): continue
+                organization = escape_latex(item.get("organization", "Organization"))
+                location = escape_latex(item.get("location", "City, State"))
+                role = escape_latex(item.get("role", "Role"))
+                dates_str = format_dates(item.get("dates", {}))
+                descriptions = item.get("descriptions", [])
+
+                section_latex += f"\\textbf{{{organization}}} \\hfill {location}\n\n"
+                section_latex += f"\\textbf{{{role}}} \\hfill {dates_str}\n"
+                if descriptions:
+                    section_latex += generate_latex_list(descriptions)
+                section_latex += "\\vspace{12pt}\n"
+
+        # --- Skills Section (updated for Harvard style) ---
         elif section_key == "skills":
             categories = section_content.get("categories", [])
             if not isinstance(categories, list): categories = []
-            all_skills_parts = []
+            
             for category in categories:
                 if not isinstance(category, dict): continue
-                cat_name = escape_latex(category.get("name", "Skills"))
+                cat_name = escape_latex(category.get("name", "Technical"))
                 items = category.get("items", [])
                 if not isinstance(items, list): items = []
                 if items:
                     escaped_items = [escape_latex(skill) for skill in items if isinstance(skill, str)]
                     if escaped_items:
-                        all_skills_parts.append(f"\\textbf{{{cat_name}:}} {', '.join(escaped_items)}")
-
-            if all_skills_parts:
-                 section_latex += "\n".join(all_skills_parts) + "\n\n"
+                        section_latex += f"\\textbf{{{cat_name}:}} {', '.join(escaped_items)}\n\n"
+            
+            # Add interests section if available
+            interests = section_content.get("interests", [])
+            if isinstance(interests, list) and interests:
+                interests_list = [escape_latex(interest) for interest in interests if interest]
+                if interests_list:
+                    section_latex += f"\\textbf{{Interests:}} {', '.join(interests_list)}\n\n"
 
         # --- Languages Section ---
         elif section_key == "languages":

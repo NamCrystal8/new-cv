@@ -7,6 +7,7 @@ import dotenv
 import re
 from utils.latex_prompt import latex_prompt
 from utils.response_cleaner import response_cleaner
+from utils.cv_structure import CV_STRUCTURE
 
 dotenv.load_dotenv()
 
@@ -47,5 +48,94 @@ class GeminiService:
 
         except Exception as e:
             return {"error": f"Error processing PDF: {str(e)}"}
+            
+    async def analyze_cv_weaknesses(self, cv_data: dict) -> dict:
+        """
+        Analyze CV for weaknesses and areas of improvement
+        """
+        try:
+            prompt = f"""
+            Analyze this CV data for weaknesses, missing information, and areas for improvement.
+            Focus on identifying:
+            1. Missing critical information (education details, experience descriptions, etc.)
+            2. Weak sections that need strengthening
+            3. Formatting or structural issues
+            4. Suggestions for improvement
+            
+            CV Data:
+            {json.dumps(cv_data, indent=2)}
+            
+            Provide your analysis as a JSON object with these fields:
+            1. weaknesses: [List of specific weaknesses found]
+            2. missing_information: [List of critical information missing]
+            3. improvement_suggestions: [List of specific suggestions]
+            4. required_inputs: [List of specific information to request from the user]
+            """
+
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+            
+            response_text = response.text
+            # Extract JSON from response if needed
+            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(1)
+            
+            try:
+                analysis_result = json.loads(response_text)
+                return analysis_result
+            except json.JSONDecodeError:
+                return {
+                    "weaknesses": ["Unable to analyze CV properly"],
+                    "missing_information": ["Could not determine missing information"],
+                    "improvement_suggestions": ["Review the CV manually"],
+                    "required_inputs": []
+                }
+                
+        except Exception as e:
+            return {"error": f"Error analyzing CV: {str(e)}"}
+            
+    async def enhance_cv_with_input(self, cv_data: dict, additional_input: dict) -> dict:
+        """
+        Enhance CV with additional user input based on the weakness analysis
+        """
+        try:
+            prompt = f"""
+            Enhance and improve this CV data using the additional information provided by the user.
+            
+            Original CV Data:
+            {json.dumps(cv_data, indent=2)}
+            
+            Additional User Input:
+            {json.dumps(additional_input, indent=2)}
+            
+            Create an improved CV structure following the Harvard style format.
+            Return your response as a valid JSON object matching this structure:
+            {CV_STRUCTURE}
+            
+            Focus on:
+            1. Incorporating the new information from the user
+            2. Strengthening weak areas identified previously
+            3. Ensuring all sections follow the Harvard CV format
+            4. Using action verbs and quantifiable achievements
+            """
+
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+            
+            enhanced_cv = response_cleaner(response.text)
+            
+            try:
+                json_result = json.loads(enhanced_cv)
+                return json_result
+            except json.JSONDecodeError as json_err:
+                return {"error": f"Failed to parse API response as JSON: {str(json_err)}", "raw_response": enhanced_cv}
+                
+        except Exception as e:
+            return {"error": f"Error enhancing CV: {str(e)}"}
 
 gemini_service = GeminiService()
