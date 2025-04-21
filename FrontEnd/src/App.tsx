@@ -41,7 +41,7 @@ const App: React.FC = () => {
       const formData = new FormData();
       formData.append('file', pdfFile);
       
-      const response = await fetch('http://localhost:8000/analyze-cv', {
+      const response = await fetch('http://localhost:8000/analyze-cv-weaknesses', {
         method: 'POST',
         body: formData,
       });

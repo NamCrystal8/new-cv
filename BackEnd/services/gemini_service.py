@@ -42,12 +42,57 @@ class GeminiService:
 
             try:
                 json_result = json.loads(latex_content)
-                return json_result
+                # Ensure the result conforms to CV_STRUCTURE
+                standardized_result = self.ensure_cv_structure(json_result)
+                return standardized_result
             except json.JSONDecodeError as json_err:
                 return {"error": f"Failed to parse API response as JSON: {str(json_err)}", "raw_response": latex_content}
 
         except Exception as e:
             return {"error": f"Error processing PDF: {str(e)}"}
+    
+    def ensure_cv_structure(self, data: dict) -> dict:
+        """
+        Ensures that the CV data conforms to the expected CV_STRUCTURE format.
+        If data is missing or malformed, it is fixed to match the required structure.
+        """
+        try:
+            # If the data already has cv_template, use it as a base
+            if "cv_template" in data:
+                cv_template = data["cv_template"]
+            else:
+                # Otherwise, create a new cv_template structure
+                cv_template = {"metadata": {}, "sections": {}}
+            
+            # Load the expected structure
+            expected_structure = json.loads(CV_STRUCTURE)["cv_template"]
+            
+            # Ensure metadata exists with section_order
+            if "metadata" not in cv_template or not isinstance(cv_template["metadata"], dict):
+                cv_template["metadata"] = expected_structure["metadata"]
+            elif "section_order" not in cv_template["metadata"]:
+                cv_template["metadata"]["section_order"] = expected_structure["metadata"]["section_order"]
+            
+            # Ensure sections exists
+            if "sections" not in cv_template or not isinstance(cv_template["sections"], dict):
+                cv_template["sections"] = expected_structure["sections"]
+            
+            # Ensure all required sections exist
+            for section_key in expected_structure["sections"]:
+                if (section_key not in cv_template["sections"]):
+                    cv_template["sections"][section_key] = expected_structure["sections"][section_key]
+            
+            # Set rendering rules if missing
+            if "rendering_rules" not in cv_template:
+                cv_template["rendering_rules"] = expected_structure["rendering_rules"]
+                
+            # Return the standardized structure
+            return {"cv_template": cv_template}
+            
+        except Exception as e:
+            print(f"Error ensuring CV structure: {e}")
+            # Return the original data if we can't standardize it
+            return data
             
     async def analyze_cv_weaknesses(self, cv_data: dict) -> dict:
         """
@@ -131,11 +176,17 @@ class GeminiService:
             
             try:
                 json_result = json.loads(enhanced_cv)
-                return json_result
+                # Ensure the enhanced result conforms to CV_STRUCTURE
+                standardized_result = self.ensure_cv_structure(json_result)
+                return standardized_result
             except json.JSONDecodeError as json_err:
-                return {"error": f"Failed to parse API response as JSON: {str(json_err)}", "raw_response": enhanced_cv}
+                # If JSON parsing fails, use the original CV data after ensuring it has proper structure
+                standardized_original = self.ensure_cv_structure(cv_data)
+                return standardized_original
                 
         except Exception as e:
-            return {"error": f"Error enhancing CV: {str(e)}"}
+            print(f"Error enhancing CV: {str(e)}")
+            # In case of any error, return the original CV data with proper structure
+            return self.ensure_cv_structure(cv_data)
 
 gemini_service = GeminiService()

@@ -1,6 +1,89 @@
 from utils.cv_structure import CV_STRUCTURE
 
 
+def get_latex_template() -> str:
+    """Returns a basic Harvard-style CV template for fallback situations."""
+    return r"""
+\documentclass[letterpaper,11pt]{article}
+
+% Harvard Style CV Template
+% Document formatting
+\usepackage[top=0.75in, bottom=0.75in, left=0.75in, right=0.75in]{geometry}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern} % Load a font with all the characters
+\usepackage{titlesec}
+\usepackage{xcolor}
+
+% Set font to Palatino, which is elegant and readable
+\usepackage{palatino}
+
+% Define Harvard colors
+\definecolor{harvardcrimson}{RGB}{165,28,48}
+
+% Customize section formatting
+\titleformat{\section}
+  {\normalfont\Large\bfseries}
+  {}
+  {0em}
+  {\centering}[\titlerule]
+
+\titlespacing*{\section}
+  {0pt}
+  {12pt}
+  {8pt}
+
+% Remove paragraph indentation
+\setlength{\parindent}{0pt}
+
+% Customize hyperref settings
+\hypersetup{
+    colorlinks=true,
+    linkcolor=harvardcrimson,
+    filecolor=harvardcrimson,
+    urlcolor=harvardcrimson,
+    pdftitle={Harvard Style CV},
+    pdfpagemode=FullScreen,
+}
+
+\begin{document}
+
+\begin{center}
+    {\Large\textbf{Your Name}}\\[4pt]
+    {\normalsize\textit{Professional Title}}\\[4pt]
+    \hrulefill
+\end{center}
+\begin{center}
+    Address, City, State ZIP {\large\textbullet} \href{mailto:email@example.com}{email@example.com} {\large\textbullet} \href{tel:+11234567890}{(123) 456-7890}
+\end{center}
+
+\section{Education}
+\textbf{Harvard University} \hfill Cambridge, MA
+
+Degree, Major \hfill Graduation Date
+
+\section{Experience}
+\textbf{Company Name} \hfill Location
+
+\textit{Job Title} \hfill Start Date -- End Date
+
+\begin{itemize}[noitemsep, topsep=0pt, partopsep=0pt, parsep=0pt]
+    \item A brief accomplishment or responsibility
+    \item Another accomplishment with quantifiable results
+\end{itemize}
+
+\section{Skills}
+\textbf{Technical:} List of technical skills
+
+\textbf{Languages:} List of languages
+
+\end{document}
+"""
+
+
 def latex_prompt(extracted_text: str) -> str:
     """Generate the ATS-optimized prompt based on extracted text."""
     return f"""As a senior HR data analyst specializing in ATS optimization, transform the following CV text into a highly optimized, ATS-friendly format with emphasis on quantifiable achievements and industry-specific keywords:

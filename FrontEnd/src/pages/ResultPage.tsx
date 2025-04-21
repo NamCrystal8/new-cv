@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 interface ResultPageProps {
   pdfUrl: string | null;
@@ -6,6 +6,12 @@ interface ResultPageProps {
 }
 
 const ResultPage: React.FC<ResultPageProps> = ({ pdfUrl, resetFlow }) => {
+  
+  useEffect(() => {
+    // Debug log to check the PDF URL
+    console.log("PDF URL in ResultPage:", pdfUrl);
+  }, [pdfUrl]);
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -18,11 +24,12 @@ const ResultPage: React.FC<ResultPageProps> = ({ pdfUrl, resetFlow }) => {
       {pdfUrl ? (
         <div className="card bg-base-100 shadow-sm border border-base-300 overflow-hidden">
           <div className="card-body p-0 h-[70vh] min-h-[500px]">
-            <embed 
-              src={pdfUrl} 
-              type="application/pdf"
+            <iframe 
+              src={pdfUrl}
+              title="PDF Viewer"
               className="w-full h-full"
-            />
+              style={{ border: 'none' }}
+            ></iframe>
           </div>
           
           <div className="card-actions justify-center p-4 bg-base-200">
@@ -71,6 +78,15 @@ const ResultPage: React.FC<ResultPageProps> = ({ pdfUrl, resetFlow }) => {
             <div className="text-sm">Please wait while we generate your enhanced CV.</div>
           </div>
           <div className="loading loading-spinner loading-md"></div>
+        </div>
+      )}
+      
+      {/* Debug section to show PDF URL */}
+      {pdfUrl && (
+        <div className="mt-4 p-4 bg-base-200 rounded-lg">
+          <p className="text-sm font-mono break-all">
+            <strong>Debug - PDF URL:</strong> {pdfUrl}
+          </p>
         </div>
       )}
     </div>
