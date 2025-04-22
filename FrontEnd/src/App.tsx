@@ -6,27 +6,16 @@ import ErrorMessage from './components/ui/ErrorMessage';
 import UploadPage from './pages/UploadPage';
 import ReviewPage from './pages/ReviewPage';
 import ResultPage from './pages/ResultPage';
-import { FlowResponse } from './types';
-
-// Simple test component to verify Tailwind CSS is working
-const TailwindTest = () => {
-  return (
-    <div className="p-4 m-4 bg-blue-500 text-white rounded-lg shadow-lg">
-      <h2 className="text-xl font-bold">Tailwind CSS Test Component</h2>
-      <p className="mt-2">If you can see this with blue background and white text, Tailwind CSS is working!</p>
-    </div>
-  );
-};
+import { FlowResponse, EditableSection } from './types';
 
 const App: React.FC = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [flowResponse, setFlowResponse] = useState<FlowResponse | null>(null);
-  const [additionalInput, setAdditionalInput] = useState<{[key: string]: string}>({});
+  const [editableSections, setEditableSections] = useState<EditableSection[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [selectedInputs, setSelectedInputs] = useState<{[key: string]: boolean}>({});
   
   // Function to upload PDF and start CV analysis
   const analyzePdf = async () => {
@@ -50,15 +39,13 @@ const App: React.FC = () => {
         throw new Error(`Server responded with status ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = await response.json() as FlowResponse;
       setFlowResponse(data);
       
-      // Initialize selected inputs - all are selected by default
-      const initialSelectedInputs: {[key: string]: boolean} = {};
-      data.analysis.required_inputs.forEach((input: string) => {
-        initialSelectedInputs[input] = true;
-      });
-      setSelectedInputs(initialSelectedInputs);
+      // Store editable sections for modification
+      if (data.editable_sections) {
+        setEditableSections(data.editable_sections);
+      }
       
       // Move to step 2
       setCurrentStep(2);
@@ -70,35 +57,25 @@ const App: React.FC = () => {
     }
   };
   
-  // Step 2: Handle additional input based on analysis
-  const handleAdditionalInputChange = (input: string, value: string) => {
-    setAdditionalInput(prev => ({
-      ...prev,
-      [input]: value
-    }));
+  // Function to update editable sections when modified in the review page
+  const updateEditableSections = (sections: EditableSection[]) => {
+    setEditableSections(sections);
   };
   
-  const toggleInputSelection = (input: string) => {
-    setSelectedInputs(prev => ({
-      ...prev,
-      [input]: !prev[input]
-    }));
-  };
-  
-  // Function to complete the CV flow with additional inputs
-  const completeCvFlow = async () => {
+  // Function to complete the CV flow with enhanced data
+  const completeCvFlow = async (updatedSections?: EditableSection[]) => {
     if (!flowResponse) return;
     
     setIsLoading(true);
     
     try {
-      // Format the selectedInputs and additionalInput for the backend
-      const selectedAdditionalInputs: {[key: string]: string} = {};
-      Object.keys(selectedInputs).forEach(key => {
-        if (selectedInputs[key]) {
-          selectedAdditionalInputs[key] = additionalInput[key] || '';
-        }
-      });
+      // If we received updated sections from ReviewPage, use those instead
+      if (updatedSections) {
+        setEditableSections(updatedSections);
+      }
+      
+      // Convert editable sections to the format expected by the backend
+      const formattedSections = formatSectionsForBackend(updatedSections || editableSections);
       
       const response = await fetch('http://localhost:8000/complete-cv-flow', {
         method: 'POST',
@@ -107,7 +84,7 @@ const App: React.FC = () => {
         },
         body: JSON.stringify({
           flow_id: flowResponse.flow_id,
-          additional_inputs: selectedAdditionalInputs
+          additional_inputs: formattedSections
         }),
       });
       
@@ -128,13 +105,65 @@ const App: React.FC = () => {
     }
   };
   
+  // Format editable sections for the backend API
+  const formatSectionsForBackend = (sections: EditableSection[]) => {
+    const formattedData: Record<string, string> = {};
+    
+    // Convert complex nested objects to flattened string representations
+    sections.forEach(section => {
+      switch (section.type) {
+        case 'object':
+          // Contact info section
+          if (section.id === 'header') {
+            section.fields.forEach(field => {
+              // Store each field with a qualified key: header.name, header.email, etc.
+              formattedData[`header.${field.id}`] = field.value;
+            });
+          }
+          break;
+          
+        case 'list':
+          // Education, Experience, Projects sections
+          if (section.id === 'education') {
+            // Convert education list to JSON string
+            formattedData[section.id] = JSON.stringify(section.items);
+          }
+          else if (section.id === 'experience') {
+            // Convert experience list to JSON string
+            formattedData[section.id] = JSON.stringify(section.items);
+          }
+          else if (section.id === 'projects') {
+            // Convert projects list to JSON string
+            formattedData[section.id] = JSON.stringify(section.items);
+          }
+          break;
+          
+        case 'nested_list':
+          // Skills section
+          if (section.id === 'skills') {
+            formattedData[section.id] = JSON.stringify(section.categories);
+          }
+          break;
+          
+        case 'textarea':
+          // Raw input (fallback)
+          formattedData['raw_text'] = section.value;
+          break;
+      }
+    });
+    
+    // Debug log to see what we're sending
+    console.log('Sending to backend:', formattedData);
+    
+    return formattedData;
+  };
+  
   // Reset the flow
   const resetFlow = () => {
     setPdfFile(null);
     setPdfUrl(null);
     setFlowResponse(null);
-    setAdditionalInput({});
-    setSelectedInputs({});
+    setEditableSections([]);
     setErrorMessage(null);
     setCurrentStep(1);
   };
@@ -169,10 +198,6 @@ const App: React.FC = () => {
               <ReviewPage 
                 isLoading={isLoading}
                 flowResponse={flowResponse}
-                additionalInput={additionalInput}
-                selectedInputs={selectedInputs}
-                handleAdditionalInputChange={handleAdditionalInputChange}
-                toggleInputSelection={toggleInputSelection}
                 completeCvFlow={completeCvFlow}
                 resetFlow={resetFlow}
               />

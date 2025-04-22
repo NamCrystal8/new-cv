@@ -43,46 +43,314 @@ async def analyze_cv_weaknesses(file: UploadFile = File(...)):
         # Generate a flow ID to track this CV processing
         flow_id = str(uuid.uuid4())
         
-        # Analyze the CV for weaknesses - these would normally come from a Gemini analysis
-        # For now, we'll use example values but in the future this should be dynamically generated
+        # Analyze the CV for weaknesses based on the CV structure
         try:
-            # Do a proper analysis of the CV using Gemini
-            # For now, using static values for demonstration
-            required_inputs = [
-                "work_experience",
-                "education",
-                "skills",
-                "projects",
-                "achievements"
-            ]
+            # Ensure we have a proper structure to work with
+            if not isinstance(extracted_cv_data, dict):
+                extracted_cv_data = {}
             
-            weaknesses = [
-                "Missing quantifiable achievements in work experience",
-                "Skills section lacks organization by categories",
-                "Project descriptions could be more specific about your role"
-            ]
+            if "cv_template" not in extracted_cv_data:
+                extracted_cv_data = gemini_service.ensure_cv_structure(extracted_cv_data)
             
-            missing_information = [
-                "Specific dates for education and work experience",
-                "Contact information could be more comprehensive",
-                "Lack of relevant certifications"
-            ]
+            cv_template = extracted_cv_data.get("cv_template", {})
+            sections = cv_template.get("sections", {})
             
-            improvement_suggestions = [
-                "Add metrics to showcase impact in previous roles",
-                "Organize skills by categories like Technical, Soft Skills, etc.",
-                "Expand on your role and contributions in projects"
-            ]
+            # Generate section-based analysis
+            section_analysis = {}
+            missing_sections = []
+            improvement_suggestions = []
+            
+            # Analyze the header (contact info)
+            header = sections.get("header", {})
+            contact_info = header.get("contact_info", {})
+            header_analysis = {
+                "is_complete": True,
+                "missing_fields": []
+            }
+            
+            # Check header fields
+            if not header.get("name") or header.get("name") == "Firstname Lastname":
+                header_analysis["is_complete"] = False
+                header_analysis["missing_fields"].append("name")
+            
+            # Check contact info fields
+            for field in ["email", "phone", "location"]:
+                field_data = contact_info.get(field, {})
+                if not field_data or not field_data.get("value"):
+                    header_analysis["is_complete"] = False
+                    header_analysis["missing_fields"].append(f"contact_info.{field}")
+            
+            if not header_analysis["is_complete"]:
+                missing_sections.append("Contact Information")
+                improvement_suggestions.append("Complete your contact information for better reachability")
+            
+            section_analysis["header"] = header_analysis
+            
+            # Analyze education section
+            education = sections.get("education", {})
+            education_items = education.get("items", [])
+            education_analysis = {
+                "is_complete": bool(education_items),
+                "item_count": len(education_items),
+                "missing_fields": []
+            }
+            
+            if not education_items:
+                missing_sections.append("Education")
+                improvement_suggestions.append("Add your educational background")
+            else:
+                # Check for incomplete education items
+                incomplete_items = 0
+                for item in education_items:
+                    if not item.get("institution") or not item.get("degree"):
+                        incomplete_items += 1
+                
+                if incomplete_items > 0:
+                    education_analysis["missing_fields"].append(f"{incomplete_items} education entries are incomplete")
+                    improvement_suggestions.append("Complete all education entries with institution, degree, and dates")
+            
+            section_analysis["education"] = education_analysis
+            
+            # Analyze experience section
+            experience = sections.get("experience", {})
+            experience_items = experience.get("items", [])
+            experience_analysis = {
+                "is_complete": bool(experience_items),
+                "item_count": len(experience_items),
+                "missing_fields": [],
+                "items_without_achievements": 0,
+            }
+            
+            if not experience_items:
+                missing_sections.append("Work Experience")
+                improvement_suggestions.append("Add your work experience to showcase your professional background")
+            else:
+                # Check for achievements and quantifiables
+                items_without_achievements = 0
+                items_without_quantifiables = 0
+                
+                for item in experience_items:
+                    achievements = item.get("achievements", [])
+                    
+                    if not achievements:
+                        items_without_achievements += 1
+                        continue
+                    
+                    # Check for quantifiable achievements (containing numbers)
+                    has_quantifiable = False
+                    for achievement in achievements:
+                        if any(char.isdigit() for char in achievement):
+                            has_quantifiable = True
+                            break
+                    
+                    if not has_quantifiable:
+                        items_without_quantifiables += 1
+                
+                experience_analysis["items_without_achievements"] = items_without_achievements
+                experience_analysis["items_without_quantifiables"] = items_without_quantifiables
+                
+                if items_without_achievements > 0:
+                    experience_analysis["missing_fields"].append(f"{items_without_achievements} jobs lack achievements")
+                    improvement_suggestions.append("Add achievements for all work experiences")
+                
+                if items_without_quantifiables > 0:
+                    improvement_suggestions.append("Add quantifiable metrics to your achievements (e.g., 'Increased sales by 20%')")
+            
+            section_analysis["experience"] = experience_analysis
+            
+            # Analyze skills section
+            skills = sections.get("skills", {})
+            skill_categories = skills.get("categories", [])
+            skills_analysis = {
+                "is_complete": bool(skill_categories),
+                "category_count": len(skill_categories),
+                "total_skills": sum(len(category.get("items", [])) for category in skill_categories),
+                "missing_categories": []
+            }
+            
+            if not skill_categories:
+                missing_sections.append("Skills")
+                improvement_suggestions.append("Add your technical and soft skills")
+            else:
+                # Check for common categories that might be missing
+                category_names = [category.get("name", "").lower() for category in skill_categories]
+                
+                common_categories = ["technical", "language", "soft skills", "tools"]
+                for category in common_categories:
+                    if not any(category in name for name in category_names):
+                        skills_analysis["missing_categories"].append(category)
+                
+                if skills_analysis["missing_categories"]:
+                    improvement_suggestions.append("Consider adding more skill categories: " + ", ".join(skills_analysis["missing_categories"]))
+                
+                if skills_analysis["total_skills"] < 5:
+                    improvement_suggestions.append("Add more specific skills to make your profile more attractive")
+            
+            section_analysis["skills"] = skills_analysis
+            
+            # Analyze projects section
+            projects = sections.get("projects", {})
+            project_items = projects.get("items", [])
+            projects_analysis = {
+                "is_complete": bool(project_items),
+                "item_count": len(project_items),
+                "items_without_contributions": 0
+            }
+            
+            if not project_items and not experience_items:
+                missing_sections.append("Projects")
+                improvement_suggestions.append("Add projects to showcase your practical skills")
+            elif project_items:
+                # Check for contributions
+                items_without_contributions = 0
+                for item in project_items:
+                    if not item.get("key_contributions", []):
+                        items_without_contributions += 1
+                
+                projects_analysis["items_without_contributions"] = items_without_contributions
+                
+                if items_without_contributions > 0:
+                    improvement_suggestions.append("Add specific contributions for each project")
+            
+            section_analysis["projects"] = projects_analysis
+            
+            # Create a list of editable sections based on the CV structure
+            editable_sections = []
+            
+            # Header section (always include)
+            editable_sections.append({
+                "id": "header",
+                "name": "Contact Information",
+                "type": "object",
+                "fields": [
+                    {"id": "name", "name": "Full Name", "value": header.get("name", "")},
+                    {"id": "email", "name": "Email", "value": contact_info.get("email", {}).get("value", "")},
+                    {"id": "phone", "name": "Phone", "value": contact_info.get("phone", {}).get("value", "")},
+                    {"id": "location", "name": "Location", "value": contact_info.get("location", {}).get("value", "")}
+                ]
+            })
+            
+            # Education (list type)
+            education_fields = []
+            for i, item in enumerate(education_items):
+                education_fields.append({
+                    "id": f"education_{i}",
+                    "institution": item.get("institution", ""),
+                    "degree": item.get("degree", ""),
+                    "location": item.get("location", ""),
+                    "graduation_date": item.get("graduation_date", ""),
+                    "gpa": item.get("gpa", "")
+                })
+            
+            editable_sections.append({
+                "id": "education",
+                "name": "Education",
+                "type": "list",
+                "items": education_fields,
+                "template": {
+                    "institution": "",
+                    "degree": "",
+                    "location": "",
+                    "graduation_date": "",
+                    "gpa": ""
+                }
+            })
+            
+            # Experience (list type)
+            experience_fields = []
+            for i, item in enumerate(experience_items):
+                achievements = item.get("achievements", [])
+                experience_fields.append({
+                    "id": f"experience_{i}",
+                    "company": item.get("company", ""),
+                    "title": item.get("title", ""),
+                    "location": item.get("location", ""),
+                    "start_date": item.get("dates", {}).get("start", ""),
+                    "end_date": item.get("dates", {}).get("end", ""),
+                    "is_current": item.get("dates", {}).get("is_current", False),
+                    "achievements": achievements
+                })
+            
+            editable_sections.append({
+                "id": "experience",
+                "name": "Work Experience",
+                "type": "list",
+                "items": experience_fields,
+                "template": {
+                    "company": "",
+                    "title": "",
+                    "location": "",
+                    "start_date": "",
+                    "end_date": "",
+                    "is_current": False,
+                    "achievements": []
+                }
+            })
+            
+            # Skills (nested list type)
+            skill_fields = []
+            for i, category in enumerate(skill_categories):
+                skill_fields.append({
+                    "id": f"skill_category_{i}",
+                    "name": category.get("name", ""),
+                    "items": category.get("items", [])
+                })
+            
+            editable_sections.append({
+                "id": "skills",
+                "name": "Skills",
+                "type": "nested_list",
+                "categories": skill_fields,
+                "template": {
+                    "name": "",
+                    "items": []
+                }
+            })
+            
+            # Projects (list type)
+            project_fields = []
+            for i, item in enumerate(project_items):
+                project_fields.append({
+                    "id": f"project_{i}",
+                    "title": item.get("title", ""),
+                    "description": item.get("description", ""),
+                    "start_date": item.get("dates", {}).get("start", ""),
+                    "end_date": item.get("dates", {}).get("end", ""),
+                    "technologies": item.get("technologies", []),
+                    "contributions": item.get("key_contributions", [])
+                })
+            
+            editable_sections.append({
+                "id": "projects",
+                "name": "Projects",
+                "type": "list",
+                "items": project_fields,
+                "template": {
+                    "title": "",
+                    "description": "",
+                    "start_date": "",
+                    "end_date": "",
+                    "technologies": [],
+                    "contributions": []
+                }
+            })
+            
         except Exception as analysis_error:
-            print(f"Error analyzing CV weaknesses: {str(analysis_error)}")
-            # Provide default values if analysis fails
-            required_inputs = ["experience", "skills"]
-            weaknesses = ["Analysis could not be completed"]
-            missing_information = ["Please review your CV manually"]
-            improvement_suggestions = ["Ensure all sections are complete"]
+            print(f"Error analyzing CV structure: {str(analysis_error)}")
+            import traceback
+            print(f"[DEBUG] Analysis error stack trace: {traceback.format_exc()}")
+            # Provide fallback values if analysis fails
+            missing_sections = ["Could not analyze CV completely"]
+            improvement_suggestions = ["Please review your CV manually and ensure all sections are complete"]
+            section_analysis = {}
+            editable_sections = [{
+                "id": "raw_input",
+                "name": "CV Contents",
+                "type": "textarea",
+                "value": str(extracted_cv_data)[:1000] + "..."
+            }]
         
         # Store the extracted CV data for later use
-        # Make sure we store the actual data structure, not just a string representation
         if isinstance(extracted_cv_data, dict):
             # Ensure we have the cv_template structure for consistent processing
             if "cv_template" not in extracted_cv_data:
@@ -98,24 +366,25 @@ async def analyze_cv_weaknesses(file: UploadFile = File(...)):
                 "status": "analyzed"
             }
         
-        # Create a safe preview of the extracted text for the response
+        # Create a preview of the extracted text for the response (truncated)
         if isinstance(extracted_cv_data, dict):
-            preview = str(extracted_cv_data)[:500] + "..." if len(str(extracted_cv_data)) > 500 else str(extracted_cv_data)
+            preview = str(extracted_cv_data)[:200] + "..." if len(str(extracted_cv_data)) > 200 else str(extracted_cv_data)
         else:
-            preview = str(extracted_cv_data)[:500] + "..." if len(str(extracted_cv_data)) > 500 else str(extracted_cv_data)
+            preview = str(extracted_cv_data)[:200] + "..." if len(str(extracted_cv_data)) > 200 else str(extracted_cv_data)
         
+        # Return structured analysis data
         return {
             "flow_id": flow_id,
             "cv_data": {
                 "extracted_text": preview
             },
             "analysis": {
-                "summary": "Your CV has been analyzed. You can provide additional information to enhance it (optional).",
-                "required_inputs": required_inputs,
-                "weaknesses": weaknesses,
-                "missing_information": missing_information,
-                "improvement_suggestions": improvement_suggestions
-            }
+                "summary": "Your CV has been analyzed. Review the highlighted areas and edit as needed.",
+                "missing_sections": missing_sections,
+                "improvement_suggestions": improvement_suggestions,
+                "section_analysis": section_analysis
+            },
+            "editable_sections": editable_sections
         }
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -135,6 +404,8 @@ async def complete_cv_flow(request: CompleteFlowRequest):
     """
     flow_id = request.flow_id
     additional_inputs = request.additional_inputs
+    
+    print(f"[DEBUG] Received additional_inputs: {additional_inputs}")
     
     if flow_id not in cv_flows:
         raise HTTPException(status_code=404, detail="Flow not found")
@@ -161,8 +432,8 @@ async def complete_cv_flow(request: CompleteFlowRequest):
                 except Exception as parse_error:
                     print(f"[DEBUG] Failed to parse string: {parse_error}")
         
-        # Check if additional inputs are empty or if any of them have values
-        has_additional_data = bool(additional_inputs) and any(value.strip() for value in additional_inputs.values())
+        # Check if additional inputs exist
+        has_additional_data = bool(additional_inputs)
         print(f"[DEBUG] Has additional data: {has_additional_data}")
         
         # Make sure we have a valid dictionary to work with
@@ -175,22 +446,149 @@ async def complete_cv_flow(request: CompleteFlowRequest):
             print("[DEBUG] Adding cv_template wrapper to data")
             extracted_text = gemini_service.ensure_cv_structure(extracted_text)
         
+        # Update CV structure with new data from editable sections
+        if has_additional_data:
+            # Process header/contact info updates
+            import json
+            
+            cv_template = extracted_text.get("cv_template", {})
+            sections = cv_template.get("sections", {})
+            
+            # Update header fields
+            for key, value in additional_inputs.items():
+                if key.startswith("header."):
+                    field_name = key.split('.')[1]  # e.g., "header.name" -> "name"
+                    if field_name == "name":
+                        if "header" not in sections:
+                            sections["header"] = {}
+                        sections["header"]["name"] = value
+                    elif field_name in ["email", "phone", "location"]:
+                        if "header" not in sections:
+                            sections["header"] = {}
+                        if "contact_info" not in sections["header"]:
+                            sections["header"]["contact_info"] = {}
+                        
+                        # Initialize the field if it doesn't exist
+                        if field_name not in sections["header"]["contact_info"]:
+                            sections["header"]["contact_info"][field_name] = {}
+                        
+                        # Update the value
+                        sections["header"]["contact_info"][field_name]["value"] = value
+                        
+                        # Update link for email and phone
+                        if field_name == "email":
+                            sections["header"]["contact_info"][field_name]["link"] = f"mailto:{value}"
+                        elif field_name == "phone":
+                            sections["header"]["contact_info"][field_name]["link"] = f"tel:{value}"
+            
+            # Update education section
+            if "education" in additional_inputs:
+                try:
+                    education_items = json.loads(additional_inputs["education"])
+                    if "education" not in sections:
+                        sections["education"] = {"section_title": "Education", "items": []}
+                        
+                    # Transform the education items to match the expected format
+                    formatted_education_items = []
+                    for item in education_items:
+                        formatted_item = {
+                            "institution": item.get("institution", ""),
+                            "degree": item.get("degree", ""),
+                            "location": item.get("location", ""),
+                            "graduation_date": item.get("graduation_date", "")
+                        }
+                        
+                        # Add optional GPA if provided
+                        if "gpa" in item and item["gpa"]:
+                            formatted_item["gpa"] = item["gpa"]
+                            
+                        formatted_education_items.append(formatted_item)
+                    
+                    sections["education"]["items"] = formatted_education_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing education data: {str(e)}")
+            
+            # Update experience section
+            if "experience" in additional_inputs:
+                try:
+                    experience_items = json.loads(additional_inputs["experience"])
+                    if "experience" not in sections:
+                        sections["experience"] = {"section_title": "Experience", "items": []}
+                    
+                    # Transform the experience items to match the expected format
+                    formatted_experience_items = []
+                    for item in experience_items:
+                        formatted_item = {
+                            "company": item.get("company", ""),
+                            "title": item.get("title", ""),
+                            "location": item.get("location", ""),
+                            "dates": {
+                                "start": item.get("start_date", ""),
+                                "end": item.get("end_date", ""),
+                                "is_current": item.get("is_current", False)
+                            },
+                            "achievements": item.get("achievements", [])
+                        }
+                        formatted_experience_items.append(formatted_item)
+                    
+                    sections["experience"]["items"] = formatted_experience_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing experience data: {str(e)}")
+            
+            # Update skills section
+            if "skills" in additional_inputs:
+                try:
+                    skill_categories = json.loads(additional_inputs["skills"])
+                    if "skills" not in sections:
+                        sections["skills"] = {"section_title": "Skills", "categories": []}
+                    
+                    # Transform skill categories to match the expected format
+                    formatted_skill_categories = []
+                    for category in skill_categories:
+                        formatted_category = {
+                            "name": category.get("name", ""),
+                            "items": category.get("items", [])
+                        }
+                        formatted_skill_categories.append(formatted_category)
+                    
+                    sections["skills"]["categories"] = formatted_skill_categories
+                except Exception as e:
+                    print(f"[DEBUG] Error processing skills data: {str(e)}")
+            
+            # Update projects section
+            if "projects" in additional_inputs:
+                try:
+                    project_items = json.loads(additional_inputs["projects"])
+                    if "projects" not in sections:
+                        sections["projects"] = {"section_title": "Projects", "items": []}
+                    
+                    # Transform project items to match the expected format
+                    formatted_project_items = []
+                    for item in project_items:
+                        formatted_item = {
+                            "title": item.get("title", ""),
+                            "description": item.get("description", ""),
+                            "dates": {
+                                "start": item.get("start_date", ""),
+                                "end": item.get("end_date", "")
+                            },
+                            "technologies": item.get("technologies", []),
+                            "key_contributions": item.get("contributions", [])
+                        }
+                        formatted_project_items.append(formatted_item)
+                    
+                    sections["projects"]["items"] = formatted_project_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing projects data: {str(e)}")
+            
+            # Raw text fallback (if present)
+            if "raw_text" in additional_inputs:
+                print("[DEBUG] Using raw text input as fallback")
+                extracted_text = {"raw_text": additional_inputs["raw_text"]}
+        
         try:
-            if has_additional_data:
-                # If we have additional inputs, enhance the CV
-                print("[DEBUG] Enhancing CV with additional inputs...")
-                enhanced_cv = await gemini_service.enhance_cv_with_input(
-                    cv_data=extracted_text,
-                    additional_input=additional_inputs
-                )
-                
-                # Use the enhanced CV for LaTeX conversion
-                latex_result = convert_to_latex_service(enhanced_cv)
-            else:
-                # If no additional inputs, just use the original CV data
-                print("[DEBUG] No additional inputs provided, using original CV data...")
-                latex_result = convert_to_latex_service(extracted_text)
-                
+            # Generate the LaTeX from the enhanced CV structure
+            latex_result = convert_to_latex_service(extracted_text)               
         except Exception as latex_error:
             print(f"[DEBUG] Error in LaTeX conversion: {str(latex_error)}")
             import traceback
