@@ -10,7 +10,7 @@ def sanitize_filename(name: str) -> str:
     """Removes potentially unsafe characters for filenames."""
     import re
     if not name or not isinstance(name, str):
-        return "cv_output"  # Default base name
+        return "cv_output"
     name = name.strip().replace(" ", "_")
     name = re.sub(r'[^\w\-]+', '', name)
     return name if name else "cv_output"

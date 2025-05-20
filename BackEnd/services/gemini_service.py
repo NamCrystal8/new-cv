@@ -106,6 +106,7 @@ class GeminiService:
             2. Weak sections that need strengthening
             3. Formatting or structural issues
             4. Suggestions for improvement
+            5. Only giving the information that is neccesary, if the section is good enough don't try to improve it
             
             CV Data:
             {json.dumps(cv_data, indent=2)}
@@ -141,6 +142,149 @@ class GeminiService:
                 
         except Exception as e:
             return {"error": f"Error analyzing CV: {str(e)}"}
+            
+    async def generate_detailed_analysis(self, cv_data: dict) -> dict:
+        """
+        Generate detailed weakness analysis and recommendations for the CV
+        """
+        try:
+            prompt = f"""
+            You are a professional CV reviewer with expertise in helping job seekers improve their resumes.
+            Analyze this CV in detail and provide:
+            
+            1. A list of weaknesses with severity ratings (low, medium, high)
+            2. Specific recommendations for improvements
+            
+            CV Data:
+            {json.dumps(cv_data, indent=2)}
+            
+            Provide your analysis in the following JSON format:
+            
+            {{
+              "weaknesses": [
+                {{
+                  "category": "Clear category name (e.g., 'Contact Information', 'Work Experience')",
+                  "description": "Detailed explanation of the weakness",
+                  "severity": "low|medium|high"
+                }}
+              ],
+              "recommendations": [
+                {{
+                  "id": "unique_id",
+                  "section": "Section name (e.g., 'Header', 'Experience', 'Education', 'Skills', 'Projects')",
+                  "field": "Specific field (e.g., 'name', 'email', 'experience.0.company', 'skills.0.1')",
+                  "current": "Current content or 'empty' if missing",
+                  "suggested": "Suggested improvement text",
+                  "reason": "Brief explanation of why this change would help"
+                }}
+              ]
+            }}
+            
+            Focus on actionable improvements and professional best practices.
+            For each weakness, provide at least one corresponding recommendation.
+            
+            Guidelines for recommendations:
+            1. For Header/Contact Info: Use section="Header" and field should be the exact field name (name, email, phone, location)
+            2. For Education/Experience/Projects: Use field format like "education.0.institution" where the number is the item index
+            3. For Skills: Use field format like "skills.0.2" where first number is category index and second is skill index
+            4. For new items: Use field="new_item" and suggested value should be a valid JSON object for that section
+            5. Make recommendations SPECIFIC and ACTIONABLE with clear improvements
+            
+            Ensure each recommendation can be directly applied to the CV.
+            """
+
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+            
+            response_text = response.text
+            
+            # Extract JSON from response if needed
+            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(1)
+                
+            try:
+                detailed_analysis = json.loads(response_text)
+                if not isinstance(detailed_analysis, dict):
+                    raise ValueError("Response is not a dictionary")
+                    
+                # Ensure required keys exist
+                if "weaknesses" not in detailed_analysis:
+                    detailed_analysis["weaknesses"] = []
+                if "recommendations" not in detailed_analysis:
+                    detailed_analysis["recommendations"] = []
+                    
+                # Ensure all recommendations have IDs and are properly categorized
+                for i, rec in enumerate(detailed_analysis["recommendations"]):
+                    # Set ID if missing
+                    if "id" not in rec or not rec["id"]:
+                        rec["id"] = f"rec_{i}"
+                    
+                    # Ensure section is standardized (convert any variant to standard names)
+                    section_map = {
+                        "contact": "Header",
+                        "contact information": "Header",
+                        "personal information": "Header",
+                        "header": "Header",
+                        "education": "Education",
+                        "educational background": "Education",
+                        "academic": "Education",
+                        "experience": "Experience",
+                        "work experience": "Experience",
+                        "professional experience": "Experience",
+                        "employment": "Experience",
+                        "skills": "Skills",
+                        "skill": "Skills",
+                        "technical skills": "Skills",
+                        "projects": "Projects",
+                        "project": "Projects"
+                    }
+                    
+                    if "section" in rec:
+                        section_lower = rec["section"].lower()
+                        for key, value in section_map.items():
+                            if key in section_lower:
+                                rec["section"] = value
+                                break
+                    else:
+                        rec["section"] = "General"
+                    
+                    # Set default values for missing fields
+                    if "field" not in rec or not rec["field"]:
+                        rec["field"] = "general"
+                    if "current" not in rec:
+                        rec["current"] = "empty"
+                    if "suggested" not in rec:
+                        rec["suggested"] = ""
+                    if "reason" not in rec:
+                        rec["reason"] = "Improves your CV's professional appearance"
+                        
+                return detailed_analysis
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error: {e}")
+                # Provide fallback values if analysis fails
+                return {
+                    "weaknesses": [
+                        {
+                            "category": "General",
+                            "description": "Unable to analyze CV properly. Please review manually.",
+                            "severity": "medium"
+                        }
+                    ],
+                    "recommendations": []
+                }
+                
+        except Exception as e:
+            print(f"Error generating detailed analysis: {str(e)}")
+            import traceback
+            print(f"[DEBUG] Analysis error stack trace: {traceback.format_exc()}")
+            return {
+                "error": f"Error analyzing CV: {str(e)}",
+                "weaknesses": [],
+                "recommendations": []
+            }
             
     async def enhance_cv_with_input(self, cv_data: dict, additional_input: dict) -> dict:
         """
@@ -188,5 +332,77 @@ class GeminiService:
             print(f"Error enhancing CV: {str(e)}")
             # In case of any error, return the original CV data with proper structure
             return self.ensure_cv_structure(cv_data)
+
+    async def compare_cv_to_jd_full(self, cv_data: dict, job_description: str) -> dict:
+        """
+        Compare the CV to a job description and return matches, missing, not_needed, and recommended courses.
+        """
+        try:
+            prompt = f"""
+            You are a professional career advisor and CV reviewer. Compare the following CV data to the provided job description. Identify:
+            1. What the CV already has for the job description (matches)
+            2. What is missing (required by the job description, not in the CV)
+            3. What is not needed (in the CV, but not required by the job description)
+            4. For each missing/weak area, recommend specific online courses or learning resources (with platform names, e.g., Coursera, Udemy, edX, LinkedIn Learning) to help the candidate improve in the missing/weak areas.
+
+            CV Data:
+            {json.dumps(cv_data, indent=2)}
+
+            Job Description:
+            {job_description}
+
+            Provide your response as a JSON object with the following structure:
+            {{
+              "matches": [
+                {{"category": "Skill/Experience/Qualification", "description": "How the CV matches the job requirement"}}
+              ],
+              "missing": [
+                {{"category": "Skill/Experience/Qualification", "description": "What is missing or weak"}}
+              ],
+              "not_needed": [
+                {{"category": "Skill/Experience/Qualification", "description": "What is in the CV but not needed for the job"}}
+              ],
+              "recommended_courses": [
+                {{"title": "Course Title", "platform": "Platform Name", "url": "Course URL", "reason": "Why this course is recommended"}}
+              ]
+            }}
+            """
+
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+
+            response_text = response.text
+            print(response_text)
+            json_match = re.search(r'```json\\s*(.*?)\\s*```', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(1)
+            try:
+                result = json.loads(response_text)
+                if "matches" not in result:
+                    result["matches"] = []
+                if "missing" not in result:
+                    result["missing"] = []
+                if "not_needed" not in result:
+                    result["not_needed"] = []
+                if "recommended_courses" not in result:
+                    result["recommended_courses"] = []
+                return result
+            except json.JSONDecodeError:
+                return {
+                    "matches": [],
+                    "missing": [],
+                    "not_needed": [],
+                    "recommended_courses": []
+                }
+        except Exception as e:
+            return {
+                "error": f"Error comparing CV to JD: {str(e)}",
+                "matches": [],
+                "missing": [],
+                "not_needed": [],
+                "recommended_courses": []
+            }
 
 gemini_service = GeminiService()

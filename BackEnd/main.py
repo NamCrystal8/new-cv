@@ -1,16 +1,50 @@
-"""
-Main entry point for the FastAPI application.
-This file imports and registers all route modules.
-"""
+import os
+import uuid
+from fastapi import FastAPI, Depends
 from core.app import app
+from models import User, CV, get_user_db, UserRead, UserCreate, UserUpdate
+from core.database import Base, engine, get_async_db
 from routes import base_routes, pdf_routes, cv_routes
+from core.security import auth_backend, fastapi_users, current_active_user
 
-# Register all route modules
+# --- Database Initialization --- START ---
+@app.on_event("startup")
+async def on_startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+# --- Database Initialization --- END ---
+
+# --- Include Routers --- START ---
 app.include_router(base_routes.router)
 app.include_router(pdf_routes.router)
 app.include_router(cv_routes.router)
 
-# For direct execution
+# Include FastAPI-Users routers with correct schemas
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend),
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_reset_password_router(),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_verify_router(UserRead),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix="/users",
+    tags=["users"],
+)
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

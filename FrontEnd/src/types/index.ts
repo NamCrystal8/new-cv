@@ -1,4 +1,17 @@
 // Types related to CV analysis and flow responses
+import {
+  EducationItem,
+  EducationSection,
+  ExperienceItem,
+  ExperienceSection,
+  SkillCategory,
+  SkillsSection,
+  ProjectItem,
+  ProjectsSection,
+  LanguageItem,
+  LanguagesSection
+} from '../components/cv-editors/new-editors';
+
 export interface SectionAnalysis {
   is_complete: boolean;
   missing_fields: string[];
@@ -20,6 +33,22 @@ export interface CVAnalysis {
   };
 }
 
+// New interfaces for the weakness analysis and recommendations
+export interface WeaknessAnalysis {
+  category: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface RecommendationItem {
+  id: string;
+  section: string;
+  field: string;
+  current: string;
+  suggested: string;
+  reason: string;
+}
+
 // Field types for editable sections
 export interface Field {
   id: string;
@@ -33,82 +62,6 @@ export interface ContactSection {
   name: string;
   type: 'object';
   fields: Field[];
-}
-
-// Education item
-export interface EducationItem {
-  id: string;
-  institution: string;
-  degree: string;
-  location: string;
-  graduation_date: string;
-  gpa: string;
-}
-
-// Education section
-export interface EducationSection {
-  id: string;
-  name: string;
-  type: 'list';
-  items: EducationItem[];
-  template: Omit<EducationItem, 'id'>;
-}
-
-// Experience item
-export interface ExperienceItem {
-  id: string;
-  company: string;
-  title: string;
-  location: string;
-  start_date: string;
-  end_date: string;
-  is_current: boolean;
-  achievements: string[];
-}
-
-// Experience section
-export interface ExperienceSection {
-  id: string;
-  name: string;
-  type: 'list';
-  items: ExperienceItem[];
-  template: Omit<ExperienceItem, 'id'>;
-}
-
-// Skill category
-export interface SkillCategory {
-  id: string;
-  name: string;
-  items: string[];
-}
-
-// Skills section
-export interface SkillsSection {
-  id: string;
-  name: string;
-  type: 'nested_list';
-  categories: SkillCategory[];
-  template: Omit<SkillCategory, 'id'>;
-}
-
-// Project item
-export interface ProjectItem {
-  id: string;
-  title: string;
-  description: string;
-  start_date: string;
-  end_date: string;
-  technologies: string[];
-  contributions: string[];
-}
-
-// Projects section
-export interface ProjectsSection {
-  id: string;
-  name: string;
-  type: 'list';
-  items: ProjectItem[];
-  template: Omit<ProjectItem, 'id'>;
 }
 
 // Raw input section (fallback)
@@ -126,6 +79,7 @@ export type EditableSection =
   | ExperienceSection 
   | SkillsSection 
   | ProjectsSection
+  | LanguagesSection
   | RawInputSection;
 
 export interface FlowResponse {
@@ -133,4 +87,32 @@ export interface FlowResponse {
   analysis: CVAnalysis;
   flow_id: string;
   editable_sections: EditableSection[];
+  detailed_analysis: {
+    weaknesses: WeaknessAnalysis[];
+    recommendations: RecommendationItem[];
+  };
+}
+
+export interface JobDescriptionWeakness {
+  category: string;
+  description: string;
+}
+
+export interface RecommendedCourse {
+  title: string;
+  platform: string;
+  url: string;
+  reason: string;
+}
+
+export interface JobDescriptionAnalysis {
+  missing_requirements: string[];
+  weaknesses: JobDescriptionWeakness[];
+  recommended_courses: RecommendedCourse[];
+  error?: string;
+}
+
+export interface JobDescriptionFlowResponse {
+  cv_data: any;
+  job_analysis: JobDescriptionAnalysis;
 }

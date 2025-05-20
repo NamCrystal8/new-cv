@@ -4,6 +4,7 @@
   min-height: 100vh;
 }
 
+
 /* Animations for React logo if needed */
 @keyframes logo-spin {
   from {
@@ -19,3 +20,5 @@
     animation: logo-spin infinite 20s linear;
   }
 }
+
+/* Removed old .sidebar, .sidebar ul, .sidebar li, .sidebar li:hover styles */

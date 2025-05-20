@@ -2,3 +2,14 @@ fastapi
 uvicorn
 httpx
 cloudinary
+sqlalchemy
+pymysql
+fastapi-users[sqlalchemy]
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
+email-validator
+python-dotenv
+asyncmy
+PyPDF2
+google-genai

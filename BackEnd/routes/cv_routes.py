@@ -1,12 +1,16 @@
 import os
 import uuid
-from fastapi import APIRouter, HTTPException, File, UploadFile
+from fastapi import APIRouter, HTTPException, File, UploadFile, Depends
 from pydantic import BaseModel
 from typing import Dict
 from utils.latex_prompt import get_latex_template
 from services.latex_service import convert_to_latex_service
 from core.app import gemini_service, cv_flows
 from core.cloudinary_config import upload_file_to_cloudinary
+from core.security import current_active_user
+from models import User, CV  # Add CV import
+from core.database import get_async_db  # Import async session dependency
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -18,7 +22,10 @@ class CompleteFlowRequest(BaseModel):
     additional_inputs: Dict[str, str]
 
 @router.post("/analyze-cv-weaknesses")
-async def analyze_cv_weaknesses(file: UploadFile = File(...)):
+async def analyze_cv_weaknesses(
+    file: UploadFile = File(...),
+    user: User = Depends(current_active_user)
+):
     """
     Analyze a CV for weaknesses and suggest improvements.
     """
@@ -214,6 +221,25 @@ async def analyze_cv_weaknesses(file: UploadFile = File(...)):
             
             section_analysis["projects"] = projects_analysis
             
+            # Languages (list type)
+            languages = sections.get("languages", {})
+            language_items = languages.get("items", [])
+            language_fields = []
+            for i, item in enumerate(language_items):
+                language_fields.append({
+                    "id": f"language_{i}",
+                    "language": item.get("language", "") or item.get("name", ""),
+                    "proficiency": item.get("proficiency", "Intermediate")
+                })
+            
+            section_analysis["languages"] = {
+                "is_complete": bool(language_fields),
+                "item_count": len(language_fields)
+            }
+            
+            # Generate detailed analysis using Gemini
+            detailed_analysis = await gemini_service.generate_detailed_analysis(extracted_cv_data)
+            
             # Create a list of editable sections based on the CV structure
             editable_sections = []
             
@@ -335,6 +361,28 @@ async def analyze_cv_weaknesses(file: UploadFile = File(...)):
                 }
             })
             
+            # Languages (list type)
+            languages = sections.get("languages", {})
+            language_items = languages.get("items", [])
+            language_fields = []
+            for i, item in enumerate(language_items):
+                language_fields.append({
+                    "id": f"language_{i}",
+                    "language": item.get("language", "") or item.get("name", ""),
+                    "proficiency": item.get("proficiency", "Intermediate")
+                })
+            
+            editable_sections.append({
+                "id": "languages",
+                "name": "Languages",
+                "type": "list",
+                "items": language_fields,
+                "template": {
+                    "language": "",
+                    "proficiency": "Intermediate"
+                }
+            })
+            
         except Exception as analysis_error:
             print(f"Error analyzing CV structure: {str(analysis_error)}")
             import traceback
@@ -349,6 +397,16 @@ async def analyze_cv_weaknesses(file: UploadFile = File(...)):
                 "type": "textarea",
                 "value": str(extracted_cv_data)[:1000] + "..."
             }]
+            detailed_analysis = {
+                "weaknesses": [
+                    {
+                        "category": "General",
+                        "description": "Unable to analyze CV properly. Please review manually.",
+                        "severity": "medium"
+                    }
+                ],
+                "recommendations": []
+            }
         
         # Store the extracted CV data for later use
         if isinstance(extracted_cv_data, dict):
@@ -384,6 +442,7 @@ async def analyze_cv_weaknesses(file: UploadFile = File(...)):
                 "improvement_suggestions": improvement_suggestions,
                 "section_analysis": section_analysis
             },
+            "detailed_analysis": detailed_analysis,
             "editable_sections": editable_sections
         }
     except HTTPException:
@@ -398,7 +457,11 @@ async def analyze_cv_weaknesses(file: UploadFile = File(...)):
         await file.close()
 
 @router.post("/complete-cv-flow")
-async def complete_cv_flow(request: CompleteFlowRequest):
+async def complete_cv_flow(
+    request: CompleteFlowRequest,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_db)  # Inject async DB session
+):
     """
     Complete the CV flow with additional inputs and generate an enhanced CV.
     """
@@ -435,6 +498,16 @@ async def complete_cv_flow(request: CompleteFlowRequest):
         # Check if additional inputs exist
         has_additional_data = bool(additional_inputs)
         print(f"[DEBUG] Has additional data: {has_additional_data}")
+        
+        # Check if there are applied recommendations
+        applied_recommendations = []
+        if "applied_recommendations" in additional_inputs:
+            try:
+                applied_recommendations = json.loads(additional_inputs["applied_recommendations"])
+                # Remove this from additional_inputs to avoid conflicts
+                del additional_inputs["applied_recommendations"]
+            except Exception as rec_error:
+                print(f"[DEBUG] Error processing applied recommendations: {str(rec_error)}")
         
         # Make sure we have a valid dictionary to work with
         if not isinstance(extracted_text, dict):
@@ -581,10 +654,91 @@ async def complete_cv_flow(request: CompleteFlowRequest):
                 except Exception as e:
                     print(f"[DEBUG] Error processing projects data: {str(e)}")
             
+            # Update languages section
+            if "languages" in additional_inputs:
+                try:
+                    language_items = json.loads(additional_inputs["languages"])
+                    if "languages" not in sections:
+                        sections["languages"] = {"section_title": "Languages", "items": []}
+                    
+                    # Transform language items to match the expected format
+                    formatted_language_items = []
+                    for item in language_items:
+                        formatted_item = {
+                            "language": item.get("language", ""),
+                            "proficiency": item.get("proficiency", "Intermediate")
+                        }
+                        formatted_language_items.append(formatted_item)
+                    
+                    sections["languages"]["items"] = formatted_language_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing languages data: {str(e)}")
+            
             # Raw text fallback (if present)
             if "raw_text" in additional_inputs:
                 print("[DEBUG] Using raw text input as fallback")
                 extracted_text = {"raw_text": additional_inputs["raw_text"]}
+        
+        # Apply any recommendations from the detailed analysis to the LaTeX structure
+        # This helps ensure the final PDF reflects the carousel recommendations
+        if applied_recommendations:
+            try:
+                cv_template = extracted_text.get("cv_template", {})
+                sections = cv_template.get("sections", {})
+                
+                for rec in applied_recommendations:
+                    section_name = rec.get("section", "").lower()
+                    field_name = rec.get("field", "")
+                    
+                    # Skip if missing essential info
+                    if not section_name or not field_name or not rec.get("suggested"):
+                        continue
+                    
+                    # Handle different section types
+                    if section_name in ["header", "contact", "contact information"]:
+                        # Handle header fields
+                        if field_name == "name":
+                            if "header" in sections:
+                                sections["header"]["name"] = rec["suggested"]
+                        elif field_name in ["email", "phone", "location"]:
+                            if "header" in sections and "contact_info" in sections["header"]:
+                                if field_name in sections["header"]["contact_info"]:
+                                    sections["header"]["contact_info"][field_name]["value"] = rec["suggested"]
+                    
+                    # Handle structured fields like "experience.0.company"
+                    elif "." in field_name:
+                        parts = field_name.split(".")
+                        if len(parts) == 3:
+                            section_type, index_str, subfield = parts
+                            try:
+                                index = int(index_str)
+                                if section_type in sections and "items" in sections[section_type]:
+                                    if index < len(sections[section_type]["items"]):
+                                        if section_type == "experience" and subfield == "achievements":
+                                            # Handle special case for achievements (array)
+                                            try:
+                                                achievements = json.loads(rec["suggested"])
+                                                sections[section_type]["items"][index][subfield] = achievements
+                                            except:
+                                                # If not valid JSON, treat as single achievement
+                                                sections[section_type]["items"][index][subfield] = [rec["suggested"]]
+                                        else:
+                                            # Handle regular fields
+                                            sections[section_type]["items"][index][subfield] = rec["suggested"]
+                            except (ValueError, IndexError) as e:
+                                print(f"[DEBUG] Error applying recommendation to {field_name}: {str(e)}")
+                    
+                    # Handle new item additions
+                    elif field_name == "new_item":
+                        try:
+                            new_item = json.loads(rec["suggested"])
+                            if section_name in sections and "items" in sections[section_name]:
+                                sections[section_name]["items"].append(new_item)
+                        except Exception as e:
+                            print(f"[DEBUG] Error adding new item to {section_name}: {str(e)}")
+            
+            except Exception as e:
+                print(f"[DEBUG] Error applying recommendations: {str(e)}")
         
         try:
             # Generate the LaTeX from the enhanced CV structure
@@ -627,6 +781,16 @@ async def complete_cv_flow(request: CompleteFlowRequest):
                 detail=f"PDF generation succeeded, but upload to Cloudinary failed: {cloudinary_result['error']}"
             )
         
+        # Save CV record to database with the CV structure
+        new_cv = CV(
+            file_url=cloudinary_result["url"], 
+            user_id=user.id,
+            cv_structure=extracted_text  # Save the CV structure as JSON
+        )
+        db.add(new_cv)
+        await db.commit()
+        await db.refresh(new_cv)
+        
         # Update the flow status
         cv_flows[flow_id]["status"] = "completed"
         
@@ -643,3 +807,364 @@ async def complete_cv_flow(request: CompleteFlowRequest):
         import traceback
         print(f"[DEBUG] Stack trace: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error completing CV flow: {str(e)}")
+
+@router.get("/user-cvs")
+async def get_user_cvs(
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Retrieve all CVs uploaded by the current user.
+    """
+    from sqlalchemy import select
+    
+    try:
+        # Query to get all CVs for the current user
+        query = select(CV).where(CV.user_id == user.id).order_by(CV.id.desc())
+        result = await db.execute(query)
+        user_cvs = result.scalars().all()
+        
+        # Convert to response format
+        cvs_response = []
+        for cv in user_cvs:
+            cvs_response.append({
+                "id": cv.id,
+                "file_url": cv.file_url,
+                "has_structure": cv.cv_structure is not None,  # Flag to indicate if this CV can be re-edited
+                # Add created_at if you have that field
+                # "created_at": cv.created_at,
+            })
+        
+        return {"cvs": cvs_response}
+    except Exception as e:
+        print(f"Error fetching user CVs: {str(e)}")
+        import traceback
+        print(f"[DEBUG] Stack trace: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error fetching user CVs: {str(e)}")
+
+@router.get("/cv/{cv_id}")
+async def get_cv(
+    cv_id: int,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Retrieve a specific CV by ID, including its structure for re-editing
+    """
+    from sqlalchemy import select
+    
+    try:
+        # Query to get the specific CV
+        query = select(CV).where(CV.id == cv_id, CV.user_id == user.id)
+        result = await db.execute(query)
+        cv = result.scalars().first()
+        
+        if not cv:
+            raise HTTPException(status_code=404, detail="CV not found")
+        
+        # Return CV data with structure
+        return {
+            "id": cv.id,
+            "file_url": cv.file_url,
+            "cv_structure": cv.cv_structure,
+            "can_edit": cv.cv_structure is not None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching CV: {str(e)}")
+        import traceback
+        print(f"[DEBUG] Stack trace: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error fetching CV: {str(e)}")
+
+@router.post("/cv/{cv_id}/update")
+async def update_cv(
+    cv_id: int,
+    request: CompleteFlowRequest,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Update a previously generated CV with new structure and regenerate the PDF
+    """
+    from sqlalchemy import select
+    import json
+    
+    try:
+        # Query to get the specific CV
+        query = select(CV).where(CV.id == cv_id, CV.user_id == user.id)
+        result = await db.execute(query)
+        cv = result.scalars().first()
+        
+        if not cv:
+            raise HTTPException(status_code=404, detail="CV not found")
+        
+        # Get the existing CV structure
+        cv_structure = cv.cv_structure
+        if not cv_structure:
+            raise HTTPException(status_code=400, detail="This CV cannot be edited (no structure data available)")
+        
+        # Process the flow similar to complete_cv_flow
+        flow_id = request.flow_id
+        additional_inputs = request.additional_inputs
+        
+        # Create a flow entry if needed
+        if flow_id not in cv_flows:
+            flow_id = str(uuid.uuid4())
+            cv_flows[flow_id] = {
+                "extracted_text": cv_structure,
+                "status": "loaded_from_db"
+            }
+        
+        # Update CV structure with new data from editable sections
+        extracted_text = cv_structure
+        
+        # Process additional inputs (same logic as in complete_cv_flow)
+        if additional_inputs:
+            cv_template = extracted_text.get("cv_template", {})
+            sections = cv_template.get("sections", {})
+            
+            # Update header fields
+            for key, value in additional_inputs.items():
+                if key.startswith("header."):
+                    field_name = key.split('.')[1]  # e.g., "header.name" -> "name"
+                    if field_name == "name":
+                        if "header" not in sections:
+                            sections["header"] = {}
+                        sections["header"]["name"] = value
+                    elif field_name in ["email", "phone", "location"]:
+                        if "header" not in sections:
+                            sections["header"] = {}
+                        if "contact_info" not in sections["header"]:
+                            sections["header"]["contact_info"] = {}
+                        
+                        # Initialize the field if it doesn't exist
+                        if field_name not in sections["header"]["contact_info"]:
+                            sections["header"]["contact_info"][field_name] = {}
+                        
+                        # Update the value
+                        sections["header"]["contact_info"][field_name]["value"] = value
+                        
+                        # Update link for email and phone
+                        if field_name == "email":
+                            sections["header"]["contact_info"][field_name]["link"] = f"mailto:{value}"
+                        elif field_name == "phone":
+                            sections["header"]["contact_info"][field_name]["link"] = f"tel:{value}"
+            
+            # Update education section
+            if "education" in additional_inputs:
+                try:
+                    education_items = json.loads(additional_inputs["education"])
+                    if "education" not in sections:
+                        sections["education"] = {"section_title": "Education", "items": []}
+                        
+                    # Transform the education items to match the expected format
+                    formatted_education_items = []
+                    for item in education_items:
+                        formatted_item = {
+                            "institution": item.get("institution", ""),
+                            "degree": item.get("degree", ""),
+                            "location": item.get("location", ""),
+                            "graduation_date": item.get("graduation_date", "")
+                        }
+                        
+                        # Add optional GPA if provided
+                        if "gpa" in item and item["gpa"]:
+                            formatted_item["gpa"] = item["gpa"]
+                            
+                        formatted_education_items.append(formatted_item)
+                    
+                    sections["education"]["items"] = formatted_education_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing education data: {str(e)}")
+            
+            # Update experience section
+            if "experience" in additional_inputs:
+                try:
+                    experience_items = json.loads(additional_inputs["experience"])
+                    if "experience" not in sections:
+                        sections["experience"] = {"section_title": "Experience", "items": []}
+                    
+                    # Transform the experience items to match the expected format
+                    formatted_experience_items = []
+                    for item in experience_items:
+                        formatted_item = {
+                            "company": item.get("company", ""),
+                            "title": item.get("title", ""),
+                            "location": item.get("location", ""),
+                            "dates": {
+                                "start": item.get("start_date", ""),
+                                "end": item.get("end_date", ""),
+                                "is_current": item.get("is_current", False)
+                            },
+                            "achievements": item.get("achievements", [])
+                        }
+                        formatted_experience_items.append(formatted_item)
+                    
+                    sections["experience"]["items"] = formatted_experience_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing experience data: {str(e)}")
+            
+            # Update skills section
+            if "skills" in additional_inputs:
+                try:
+                    skill_categories = json.loads(additional_inputs["skills"])
+                    if "skills" not in sections:
+                        sections["skills"] = {"section_title": "Skills", "categories": []}
+                    
+                    # Transform skill categories to match the expected format
+                    formatted_skill_categories = []
+                    for category in skill_categories:
+                        formatted_category = {
+                            "name": category.get("name", ""),
+                            "items": category.get("items", [])
+                        }
+                        formatted_skill_categories.append(formatted_category)
+                    
+                    sections["skills"]["categories"] = formatted_skill_categories
+                except Exception as e:
+                    print(f"[DEBUG] Error processing skills data: {str(e)}")
+            
+            # Update projects section
+            if "projects" in additional_inputs:
+                try:
+                    project_items = json.loads(additional_inputs["projects"])
+                    if "projects" not in sections:
+                        sections["projects"] = {"section_title": "Projects", "items": []}
+                    
+                    # Transform project items to match the expected format
+                    formatted_project_items = []
+                    for item in project_items:
+                        formatted_item = {
+                            "title": item.get("title", ""),
+                            "description": item.get("description", ""),
+                            "dates": {
+                                "start": item.get("start_date", ""),
+                                "end": item.get("end_date", "")
+                            },
+                            "technologies": item.get("technologies", []),
+                            "key_contributions": item.get("contributions", [])
+                        }
+                        formatted_project_items.append(formatted_item)
+                    
+                    sections["projects"]["items"] = formatted_project_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing projects data: {str(e)}")
+            
+            # Update languages section
+            if "languages" in additional_inputs:
+                try:
+                    language_items = json.loads(additional_inputs["languages"])
+                    if "languages" not in sections:
+                        sections["languages"] = {"section_title": "Languages", "items": []}
+                    
+                    # Transform language items to match the expected format
+                    formatted_language_items = []
+                    for item in language_items:
+                        formatted_item = {
+                            "language": item.get("language", ""),
+                            "proficiency": item.get("proficiency", "Intermediate")
+                        }
+                        formatted_language_items.append(formatted_item)
+                    
+                    sections["languages"]["items"] = formatted_language_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing languages data: {str(e)}")
+            
+            # Raw text fallback (if present)
+            if "raw_text" in additional_inputs:
+                print("[DEBUG] Using raw text input as fallback")
+                extracted_text = {"raw_text": additional_inputs["raw_text"]}
+        
+        # Generate the LaTeX from the updated CV structure
+        try:
+            latex_result = convert_to_latex_service(extracted_text)               
+        except Exception as latex_error:
+            print(f"[DEBUG] Error in LaTeX conversion: {str(latex_error)}")
+            import traceback
+            print(f"[DEBUG] Stack trace: {traceback.format_exc()}")
+            
+            # Fallback to basic LaTeX template if conversion fails
+            latex_content = get_latex_template()
+            latex_result = {"latex": latex_content}
+        
+        # Generate a unique filename for the LaTeX file
+        tex_filename = f"Dang_Ngoc_Nam_{cv_id}_{uuid.uuid4()}.tex"
+        tex_path = os.path.join(LATEX_OUTPUT_DIR, tex_filename)
+        
+        # Write the LaTeX content to file
+        with open(tex_path, "w", encoding="utf-8") as f:
+            f.write(latex_result["latex"])
+        
+        # Convert the LaTeX file to PDF
+        from routes.pdf_routes import convert_tex_to_pdf
+        pdf_result = convert_tex_to_pdf(tex_filename)
+        pdf_filename = tex_filename.replace(".tex", ".pdf")
+        pdf_path = os.path.join(LATEX_OUTPUT_DIR, pdf_filename)
+        
+        # If PDF wasn't generated, raise an error
+        if not os.path.exists(pdf_path):
+            raise HTTPException(
+                status_code=500, 
+                detail="PDF generation failed. Please check your LaTeX template or try again."
+            )
+        
+        # Upload the PDF to Cloudinary
+        cloudinary_result = upload_file_to_cloudinary(pdf_path)
+        if not cloudinary_result["success"]:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"PDF generation succeeded, but upload to Cloudinary failed: {cloudinary_result['error']}"
+            )
+        
+        # Update the CV record in the database
+        cv.file_url = cloudinary_result["url"]
+        cv.cv_structure = extracted_text  # Update with the new structure
+        await db.commit()
+        
+        # Return full URL to PDF file
+        return {
+            "message": "CV updated successfully",
+            "pdf_url": cloudinary_result["url"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error updating CV: {str(e)}")
+        import traceback
+        print(f"[DEBUG] Stack trace: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error updating CV: {str(e)}")
+@router.post("/analyze-cv-with-job-description")
+async def analyze_cv_with_job_description(
+    file: UploadFile = File(...),
+    job_description: str = None,
+    user: User = Depends(current_active_user)
+):
+    """
+    Analyze a CV for weaknesses and compare it to a job description if provided.
+    """
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    try:
+        pdf_content = await file.read()
+        extracted_cv_data = await gemini_service.extract_pdf_text(pdf_content=pdf_content)
+        if isinstance(extracted_cv_data, dict) and "error" in extracted_cv_data:
+            raise Exception(extracted_cv_data["error"])
+        if job_description:
+            # Compare CV to job description
+            job_analysis = await gemini_service.analyze_cv_against_job_description(extracted_cv_data, job_description)
+            return {
+                "cv_data": extracted_cv_data,
+                "job_analysis": job_analysis
+            }
+        else:
+            # Fallback to normal analysis
+            detailed_analysis = await gemini_service.generate_detailed_analysis(extracted_cv_data)
+            return {
+                "cv_data": extracted_cv_data,
+                "detailed_analysis": detailed_analysis
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing PDF: {str(e)}")
+    finally:
+        await file.close()

@@ -72,9 +72,9 @@ def json_to_latex(json_data):
 
     # Default section order if not specified
     default_order = ["header", "summary", "experience", "education", 
-                    "skills", "projects", "leadership", "certifications", 
-                    "languages", "publications", "research"]
-                    
+                     "skills", "projects", "leadership", "certifications", 
+                     "languages", "publications", "research", "achievements"]
+                      
     section_order = metadata.get("section_order", default_order)
     
     # Make sure section_order is valid
@@ -427,6 +427,30 @@ def json_to_latex(json_data):
                     section_latex += "\n\n"
                     if description:
                         section_latex += f"{description}\n\n"
+
+        # --- Achievements Section ---
+        elif section_key == "achievements":
+            items = section_content.get("items", [])
+            if not isinstance(items, list): items = []
+            for i, item in enumerate(items):
+                if not isinstance(item, dict): continue
+                organization = escape_latex(item.get("organization", ""))
+                description = escape_latex(item.get("description", ""))
+                date = escape_latex(item.get("date", ""))
+                
+                # Format achievement entry in Harvard style
+                if organization:
+                    section_latex += f"\\textbf{{{organization}}}"
+                    if date:
+                        section_latex += f" \\hfill {date}"
+                    section_latex += "\n\n"
+                
+                if description:
+                    section_latex += f"{description}\n\n"
+                
+                # Add proper spacing between achievement entries
+                if i < len(items) - 1:
+                    section_latex += "\\vspace{10pt}\n"
 
         if section_latex and section_key != "header":
              processed_sections.append(section_latex)
