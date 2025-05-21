@@ -19,7 +19,20 @@ from core.database import DATABASE_URL
 config = context.config
 
 # Overwrite sqlalchemy.url with our DATABASE_URL
-config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("+asyncmy", "+pymysql"))
+# For migrations, we need to use synchronous drivers
+modified_url = DATABASE_URL
+if "+asyncmy" in modified_url:
+    modified_url = modified_url.replace("+asyncmy", "+pymysql")
+elif "+asyncpg" in modified_url:
+    modified_url = modified_url.replace("+asyncpg", "+psycopg2")
+elif "+aiosqlite" in modified_url:
+    modified_url = modified_url.replace("+aiosqlite", "")
+    
+# Make sure postgres:// URLs are converted to postgresql://
+if modified_url.startswith("postgres://"):
+    modified_url = modified_url.replace("postgres://", "postgresql://", 1)
+
+config.set_main_option("sqlalchemy.url", modified_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

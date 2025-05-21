@@ -2,9 +2,9 @@ fastapi
 uvicorn
 httpx
 cloudinary
-sqlalchemy
+sqlalchemy>=2.0.0
 pymysql
-fastapi-users[sqlalchemy]
+fastapi-users[sqlalchemy]>=10.0.0
 passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
@@ -13,8 +13,12 @@ python-dotenv
 asyncmy
 PyPDF2
 google-genai
-# Added for PostgreSQL support in Render
+# PostgreSQL support in Render
 psycopg2-binary
-asyncpg
-# Added for SQLite async support
+asyncpg>=0.27.0
+# SQLite async support
 aiosqlite
+# Added for SQLAlchemy async support
+greenlet>=2.0.0
+# Added for better debugging
+pytest-asyncio

@@ -1,11 +1,13 @@
 # render.yaml
 services:
   - type: web
-    name: new-cv-backend    env: docker
+    name: new-cv-backend    
+    env: docker
     dockerfilePath: ./BackEnd/Dockerfile
     dockerContext: ./BackEnd
     plan: free
     buildCommand: chmod +x ./build.sh && ./build.sh
+    startCommand: chmod +x ./start.sh && ./start.sh
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
@@ -22,6 +24,10 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: SQLALCHEMY_WARN_20
+        value: "1"
+      - key: PYTHONUNBUFFERED
+        value: "1"
 
 databases:
   - name: new-cv-db

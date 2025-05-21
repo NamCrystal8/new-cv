@@ -6,6 +6,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    netcat-openbsd \
+    postgresql-client \
     texlive-latex-base \
     texlive-fonts-recommended \
     texlive-latex-extra \
@@ -15,19 +17,25 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Install PostgreSQL support for Render
-RUN pip install --no-cache-dir psycopg2-binary asyncpg
+# Make shell scripts executable
+COPY build.sh start.sh test_database.sh ./
+RUN chmod +x build.sh start.sh test_database.sh
 
 # Copy the rest of the application
 COPY . .
 
+# Create output directory for LaTeX files
+RUN mkdir -p output_tex_files && chmod 777 output_tex_files
+
 # Set environment variables
 ENV PORT=8000
+ENV PYTHONUNBUFFERED=1
 
 # Expose the port the app will run on
 EXPOSE 8000
 
 # Define the command to run when the container starts
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./start.sh"]
