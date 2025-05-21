@@ -1,12 +1,24 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession # Import async components
 from sqlalchemy.orm import sessionmaker, declarative_base # Keep declarative_base
 import os
+import re
 
-# Use an async driver like asyncmy
-DATABASE_URL = "mysql+asyncmy://root@localhost:3306/new_cv" # Changed driver to asyncmy
+# Get database URL from environment variable or use default
+DATABASE_URL = os.getenv("DATABASE_URL", "mysql+asyncmy://root@localhost:3306/new_cv")
 
-# Create an async engine
-engine = create_async_engine(DATABASE_URL, echo=True) # Set echo=True for debugging if needed
+# Handle different database URL formats
+if DATABASE_URL.startswith("sqlite:"):
+    # For SQLite, we need to use aiosqlite as the driver
+    # Replace sqlite:/// with sqlite+aiosqlite:///
+    DATABASE_URL = re.sub(r'^sqlite:', 'sqlite+aiosqlite:', DATABASE_URL)
+    engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+elif DATABASE_URL.startswith("postgres://"):
+    # Render provides PostgreSQL URLs starting with postgres://
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+    engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+else:
+    # MySQL or other database
+    engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
 
 # Create an async session factory
 AsyncSessionLocal = sessionmaker(

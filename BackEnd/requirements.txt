@@ -13,3 +13,8 @@ python-dotenv
 asyncmy
 PyPDF2
 google-genai
+# Added for PostgreSQL support in Render
+psycopg2-binary
+asyncpg
+# Added for SQLite async support
+aiosqlite

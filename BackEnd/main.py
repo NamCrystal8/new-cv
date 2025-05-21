@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends
 from core.app import app
 from models import User, CV, get_user_db, UserRead, UserCreate, UserUpdate
 from core.database import Base, engine, get_async_db
-from routes import base_routes, pdf_routes, cv_routes
+from routes import base_routes, pdf_routes, cv_routes, health_routes
 from core.security import auth_backend, fastapi_users, current_active_user
 
 # --- Database Initialization --- START ---
@@ -18,6 +18,7 @@ async def on_startup():
 app.include_router(base_routes.router)
 app.include_router(pdf_routes.router)
 app.include_router(cv_routes.router)
+app.include_router(health_routes.router)
 
 # Include FastAPI-Users routers with correct schemas
 app.include_router(
@@ -47,4 +48,5 @@ app.include_router(
 )
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

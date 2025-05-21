@@ -8,11 +8,15 @@ from core.cloudinary_config import setup_cloudinary
 def create_app() -> FastAPI:
     # Initialize FastAPI
     app = FastAPI()
-    
-    # Add CORS middleware to allow requests from frontend
+      # Add CORS middleware to allow requests from frontend
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:5173"],  # Add your frontend URL
+        allow_origins=[
+            "http://localhost:3000", 
+            "http://localhost:5173",
+            # Add your production frontend URL
+            os.getenv("FRONTEND_URL", "https://your-frontend-domain.onrender.com")
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
