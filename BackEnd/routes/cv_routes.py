@@ -21,6 +21,10 @@ class CompleteFlowRequest(BaseModel):
     flow_id: str
     additional_inputs: Dict[str, str]
 
+class JobDescriptionRequest(BaseModel):
+    flow_id: str
+    job_description: str
+
 @router.post("/analyze-cv-weaknesses")
 async def analyze_cv_weaknesses(
     file: UploadFile = File(...),
@@ -1163,8 +1167,92 @@ async def analyze_cv_with_job_description(
             return {
                 "cv_data": extracted_cv_data,
                 "detailed_analysis": detailed_analysis
-            }
+            }   
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing PDF: {str(e)}")
     finally:
         await file.close()
+
+class JobDescriptionRequest(BaseModel):
+    flow_id: str
+    job_description: str
+
+@router.post("/analyze-stored-cv-with-job-description")
+async def analyze_stored_cv_with_job_description(
+    request: JobDescriptionRequest,
+    user: User = Depends(current_active_user)
+):
+    """
+    Analyze a previously stored CV against a job description using the flow_id.
+    """
+    try:
+        # Get the stored CV data from the flow
+        if request.flow_id not in cv_flows:
+            raise HTTPException(status_code=404, detail="CV flow not found. Please upload your CV again.")
+        
+        flow_data = cv_flows[request.flow_id]
+        extracted_cv_data = flow_data.get("extracted_text")
+        
+        if not extracted_cv_data:
+            raise HTTPException(status_code=404, detail="CV data not found in flow. Please upload your CV again.")
+        
+        # Ensure we have proper CV structure
+        if isinstance(extracted_cv_data, dict) and "cv_template" not in extracted_cv_data:
+            extracted_cv_data = gemini_service.ensure_cv_structure(extracted_cv_data)
+        
+        # Analyze CV against job description
+        job_analysis = await gemini_service.analyze_cv_against_job_description(
+            extracted_cv_data, 
+            request.job_description
+        )
+        
+        return {
+            "cv_data": extracted_cv_data,
+            "job_analysis": job_analysis,
+            "flow_id": request.flow_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing CV against job description: {str(e)}")
+
+@router.post("/analyze-stored-cv-with-job-description")
+async def analyze_stored_cv_with_job_description(
+    request: JobDescriptionRequest,
+    user: User = Depends(current_active_user)
+):
+    """
+    Analyze a previously stored CV against a job description using the flow_id.
+    """
+    try:
+        # Get the stored CV data from the flow
+        if request.flow_id not in cv_flows:
+            raise HTTPException(status_code=404, detail="CV flow not found. Please upload your CV again.")
+        
+        flow_data = cv_flows[request.flow_id]
+        extracted_cv_data = flow_data.get("extracted_text")
+        
+        if not extracted_cv_data:
+            raise HTTPException(status_code=404, detail="CV data not found in flow. Please upload your CV again.")
+        
+        # Ensure we have proper CV structure
+        if isinstance(extracted_cv_data, dict) and "cv_template" not in extracted_cv_data:
+            extracted_cv_data = gemini_service.ensure_cv_structure(extracted_cv_data)
+        
+        # Analyze CV against job description
+        job_analysis = await gemini_service.analyze_cv_against_job_description(
+            extracted_cv_data, 
+            request.job_description
+        )
+        
+        return {
+            "cv_data": extracted_cv_data,
+            "job_analysis": job_analysis,
+            "flow_id": request.flow_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing CV against job description: {str(e)}")

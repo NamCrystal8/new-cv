@@ -29,17 +29,16 @@ export function AppSidebar() {
           </div>
           
           {/* Main navigation items */}
-          {isAuthenticated && (
-            <div className="flex flex-col gap-2">
+          {isAuthenticated && (            <div className="flex flex-col gap-2">
               <Link 
                 to="/" 
-                className="btn btn-ghost justify-start w-full flex items-center gap-2"
+                className="flex items-center gap-2 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors duration-200 w-full"
               >
                 <Home className="h-5 w-5" /> Home
               </Link>
               <Link 
                 to="/my-cvs" 
-                className="btn btn-ghost justify-start w-full flex items-center gap-2"
+                className="flex items-center gap-2 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors duration-200 w-full"
               >
                 <FileText className="h-5 w-5" /> My CVs
               </Link>
@@ -52,19 +51,17 @@ export function AppSidebar() {
           <div className="flex flex-col gap-4">
             {isAuthenticated === null ? (
               <span>Loading...</span>
-            ) : isAuthenticated ? (
-              <button
+            ) : isAuthenticated ? (              <button
                 onClick={handleLogout}
-                className="btn btn-primary w-full flex items-center gap-2"
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 w-full"
               >
                 <LogOut className="h-5 w-5" /> Logout
               </button>
-            ) : (
-              <>
-                <Link to="/login" className="btn btn-primary w-full flex items-center gap-2 mb-2">
+            ) : (              <>
+                <Link to="/login" className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 w-full mb-2">
                   <LogIn className="h-5 w-5" /> Login
                 </Link>
-                <Link to="/register" className="btn btn-outline w-full flex items-center gap-2">
+                <Link to="/register" className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-medium rounded-lg transition-all duration-200 w-full">
                   <UserPlus className="h-5 w-5" /> Register
                 </Link>
               </>

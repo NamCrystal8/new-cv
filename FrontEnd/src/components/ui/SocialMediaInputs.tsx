@@ -73,21 +73,7 @@ const SocialMediaInputs: React.FC<SocialMediaInputsProps> = ({
       setSelectedPlatform('');
       setCustomPlatform('');
       setUrl('');
-    }
-  };
-
-  // Custom renderer for platform field
-  const renderPlatformField = (item: Record<string, string>, onChange: (value: string) => void) => {
-    const platform = item.platform;
-    const icon = platformIcons[platform];
-    
-    return (
-      <div className="flex items-center gap-2">
-        {icon && <span className="text-blue-600">{icon}</span>}
-        <span>{platform}</span>
-      </div>
-    );
-  };
+    }  };
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -105,14 +91,13 @@ const SocialMediaInputs: React.FC<SocialMediaInputsProps> = ({
         animate={{ opacity: 1 }}
         className="bg-gray-50 rounded-lg p-4 border border-dashed border-gray-200 mb-4"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">          <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">Platform</label>
-            <div className="flex gap-2">
-              <select 
-                className="select select-bordered select-sm flex-grow bg-white"
+            <div className="flex gap-2">              <select 
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 flex-grow bg-white text-sm"
                 value={selectedPlatform}
                 onChange={(e) => setSelectedPlatform(e.target.value)}
+                aria-label="Select social media platform"
               >
                 <option value="">Select platform</option>
                 {commonPlatforms.map(platform => (
@@ -124,7 +109,7 @@ const SocialMediaInputs: React.FC<SocialMediaInputsProps> = ({
               {selectedPlatform === 'custom' && (
                 <input
                   type="text"
-                  className="input input-bordered input-sm flex-grow bg-white"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 flex-grow bg-white text-sm"
                   placeholder="Enter platform name"
                   value={customPlatform}
                   onChange={(e) => setCustomPlatform(e.target.value)}
@@ -132,12 +117,11 @@ const SocialMediaInputs: React.FC<SocialMediaInputsProps> = ({
               )}
             </div>
           </div>
-          
-          <div>
+            <div>
             <label className="text-xs font-medium text-gray-500 mb-1 block">URL</label>
             <input
               type="text"
-              className="input input-bordered input-sm w-full bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 w-full bg-white text-sm"
               placeholder="https://..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -154,7 +138,7 @@ const SocialMediaInputs: React.FC<SocialMediaInputsProps> = ({
         <button
           onClick={handleAddLink}
           disabled={!(selectedPlatform && (selectedPlatform !== 'custom' || customPlatform) && url)}
-          className="btn btn-sm btn-primary"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2 text-sm"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />

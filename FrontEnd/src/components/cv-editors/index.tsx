@@ -181,22 +181,36 @@ export const ContactInfoEditor: React.FC<{
   const regularFields = section.fields.filter(field => 
     !['linkedin', 'github', 'twitter', 'portfolio', 'social'].includes(field.id)
   );
-
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-300 mb-6">
-      <div className="card-body">
-        <h3 className="card-title text-lg mb-4">{section.name}</h3>
-        
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-6 overflow-hidden">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800">{section.name}</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {regularFields.length} field{regularFields.length === 1 ? '' : 's'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
         {/* Regular contact fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {regularFields.map(field => (
-            <div key={field.id} className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">{field.name}</span>
+            <div key={field.id} className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {field.name}
               </label>
               <input 
                 type="text"
-                className="input input-bordered w-full" 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={typeof field.value === 'string' ? field.value : JSON.stringify(field.value)}
                 onChange={(e) => handleFieldChange(field.id, e.target.value)}
                 placeholder={`Enter ${field.name.toLowerCase()}`}
@@ -206,7 +220,7 @@ export const ContactInfoEditor: React.FC<{
         </div>
         
         {/* Social media links section */}
-        <div className="border-t border-base-300 pt-4 mt-2">
+        <div className="border-t border-gray-200 pt-6 mt-6">
           <SocialMediaInputs 
             links={socialLinks}
             onChange={handleSocialLinksChange}
@@ -248,77 +262,85 @@ export const EducationEditor: React.FC<{
   const handleNewItemChange = (field: string, value: string) => {
     setNewItem({ ...newItem, [field]: value });
   };
-
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-300 mb-6">
-      <div className="card-body">
-        <h3 className="card-title text-lg mb-4">{section.name}</h3>
-        
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-6 overflow-hidden">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+              <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800">{section.name}</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {section.items.length} education{section.items.length === 1 ? '' : 's'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
         {/* Existing items */}
         {section.items.map((item, index) => (
-          <div key={item.id} className="mb-6 p-4 bg-base-200 rounded-lg relative">
+          <div key={item.id} className="mb-6 p-6 bg-gray-50 rounded-xl border border-gray-200 relative group hover:shadow-md transition-shadow duration-200">
             <button 
               onClick={() => removeItem(index)} 
-              className="btn btn-circle btn-xs btn-error absolute top-2 right-2"
+              className="absolute top-4 right-4 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors duration-200 opacity-0 group-hover:opacity-100"
+              aria-label="Remove education"
             >
-              ✕
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
             </button>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Institution</span>
-                </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Institution</label>
                 <input 
                   type="text"
-                  className="input input-bordered w-full" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                   value={item.institution}
                   onChange={(e) => handleItemChange(index, 'institution', e.target.value)}
                   placeholder="Enter institution name"
                 />
               </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Degree</span>
-                </label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Degree</label>
                 <input 
                   type="text"
-                  className="input input-bordered w-full" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                   value={item.degree}
                   onChange={(e) => handleItemChange(index, 'degree', e.target.value)}
                   placeholder="Enter degree"
                 />
               </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Location</span>
-                </label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Location</label>
                 <input 
                   type="text"
-                  className="input input-bordered w-full" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                   value={item.location}
                   onChange={(e) => handleItemChange(index, 'location', e.target.value)}
                   placeholder="Enter location"
                 />
               </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Graduation Date</span>
-                </label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Graduation Date</label>
                 <input 
                   type="text"
-                  className="input input-bordered w-full" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                   value={item.graduation_date}
                   onChange={(e) => handleItemChange(index, 'graduation_date', e.target.value)}
                   placeholder="e.g., May 2023"
                 />
               </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">GPA (Optional)</span>
-                </label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">GPA (Optional)</label>
                 <input 
                   type="text"
-                  className="input input-bordered w-full" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                   value={item.gpa}
                   onChange={(e) => handleItemChange(index, 'gpa', e.target.value)}
                   placeholder="e.g., 3.8/4.0"
@@ -329,40 +351,47 @@ export const EducationEditor: React.FC<{
         ))}
         
         {/* Add new item form */}
-        <div className="mt-6 p-4 bg-base-200/50 rounded-lg border-2 border-dashed border-base-300">
-          <h4 className="font-medium mb-4">Add New Education</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="form-control">
+        <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-blue-200">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+            </div>
+            <h4 className="font-semibold text-gray-800">Add New Education</h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-2">
               <input 
                 type="text"
-                className="input input-bordered w-full" 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={newItem.institution}
                 onChange={(e) => handleNewItemChange('institution', e.target.value)}
                 placeholder="Institution name"
               />
             </div>
-            <div className="form-control">
+            <div className="space-y-2">
               <input 
                 type="text"
-                className="input input-bordered w-full" 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={newItem.degree}
                 onChange={(e) => handleNewItemChange('degree', e.target.value)}
                 placeholder="Degree"
               />
             </div>
-            <div className="form-control">
+            <div className="space-y-2">
               <input 
                 type="text"
-                className="input input-bordered w-full" 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={newItem.location}
                 onChange={(e) => handleNewItemChange('location', e.target.value)}
                 placeholder="Location"
               />
             </div>
-            <div className="form-control">
+            <div className="space-y-2">
               <input 
                 type="text"
-                className="input input-bordered w-full" 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={newItem.graduation_date}
                 onChange={(e) => handleNewItemChange('graduation_date', e.target.value)}
                 placeholder="Graduation date (e.g., May 2023)"
@@ -372,8 +401,11 @@ export const EducationEditor: React.FC<{
           <button 
             onClick={addNewItem}
             disabled={!newItem.institution || !newItem.degree} 
-            className="btn btn-primary btn-sm"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2"
           >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
             Add Education
           </button>
         </div>
@@ -481,78 +513,87 @@ export const ExperienceEditor: React.FC<{
   const handleNewItemChange = (field: string, value: any) => {
     setNewItem({ ...newItem, [field]: value });
   };
-
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-300 mb-6">
-      <div className="card-body">
-        <h3 className="card-title text-lg mb-4">{section.name}</h3>
-        
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-6 overflow-hidden">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800">{section.name}</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {section.items.length} experience{section.items.length === 1 ? '' : 's'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
         {/* Existing items */}
         {section.items.map((item, index) => (
-          <div key={item.id} className="mb-6 p-4 bg-base-200 rounded-lg relative">
+          <div key={item.id} className="mb-6 p-6 bg-gray-50 rounded-xl border border-gray-200 relative group hover:shadow-md transition-shadow duration-200">
             <button 
               onClick={() => removeItem(index)} 
-              className="btn btn-circle btn-xs btn-error absolute top-2 right-2"
+              className="absolute top-4 right-4 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors duration-200 opacity-0 group-hover:opacity-100"
+              aria-label="Remove experience"
             >
-              ✕
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
             </button>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Company</span>
-                </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Company</label>
                 <input 
                   type="text"
-                  className="input input-bordered w-full" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                   value={item.company}
                   onChange={(e) => handleItemChange(index, 'company', e.target.value)}
                   placeholder="Enter company name"
                 />
               </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Job Title</span>
-                </label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Job Title</label>
                 <input 
                   type="text"
-                  className="input input-bordered w-full" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                   value={item.title}
                   onChange={(e) => handleItemChange(index, 'title', e.target.value)}
                   placeholder="Enter job title"
                 />
               </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Location</span>
-                </label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Location</label>
                 <input 
                   type="text"
-                  className="input input-bordered w-full" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                   value={item.location}
                   onChange={(e) => handleItemChange(index, 'location', e.target.value)}
                   placeholder="Enter location"
                 />
               </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Start Date</span>
-                </label>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Start Date</label>
                 <input 
                   type="text"
-                  className="input input-bordered w-full" 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                   value={item.start_date}
                   onChange={(e) => handleItemChange(index, 'start_date', e.target.value)}
                   placeholder="e.g., Jun 2020"
                 />
               </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">End Date</span>
-                </label>
-                <div className="flex items-center gap-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">End Date</label>
+                <div className="flex items-center gap-3">
                   <input 
                     type="text"
-                    className="input input-bordered flex-1" 
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                     value={item.end_date}
                     onChange={(e) => handleItemChange(index, 'end_date', e.target.value)}
                     placeholder={item.is_current ? "Present" : "e.g., Jul 2022"}
@@ -561,26 +602,24 @@ export const ExperienceEditor: React.FC<{
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="checkbox"
-                      className="checkbox checkbox-sm" 
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300" 
                       checked={item.is_current}
                       onChange={(e) => handleItemChange(index, 'is_current', e.target.checked)}
                     />
-                    <span className="label-text">Current</span>
+                    <span className="text-sm font-medium text-gray-700">Current</span>
                   </label>
                 </div>
               </div>
             </div>
             
             {/* Achievements */}
-            <div className="mt-4">
-              <label className="label">
-                <span className="label-text font-medium">Achievements</span>
-              </label>
-              <ul className="space-y-2">
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">Achievements & Responsibilities</label>
+              <div className="space-y-3">
                 {Array.isArray(item.achievements) ? item.achievements.map((achievement, achievementIndex) => (
-                  <li key={achievementIndex} className="flex items-start gap-2">
+                  <div key={achievementIndex} className="flex items-start gap-3">
                     <textarea
-                      className="textarea textarea-bordered flex-1"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none"
                       rows={2}
                       value={achievement}
                       onChange={(e) => handleAchievementChange(index, achievementIndex, e.target.value)}
@@ -588,74 +627,85 @@ export const ExperienceEditor: React.FC<{
                     />
                     <button 
                       onClick={() => removeAchievement(index, achievementIndex)}
-                      className="btn btn-ghost btn-sm text-error"
+                      className="mt-2 w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg flex items-center justify-center transition-colors duration-200"
+                      aria-label="Remove achievement"
                     >
-                      ✕
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
                     </button>
-                  </li>
+                  </div>
                 )) : null}
-                {/* Add achievement form - use item-specific state */}
-                <li className="flex items-start gap-2">
+                {/* Add achievement form */}
+                <div className="flex items-start gap-3">
                   <textarea
-                    className="textarea textarea-bordered flex-1"
+                    className="flex-1 px-4 py-3 border border-dashed border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none bg-blue-50"
                     rows={2}
                     value={getNewAchievement(item.id)}
                     onChange={(e) => setNewAchievement(item.id, e.target.value)}
                     placeholder="Add a new achievement or responsibility"
                   />
                   <button 
-                    onClick={() => {
-                      addAchievement(index, item.id);
-                    }}
+                    onClick={() => addAchievement(index, item.id)}
                     disabled={!getNewAchievement(item.id).trim()}
-                    className="btn btn-primary btn-sm"
+                    className="mt-2 w-8 h-8 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg flex items-center justify-center transition-colors duration-200"
+                    aria-label="Add achievement"
                   >
-                    +
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
                   </button>
-                </li>
-              </ul>
-              <div className="text-xs text-base-content/70 mt-2">
-                Tip: Start each bullet with an action verb and include metrics where possible (e.g., "Increased sales by 20%")
+                </div>
+              </div>
+              <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                💡 <strong>Tip:</strong> Start each bullet with an action verb and include metrics where possible (e.g., "Increased sales by 20%")
               </div>
             </div>
           </div>
         ))}
         
         {/* Add new item form */}
-        <div className="mt-6 p-4 bg-base-200/50 rounded-lg border-2 border-dashed border-base-300">
-          <h4 className="font-medium mb-4">Add New Experience</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="form-control">
+        <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-blue-200">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+            </div>
+            <h4 className="font-semibold text-gray-800">Add New Experience</h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-2">
               <input 
                 type="text"
-                className="input input-bordered w-full" 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={newItem.company}
                 onChange={(e) => handleNewItemChange('company', e.target.value)}
                 placeholder="Company name"
               />
             </div>
-            <div className="form-control">
+            <div className="space-y-2">
               <input 
                 type="text"
-                className="input input-bordered w-full" 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={newItem.title}
                 onChange={(e) => handleNewItemChange('title', e.target.value)}
                 placeholder="Job title"
               />
             </div>
-            <div className="form-control">
+            <div className="space-y-2">
               <input 
                 type="text"
-                className="input input-bordered w-full" 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={newItem.location}
                 onChange={(e) => handleNewItemChange('location', e.target.value)}
                 placeholder="Location"
               />
             </div>
-            <div className="form-control">
+            <div className="space-y-2">
               <input 
                 type="text"
-                className="input input-bordered w-full" 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={newItem.start_date}
                 onChange={(e) => handleNewItemChange('start_date', e.target.value)}
                 placeholder="Start date (e.g., Jun 2020)"
@@ -665,8 +715,11 @@ export const ExperienceEditor: React.FC<{
           <button 
             onClick={addNewItem}
             disabled={!newItem.company || !newItem.title} 
-            className="btn btn-primary btn-sm"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2"
           >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
             Add Experience
           </button>
         </div>
@@ -1125,15 +1178,43 @@ export const RawInputEditor: React.FC<{
   onChange: (section: RawInputSection) => void 
 }> = ({ section, onChange }) => {
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-300 mb-6">
-      <div className="card-body">
-        <h3 className="card-title text-lg mb-4">{section.name}</h3>
-        <textarea
-          className="textarea textarea-bordered w-full font-mono text-sm"
-          rows={10}
-          value={section.value}
-          onChange={(e) => onChange({ ...section, value: e.target.value })}
-        />
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-6 overflow-hidden">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10,9 9,9 8,9"/>
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800">{section.name}</h3>
+            <p className="text-sm text-gray-600 mt-1">Raw data editor</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Content Section */}
+      <div className="p-6">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Raw JSON Data
+          </label>
+          <textarea
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono text-sm bg-gray-50"
+            rows={10}
+            value={section.value}
+            onChange={(e) => onChange({ ...section, value: e.target.value })}
+            placeholder="Enter raw JSON data here..."
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            This is a fallback editor for sections that don't have a specialized interface.
+          </p>
+        </div>
       </div>
     </div>
   );

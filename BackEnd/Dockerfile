@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     netcat-openbsd \
     postgresql-client \
+    curl \
+    git \
     texlive-latex-base \
     texlive-fonts-recommended \
     texlive-latex-extra \

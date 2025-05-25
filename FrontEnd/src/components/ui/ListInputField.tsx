@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,7 +14,6 @@ interface ListInputFieldProps<T extends StringList | ObjectList> {
   objectKeys?: string[];
   keyLabels?: Record<string, string>;
   addButtonText?: string;
-  removeButtonText?: string;
   className?: string;
 }
 
@@ -32,7 +31,6 @@ function ListInputField<T extends StringList | ObjectList>({
   objectKeys = [],
   keyLabels = {},
   addButtonText = 'Add',
-  removeButtonText = 'Remove',
   className = ''
 }: ListInputFieldProps<T>) {
   // State for the new item being added
@@ -152,24 +150,25 @@ function ListInputField<T extends StringList | ObjectList>({
                 {isObjectList ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-grow">
                     {objectKeys.map(key => (
-                      <div key={key} className="flex-grow">
-                        <label className="text-xs font-medium text-gray-500 mb-1 block">
+                      <div key={key} className="flex-grow">                        <label htmlFor={`${key}-${index}`} className="text-xs font-medium text-gray-500 mb-1 block">
                           {keyLabels[key] || key}
                         </label>
                         <input
+                          id={`${key}-${index}`}
                           type="text"
-                          className="input input-bordered input-sm w-full bg-white"
+                          className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 w-full bg-white"
                           value={getDisplayValue(item as any, key)}
                           onChange={(e) => handleUpdateObjectField(index, key, e.target.value)}
+                          placeholder={`Enter ${keyLabels[key] || key}`}
                         />
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <input
+                ) : (                  <input
                     type="text"
-                    className="input input-bordered input-sm flex-grow bg-white"
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 flex-grow bg-white"
                     value={getDisplayValue(item as any)}
+                    placeholder="Enter value"
                     onChange={(e) => {
                       const newItems = [...items] as any[];
                       newItems[index] = e.target.value;
@@ -204,13 +203,13 @@ function ListInputField<T extends StringList | ObjectList>({
           {isObjectList ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               {objectKeys.map(key => (
-                <div key={key}>
-                  <label className="text-xs font-medium text-gray-500 mb-1 block">
+                <div key={key}>                  <label htmlFor={`new-${key}`} className="text-xs font-medium text-gray-500 mb-1 block">
                     {keyLabels[key] || key}
                   </label>
                   <input
+                    id={`new-${key}`}
                     type="text"
-                    className="input input-bordered input-sm w-full bg-white"
+                    className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 w-full bg-white"
                     placeholder={`Enter ${keyLabels[key] || key}`}
                     value={getDisplayValue(newItem, key)}
                     onChange={(e) => handleNewObjectFieldChange(key, e.target.value)}
@@ -223,11 +222,11 @@ function ListInputField<T extends StringList | ObjectList>({
                   />
                 </div>
               ))}
-            </div>
-          ) : (
+            </div>          ) : (
             <input
+              id="new-string-input"
               type="text"
-              className="input input-bordered input-sm w-full mb-3 bg-white"
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 w-full mb-3 bg-white"
               placeholder={placeholder}
               value={newItem as string}
               onChange={(e) => setNewItem(e.target.value)}
@@ -237,6 +236,7 @@ function ListInputField<T extends StringList | ObjectList>({
                   handleAddItem();
                 }
               }}
+              aria-label={label || 'New item input'}
             />
           )}
 

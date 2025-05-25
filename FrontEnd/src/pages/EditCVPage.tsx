@@ -13,8 +13,7 @@ import {
   EducationSection,
   ExperienceSection,
   SkillsSection,
-  ProjectsSection,
-  LanguagesSection
+  ProjectsSection
 } from '../components/cv-editors/new-editors';
 import { Button } from '@/components/ui/button';
 import { 
@@ -180,17 +179,17 @@ const EditCVPage: React.FC = () => {
       sections.push({
         id: 'languages',
         name: 'Languages',
-        type: 'list',
+        type: 'languages',
         items: languageItems.map((item: any, index: number) => ({
           id: `language_${index}`,
-          language: item.language || '',
-          proficiency: item.proficiency || 'Intermediate'
+          name: item.language || '',
+          level: item.proficiency || 'Intermediate'
         })),
         template: {
-          language: '',
-          proficiency: 'Intermediate'
+          name: '',
+          level: 'Intermediate'
         }
-      });
+      } as any);
     }
     
     // Add projects section
@@ -306,22 +305,47 @@ const EditCVPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center p-12">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-opacity-50 border-t-transparent rounded-full"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="relative mb-6">
+              <div className="animate-spin h-16 w-16 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading Your CV</h3>
+            <p className="text-gray-600">Preparing your CV for editing...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (errorMessage) {
     return (
-      <div className="bg-destructive/10 border-l-4 border-destructive p-4 rounded-md shadow-sm">
-        <div className="flex items-start">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-destructive mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <h3 className="font-semibold text-destructive-foreground">Error</h3>
-            <div className="text-sm text-destructive-foreground/80">{errorMessage}</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-lg border border-red-200 p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-red-900 mb-2">Unable to Load CV</h3>
+            <p className="text-red-700 mb-6">{errorMessage}</p>
+            <Button 
+              onClick={() => navigate('/my-cvs')}
+              variant="outline"
+              className="gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Back to My CVs
+            </Button>
           </div>
         </div>
       </div>
@@ -329,128 +353,188 @@ const EditCVPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Edit Your CV</h2>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Make changes to your CV and regenerate the PDF with your updates
-        </p>
-      </div>
-      
-      {/* Preview of current CV */}
-      {cvData?.file_url && (
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden mb-6">
-          <div className="h-96 bg-gray-50 overflow-hidden">
-            <iframe 
-              src={cvData.file_url}
-              title={`CV ${cvId}`}
-              className="w-full h-full pointer-events-none"
-              style={{ border: 'none' }}
-            ></iframe>
+    <>
+      <style>{`
+        .custom-height {
+          height: calc(100% - 80px);
+        }
+        .iframe-no-border {
+          border: none;
+        }
+      `}</style>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Edit Your CV
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Make changes and see live preview
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => navigate('/my-cvs')}
+                variant="outline"
+                size="lg"
+                className="gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Back to My CVs
+              </Button>
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving}
+                variant="default"
+                size="lg"
+                className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-opacity-50 border-t-transparent rounded-full"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
-      )}
-      
-      {/* Editable Sections */}
-      <div className="space-y-4">
-        {editableSections.map((section, index) => {
-          switch (section.type) {
-            case 'object':
-              return (
-                <ContactInfoEditor 
-                  key={section.id} 
-                  section={section as ContactSection}
-                  onChange={(updatedSection) => updateSection(index, updatedSection)} 
-                />
-              );
-            case 'list':
-              if (section.id === 'education') {
-                return (
-                  <EducationEditorNew 
-                    key={section.id} 
-                    section={section as EducationSection}
-                    onChange={(updatedSection) => updateSection(index, updatedSection)} 
-                  />
-                );
-              } else if (section.id === 'experience') {
-                return (
-                  <ExperienceEditorNew 
-                    key={section.id} 
-                    section={section as ExperienceSection}
-                    onChange={(updatedSection) => updateSection(index, updatedSection)} 
-                  />
-                );
-              } else if (section.id === 'projects') {
-                return (
-                  <ProjectsEditorNew 
-                    key={section.id} 
-                    section={section as ProjectsSection}
-                    onChange={(updatedSection) => updateSection(index, updatedSection)} 
-                  />
-                );
-              } else if (section.id === 'languages') {
-                return (
-                  <LanguagesEditorNew 
-                    key={section.id} 
-                    section={section as LanguagesSection}
-                    onChange={(updatedSection) => updateSection(index, updatedSection)} 
-                  />
-                );
-              }
-              return null;
-            case 'nested_list':
-              return (
-                <SkillsEditorNew 
-                  key={section.id} 
-                  section={section as SkillsSection}
-                  onChange={(updatedSection) => updateSection(index, updatedSection)} 
-                />
-              );
-            case 'textarea':
-              return (
-                <RawInputEditor 
-                  key={section.id} 
-                  section={section as RawInputSection}
-                  onChange={(updatedSection) => updateSection(index, updatedSection)} 
-                />
-              );
-            default:
-              return null;
-          }
-        })}
       </div>
-      
-      <div className="flex flex-col sm:flex-row justify-center gap-4 mt-10">
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
-          variant="default"
-          size="lg"
-        >
-          {isSaving ? (
-            <>
-              <div className="animate-spin h-4 w-4 border-2 border-white border-opacity-50 border-t-transparent rounded-full"></div>
-              Saving...
-            </>
-          ) : (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Save Changes
-            </>
-          )}
-        </Button>
-        
-        <Button 
-          onClick={() => navigate('/my-cvs')}
-          variant="outline"
-          size="lg"
-        >
-          Cancel
-        </Button>
+
+      {/* Main Content - Split Layout */}
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 h-full">
+          
+          {/* Left Panel - Editor */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">CV Sections</h2>
+                  <p className="text-gray-600 text-sm">Edit your CV content below</p>
+                </div>
+              </div>
+              
+              {/* Editable Sections */}
+              <div className="space-y-6">
+                {editableSections.map((section, index) => {
+                  switch (section.type) {
+                    case 'object':
+                      return (
+                        <ContactInfoEditor 
+                          key={section.id} 
+                          section={section as ContactSection}
+                          onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                        />
+                      );
+                    case 'list':
+                      if (section.id === 'education') {
+                        return (
+                          <EducationEditorNew 
+                            key={section.id} 
+                            section={section as EducationSection}
+                            onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                          />
+                        );
+                      } else if (section.id === 'experience') {
+                        return (
+                          <ExperienceEditorNew 
+                            key={section.id} 
+                            section={section as ExperienceSection}
+                            onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                          />
+                        );
+                      } else if (section.id === 'projects') {
+                        return (
+                          <ProjectsEditorNew 
+                            key={section.id} 
+                            section={section as ProjectsSection}
+                            onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                          />
+                        );
+                      }
+                      return null;
+                    case 'languages':
+                      return (
+                        <LanguagesEditorNew 
+                          key={section.id} 
+                          section={section as any}
+                          onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                        />
+                      );
+                    case 'nested_list':
+                      return (
+                        <SkillsEditorNew 
+                          key={section.id} 
+                          section={section as SkillsSection}
+                          onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                        />
+                      );
+                    case 'textarea':
+                      return (
+                        <RawInputEditor 
+                          key={section.id} 
+                          section={section as RawInputSection}
+                          onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                        />
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel - Preview */}
+          <div className="xl:sticky xl:top-24 xl:h-[calc(100vh-8rem)]">
+            {cvData?.file_url && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-full">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold">Live Preview</h3>
+                      <p className="text-white/80 text-sm">Your CV as it appears</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-full bg-gray-50 overflow-hidden custom-height">
+                  <iframe 
+                    src={cvData.file_url}
+                    title={`CV ${cvId} Preview`}
+                    className="w-full h-full pointer-events-none border-0 iframe-no-border"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+        </div>
       </div>
     </div>
+    </>
   );
 };
 

@@ -108,7 +108,6 @@ function GenericListEditor<T extends ListItem>({
     newItems[index] = { ...newItems[index], [key]: newArray };
     onChange(newItems);
   };
-
   // Render a field based on its type
   const renderField = (
     field: FieldConfig, 
@@ -122,7 +121,8 @@ function GenericListEditor<T extends ListItem>({
       case 'textarea':
         return (
           <textarea
-            className="textarea textarea-bordered w-full"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none"
+            rows={3}
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
@@ -131,19 +131,22 @@ function GenericListEditor<T extends ListItem>({
         
       case 'checkbox':
         return (
-          <input
-            type="checkbox"
-            className="toggle toggle-primary"
-            checked={!!value}
-            onChange={(e) => onChange(e.target.checked)}
-          />
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              checked={!!value}
+              onChange={(e) => onChange(e.target.checked)}
+            />
+            <span className="text-sm text-gray-700">Current position</span>
+          </label>
         );
         
       case 'date':
         return (
           <input
             type="text"
-            className="input input-bordered w-full"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder || 'YYYY-MM'}
@@ -154,7 +157,7 @@ function GenericListEditor<T extends ListItem>({
         return (
           <input
             type="text"
-            className="input input-bordered w-full"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
@@ -162,12 +165,23 @@ function GenericListEditor<T extends ListItem>({
         );
     }
   };
-
   return (
-    <div className={`card bg-base-100 shadow-sm border border-base-300 mb-6 ${className}`}>
-      <div className="card-body">
-        <h3 className="card-title text-lg mb-4">{title}</h3>
-        
+    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${className}`}>
+      <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <p className="text-sm text-gray-600">{items.length} {items.length === 1 ? 'item' : 'items'}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6">
         {/* Existing items */}
         <AnimatePresence>
           {items.map((item, index) => {
@@ -181,13 +195,16 @@ function GenericListEditor<T extends ListItem>({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.3 }}
-                className={`mb-6 p-4 ${isAnimating ? 'bg-red-50 border border-red-200' : 'bg-base-200'} rounded-lg relative`}
-              >
-                <button 
+                className={`mb-6 p-6 ${isAnimating ? 'bg-red-50 border-2 border-red-200' : 'bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200'} rounded-xl relative group hover:shadow-md transition-all duration-200`}
+              >                <button 
                   onClick={() => handleRemoveItem(index)} 
-                  className="btn btn-circle btn-xs btn-error absolute top-2 right-2"
+                  className="absolute top-3 right-3 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:scale-110 transform"
+                  aria-label="Remove item"
+                  title="Remove item"
                 >
-                  ✕
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -202,10 +219,8 @@ function GenericListEditor<T extends ListItem>({
                     if (isArray) {
                       // For array fields like achievements, use ListInputField
                       return (
-                        <div key={field.key} className={`form-control ${colSpan}`}>
-                          <label className="label">
-                            <span className="label-text font-medium">{field.label}</span>
-                          </label>
+                        <div key={field.key} className={`space-y-2 ${colSpan}`}>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
                           <ListInputField
                             label=""
                             items={value}
@@ -218,16 +233,16 @@ function GenericListEditor<T extends ListItem>({
                     }
                     
                     return (
-                      <div key={field.key} className={`form-control ${colSpan}`}>
-                        <label className="label">
-                          <span className="label-text font-medium">{field.label}</span>
-                        </label>
-                        {renderField(
-                          field, 
-                          (item as any)[field.key], 
-                          (newValue) => handleItemChange(index, field.key, newValue),
-                          item.id
-                        )}
+                      <div key={field.key} className={`space-y-2 ${colSpan}`}>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
+                        <div className="relative">
+                          {renderField(
+                            field, 
+                            (item as any)[field.key], 
+                            (newValue) => handleItemChange(index, field.key, newValue),
+                            item.id
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -242,10 +257,17 @@ function GenericListEditor<T extends ListItem>({
           initial={{ opacity: 0.8 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
-          className="mt-6 p-4 bg-base-200/50 rounded-lg border-2 border-dashed border-base-300"
+          className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-blue-200 hover:border-blue-300 transition-colors duration-200"
         >
-          <h4 className="font-medium mb-4">Add New {title}</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <svg className="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            <h4 className="font-semibold text-gray-900">Add New {title}</h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {fields.map((field) => {
               // Skip array fields in the add form - they'll be added after item creation
               if (Array.isArray((template as any)[field.key])) return null;
@@ -254,15 +276,15 @@ function GenericListEditor<T extends ListItem>({
               const colSpan = field.span === 2 ? 'md:col-span-2' : '';
               
               return (
-                <div key={field.key} className={`form-control ${colSpan}`}>
-                  <label className="label">
-                    <span className="label-text font-medium">{field.label}</span>
-                  </label>
-                  {renderField(
-                    field, 
-                    (newItem as any)[field.key], 
-                    (newValue) => handleNewItemChange(field.key, newValue)
-                  )}
+                <div key={field.key} className={`space-y-2 ${colSpan}`}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
+                  <div className="relative">
+                    {renderField(
+                      field, 
+                      (newItem as any)[field.key], 
+                      (newValue) => handleNewItemChange(field.key, newValue)
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -276,9 +298,9 @@ function GenericListEditor<T extends ListItem>({
                 const value = (newItem as any)[f.key];
                 return !value || (typeof value === 'string' && value.trim() === '');
               })}
-            className="btn btn-primary btn-sm"
+            className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-2 px-6 rounded-full transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
             {addButtonText}

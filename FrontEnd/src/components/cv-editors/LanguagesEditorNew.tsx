@@ -1,197 +1,179 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import ListInputField from '../ui/ListInputField';
 
-// Language item structure
-export interface LanguageItem {
+export interface Language {
   id: string;
-  language: string;
-  proficiency: string;
+  name: string;
+  level: string;
 }
 
 export interface LanguagesSection {
   id: string;
   name: string;
-  type: 'list';
-  items: LanguageItem[];
-  template: Omit<LanguageItem, 'id'>;
+  type: 'languages';
+  items: Language[];
+  template: Omit<Language, 'id'>;
 }
 
-const LanguagesEditorNew: React.FC<{ 
-  section: LanguagesSection, 
-  onChange: (section: LanguagesSection) => void 
-}> = ({ section, onChange }) => {
-  const [newLanguage, setNewLanguage] = useState<Omit<LanguageItem, 'id'>>({ ...section.template });
-  const [animatingItemId, setAnimatingItemId] = useState<string | null>(null);
+interface LanguagesEditorNewProps {
+  section: LanguagesSection;
+  onChange: (section: LanguagesSection) => void;
+}
 
-  // Add a new language
-  const handleAddLanguage = () => {
-    if (!newLanguage.language.trim()) return;
-    
-    // Generate a unique ID
-    const newId = `language_${Date.now()}`;
-    const languageToAdd = { 
-      id: newId, 
-      language: newLanguage.language,
-      proficiency: newLanguage.proficiency || 'Intermediate' // default value
-    };
-    
-    onChange({ 
-      ...section, 
-      items: [...section.items, languageToAdd] 
-    });
-    
-    // Reset form
-    setNewLanguage({ ...section.template });
-    
-    // Animate
-    setAnimatingItemId(newId);
-    setTimeout(() => setAnimatingItemId(null), 500);
+const LanguagesEditorNew: React.FC<LanguagesEditorNewProps> = ({ section, onChange }) => {
+  // Ensure template has safe default values
+  const safeTemplate = {
+    name: section.template?.name || '',
+    level: section.template?.level || 'Basic'
   };
+  
+  const [newLanguage, setNewLanguage] = useState<Omit<Language, 'id'>>(safeTemplate);
 
-  // Remove a language
-  const handleRemoveLanguage = (index: number) => {
-    // Start remove animation
-    const itemToRemove = section.items[index];
-    setAnimatingItemId(itemToRemove.id);
-    
-    // Delay actual removal to allow animation to complete
-    setTimeout(() => {
-      const newItems = [...section.items];
-      newItems.splice(index, 1);
-      onChange({ ...section, items: newItems });
-      setAnimatingItemId(null);
-    }, 300);
-  };
-
-  // Update language field
-  const handleLanguageChange = (index: number, field: keyof Omit<LanguageItem, 'id'>, value: string) => {
+  const handleLanguageChange = (index: number, field: keyof Language, value: string) => {
     const newItems = [...section.items];
-    newItems[index] = { 
-      ...newItems[index],
-      [field]: value
-    };
+    newItems[index] = { ...newItems[index], [field]: value };
     onChange({ ...section, items: newItems });
   };
 
-  // Proficiency options
-  const proficiencyOptions = [
-    'Native/Bilingual', 
-    'Fluent', 
-    'Advanced', 
-    'Intermediate', 
-    'Basic/Elementary'
-  ];
+  const removeLanguage = (index: number) => {
+    const newItems = [...section.items];
+    newItems.splice(index, 1);
+    onChange({ ...section, items: newItems });
+  };  const addNewLanguage = () => {
+    const languageName = newLanguage?.name || '';
+    if (!languageName.trim()) return;
+    
+    const newId = `language_${Date.now()}`;
+    const languageToAdd = { 
+      id: newId, 
+      name: languageName,
+      level: newLanguage?.level || 'Basic'
+    };
+    onChange({ ...section, items: [...section.items, languageToAdd] });
+    setNewLanguage(safeTemplate);
+  };
+
+  const handleNewLanguageChange = (field: keyof Omit<Language, 'id'>, value: string) => {
+    setNewLanguage({ ...newLanguage, [field]: value });
+  };
 
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-300 mb-6">
-      <div className="card-body">
-        <h3 className="card-title text-lg mb-4">{section.name}</h3>
-        
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-6 overflow-hidden">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12.5 8a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/>
+              <path d="M12.5 2a10.5 10.5 0 1 0 0 21 10.5 10.5 0 0 0 0-21z"/>
+              <path d="M12 2v20"/>
+              <path d="M2 12h20"/>
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800">{section.name}</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {section.items.length} language{section.items.length === 1 ? '' : 's'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
         {/* Existing languages */}
-        <AnimatePresence>
-          {section.items.map((item, index) => {
-            const isAnimating = animatingItemId === item.id;
-            
-            return (
-              <motion.div
-                key={item.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.3 }}
-                className={`mb-4 p-4 ${isAnimating ? 'bg-red-50 border border-red-200' : 'bg-base-200'} rounded-lg relative`}
+        <div className="space-y-4">
+          {section.items.map((language, index) => (
+            <div key={language.id} className="p-6 bg-gray-50 rounded-xl border border-gray-200 relative group hover:shadow-md transition-shadow duration-200">
+              <button 
+                onClick={() => removeLanguage(index)} 
+                className="absolute top-4 right-4 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100"
+                aria-label="Remove language"
               >
-                <button 
-                  onClick={() => handleRemoveLanguage(index)} 
-                  className="btn btn-circle btn-xs btn-error absolute top-2 right-2"
-                >
-                  ✕
-                </button>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Language</span>
-                    </label>
-                    <input 
-                      type="text"
-                      className="input input-bordered w-full" 
-                      value={item.language}
-                      onChange={(e) => handleLanguageChange(index, 'language', e.target.value)}
-                      placeholder="e.g., English, Spanish, etc."
-                    />
-                  </div>
-                  
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Proficiency</span>
-                    </label>
-                    <select
-                      className="select select-bordered w-full"
-                      value={item.proficiency}
-                      onChange={(e) => handleLanguageChange(index, 'proficiency', e.target.value)}
-                    >
-                      {proficiencyOptions.map(option => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
-                  </div>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">                <div className="space-y-2">
+                  <label htmlFor={`name-${language.id}`} className="block text-sm font-medium text-gray-700">Language</label>
+                  <input 
+                    id={`name-${language.id}`}
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                    value={language.name}
+                    onChange={(e) => handleLanguageChange(index, 'name', e.target.value)}
+                    placeholder="Enter language name"
+                  />
+                </div><div className="space-y-2">
+                  <label htmlFor={`level-${language.id}`} className="block text-sm font-medium text-gray-700">Proficiency Level</label>
+                  <select 
+                    id={`level-${language.id}`}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                    value={language.level}
+                    onChange={(e) => handleLanguageChange(index, 'level', e.target.value)}
+                  >
+                    <option value="">Select level</option>
+                    <option value="Basic">Basic</option>
+                    <option value="Conversational">Conversational</option>
+                    <option value="Proficient">Proficient</option>
+                    <option value="Fluent">Fluent</option>
+                    <option value="Native">Native</option>
+                  </select>
                 </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+              </div>
+            </div>
+          ))}
+        </div>
         
         {/* Add new language form */}
-        <motion.div
-          initial={{ opacity: 0.8 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2 }}
-          className="mt-4 p-4 bg-base-200/50 rounded-lg border-2 border-dashed border-base-300"
-        >
-          <h4 className="font-medium mb-4">Add New Language</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="form-control">
-              <input
+        <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-blue-200">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+            </div>
+            <h4 className="font-semibold text-gray-800">Add New Language</h4>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">            <div className="space-y-2">
+              <label htmlFor="new-language-name" className="block text-sm font-medium text-gray-700 sr-only">Language Name</label>              <input 
+                id="new-language-name"
                 type="text"
-                className="input input-bordered w-full"
-                value={newLanguage.language}
-                onChange={(e) => setNewLanguage({ ...newLanguage, language: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                value={newLanguage?.name || ''}
+                onChange={(e) => handleNewLanguageChange('name', e.target.value)}
                 placeholder="Language name"
               />
-            </div>
-            
-            <div className="form-control">
-              <select
-                className="select select-bordered w-full"
-                value={newLanguage.proficiency}
-                onChange={(e) => setNewLanguage({ ...newLanguage, proficiency: e.target.value })}
+            </div><div className="space-y-2">
+              <label htmlFor="new-language-level" className="block text-sm font-medium text-gray-700 sr-only">Proficiency Level</label>              <select 
+                id="new-language-level"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                value={newLanguage?.level || ''}
+                onChange={(e) => handleNewLanguageChange('level', e.target.value)}
               >
-                <option value="" disabled>Select proficiency</option>
-                {proficiencyOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
+                <option value="">Select proficiency level</option>
+                <option value="Basic">Basic</option>
+                <option value="Conversational">Conversational</option>
+                <option value="Proficient">Proficient</option>
+                <option value="Fluent">Fluent</option>
+                <option value="Native">Native</option>
               </select>
             </div>
           </div>
-          
-          <Button
-            onClick={handleAddLanguage}
-            disabled={!newLanguage.language.trim()}
-            className="btn btn-primary btn-sm"
+            <button 
+            onClick={addNewLanguage}
+            disabled={!(newLanguage?.name || '').trim() || !(newLanguage?.level || '')} 
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
             </svg>
             Add Language
-          </Button>
-        </motion.div>
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
-export default LanguagesEditorNew; 
+export default LanguagesEditorNew;

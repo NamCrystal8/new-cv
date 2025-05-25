@@ -9,6 +9,7 @@ services:
     buildCommand: chmod +x ./build.sh && ./build.sh
     startCommand: chmod +x ./start.sh && ./start.sh
     healthCheckPath: /health
+    autoDeploy: true  # Enable automatic deployments
     envVars:
       - key: DATABASE_URL
         fromDatabase:

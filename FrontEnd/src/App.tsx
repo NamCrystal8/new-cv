@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
 import StepIndicator from './components/ui/StepIndicator';
 import ErrorMessage from './components/ui/ErrorMessage';
@@ -11,12 +11,13 @@ import RegisterPage from './pages/RegisterPage';
 import UserCVsPage from './pages/UserCVsPage';
 import EditCVPage from './pages/EditCVPage';
 import { AppSidebar } from '@/components/app-sidebar';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { FlowResponse, EditableSection, RecommendationItem, JobDescriptionFlowResponse, JobDescriptionAnalysis } from './types';
-import { Button } from '@/components/ui/button';
 import WeaknessAnalysisDisplay from './components/ui/WeaknessAnalysisDisplay';
 import RecommendationsCarousel from './components/ui/RecommendationsCarousel';
-import JobDescriptionAnalysisDisplay from './components/ui/JobDescriptionAnalysisDisplay';
+import JobDescriptionPrompt from './components/ui/JobDescriptionPrompt';
+import JobDescriptionInput from './components/ui/JobDescriptionInput';
+import InteractiveCVOptimizer from './components/ui/InteractiveCVOptimizer';
 
 // Auth context setup
 export const AuthContext = createContext({
@@ -159,7 +160,7 @@ const MainAppContent: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [jobDescriptionUsed, setJobDescriptionUsed] = useState<boolean>(false);
+  const [flowId, setFlowId] = useState<string | null>(null);
   const navigate = useNavigate(); // For handling unauthorized errors
 
   // Function to handle API errors, especially 401 Unauthorized
@@ -174,9 +175,8 @@ const MainAppContent: React.FC = () => {
       setErrorMessage(defaultMessage);
     }
   };
-
-  // Function to upload PDF and start CV analysis
-  const analyzePdf = async (jobDescription?: string) => {
+  // Function to upload PDF and start CV analysis (no job description)
+  const analyzePdf = async () => {
     if (!pdfFile) {
       setErrorMessage('Please upload a PDF file first');
       return;
@@ -188,15 +188,8 @@ const MainAppContent: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', pdfFile);
-      if (jobDescription && jobDescription.trim().length > 0) {
-        formData.append('job_description', jobDescription);
-      }
 
-      const endpoint = (jobDescription && jobDescription.trim().length > 0)
-        ? '/api/analyze-cv-with-job-description'
-        : '/api/analyze-cv-weaknesses';
-
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/analyze-cv-weaknesses', {
         method: 'POST',
         body: formData,
       });
@@ -206,24 +199,14 @@ const MainAppContent: React.FC = () => {
         throw { response, ...errorData };
       }
 
-      if (endpoint === '/api/analyze-cv-with-job-description') {
-        const data = await response.json() as JobDescriptionFlowResponse;
-        setJobAnalysis(data.job_analysis);
-        setJobDescriptionUsed(true);
-        setCurrentStep(2); // Show job analysis first
-        // Optionally, you can also set flowResponse for later steps if needed
-        setFlowResponse(null);
-        setEditableSections([]);
-      } else {
-        const data = await response.json() as FlowResponse;
-        setFlowResponse(data);
-        if (data.editable_sections) {
-          setEditableSections(data.editable_sections);
-        }
-        setCurrentStep(2);
-        setJobDescriptionUsed(false);
-        setJobAnalysis(null);
+      const data = await response.json() as FlowResponse;
+      setFlowResponse(data);
+      setFlowId(data.flow_id);
+      if (data.editable_sections) {
+        setEditableSections(data.editable_sections);
       }
+      setCurrentStep(2); // Move to weakness analysis
+      setJobAnalysis(null);
     } catch (error: any) {
       handleApiError(error, 'Failed to analyze your CV. Please try again.');
     } finally {
@@ -318,9 +301,7 @@ const MainAppContent: React.FC = () => {
     
     // Move to the edit page
     setCurrentStep(4);
-  };
-
-  // Function to complete the CV flow with enhanced data
+  };  // Function to complete the CV flow with enhanced data
   const completeCvFlow = async (updatedSections?: EditableSection[]) => {
     if (!flowResponse) return;
 
@@ -343,7 +324,7 @@ const MainAppContent: React.FC = () => {
         );
       }
 
-      const response = await fetch('/api/complete-cv-flow', { // Use Vite proxy
+      const response = await fetch('/api/complete-cv-flow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -352,20 +333,59 @@ const MainAppContent: React.FC = () => {
           flow_id: flowResponse.flow_id,
           additional_inputs: formattedSections
         }),
-        // Headers for auth might be needed depending on cookie settings (credentials: 'include')
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: `Server responded with status ${response.status}` }));
-        throw { response, ...errorData }; // Throw object with response and detail
+        throw { response, ...errorData };
       }
 
-      const data = await response.json();
-      setPdfUrl(data.pdf_url);
-
-      setCurrentStep(5);
+      const result = await response.json();
+      if (result.pdf_url) {
+        setPdfUrl(result.pdf_url);
+        setCurrentStep(8); // Final result step
+      } else {
+        throw new Error('No PDF URL received from server');
+      }
     } catch (error: any) {
-      handleApiError(error, 'Failed to generate the enhanced CV. Please try again.');
+      handleApiError(error, 'Failed to generate the final CV. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Function to analyze stored CV against job description
+  const analyzeJobDescription = async (jobDescription: string) => {
+    if (!flowId) {
+      setErrorMessage('No CV data found. Please upload your CV again.');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch('/api/analyze-stored-cv-with-job-description', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          flow_id: flowId,
+          job_description: jobDescription
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: `Server responded with status ${response.status}` }));
+        throw { response, ...errorData };
+      }
+
+      const data = await response.json() as JobDescriptionFlowResponse;
+      setJobAnalysis(data.job_analysis);
+      setCurrentStep(6); // Move to job analysis step
+    } catch (error: any) {
+      handleApiError(error, 'Failed to analyze against job description. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -401,21 +421,53 @@ const MainAppContent: React.FC = () => {
     console.log('Sending to backend:', formattedData);
     return formattedData;
   };
-
   // Reset the flow
   const resetFlow = () => {
     setPdfFile(null);
     setPdfUrl(null);
     setFlowResponse(null);
+    setJobAnalysis(null);
     setEditableSections([]);
     setErrorMessage(null);
+    setFlowId(null);
     setCurrentStep(1);
+  };
+  // Handler for job description prompt step
+  const handleJobDescriptionPrompt = (hasJobDescription: boolean) => {
+    if (hasJobDescription) {
+      setCurrentStep(5); // Go to job description input
+    } else {
+      setCurrentStep(7); // Skip to review (step 7 since we skip JD steps)
+    }
+  };
+
+  // Handler for job description input step
+  const handleJobDescriptionInput = async (jobDescription: string) => {
+    await analyzeJobDescription(jobDescription);
+    // analyzeJobDescription will set current step to 6 when complete
+  };
+  // Handler to go back from job description input
+  const handleBackToPrompt = () => {
+    setCurrentStep(4);
+  };
+
+  // Handler for CV optimization completion
+  const handleOptimizationComplete = (optimizedSections: EditableSection[], appliedChanges: any[]) => {
+    setEditableSections(optimizedSections);
+    // Store the applied changes in flowResponse for later use
+    if (flowResponse) {
+      setFlowResponse({
+        ...flowResponse,
+        applied_optimizations: appliedChanges
+      } as any);
+    }
+    setCurrentStep(7); // Go to review
   };
 
   // Render content based on current step
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 1:
+      case 1: // Upload CV
         return (
           <UploadPage 
             pdfFile={pdfFile}
@@ -426,53 +478,7 @@ const MainAppContent: React.FC = () => {
             setErrorMessage={setErrorMessage}
           />
         );
-      case 2:
-        if (jobDescriptionUsed) {
-          console.log('JobDescriptionAnalysis:', jobAnalysis);
-          if (jobAnalysis && (
-            (Array.isArray(jobAnalysis.missing_requirements) && jobAnalysis.missing_requirements.length > 0) ||
-            (Array.isArray(jobAnalysis.weaknesses) && jobAnalysis.weaknesses.length > 0) ||
-            (Array.isArray(jobAnalysis.recommended_courses) && jobAnalysis.recommended_courses.length > 0)
-          )) {
-            // Show job description analysis step
-            return (
-              <JobDescriptionAnalysisDisplay
-                jobAnalysis={jobAnalysis}
-                onNext={() => {
-                  setJobDescriptionUsed(false);
-                  setCurrentStep(3);
-                  // After this, fetch the regular analysis for the next step
-                  analyzePdf(); // Call without job description to get regular analysis
-                }}
-                isLoading={isLoading}
-              />
-            );
-          } else if (jobAnalysis) {
-            // If jobAnalysis is present but all arrays are empty
-            return (
-              <div className="text-center py-12 text-gray-500">
-                No missing requirements, weaknesses, or course recommendations found for this job description.<br />
-                <button className="mt-4 px-4 py-2 bg-primary text-white rounded" onClick={() => {
-                  setJobDescriptionUsed(false);
-                  setCurrentStep(3);
-                  analyzePdf();
-                }}>Continue</button>
-              </div>
-            );
-          } else {
-            // If jobAnalysis is null or undefined
-            return (
-              <div className="text-center py-12 text-gray-500">
-                No analysis data available.<br />
-                <button className="mt-4 px-4 py-2 bg-primary text-white rounded" onClick={() => {
-                  setJobDescriptionUsed(false);
-                  setCurrentStep(3);
-                  analyzePdf();
-                }}>Continue</button>
-              </div>
-            );
-          }
-        }
+      case 2: // CV Weakness Analysis
         return flowResponse ? (
           <WeaknessAnalysisDisplay 
             weaknesses={Array.isArray(flowResponse.detailed_analysis.weaknesses) 
@@ -487,14 +493,43 @@ const MainAppContent: React.FC = () => {
             onNext={proceedToRecommendations}
           />
         ) : null;
-      case 3:
+      case 3: // Recommendations
         return flowResponse ? (
           <RecommendationsCarousel 
             recommendations={flowResponse.detailed_analysis.recommendations}
             onComplete={handleRecommendationsComplete}
           />
         ) : null;
-      case 4:
+      case 4: // Job Description Prompt
+        return (
+          <JobDescriptionPrompt 
+            onYes={() => handleJobDescriptionPrompt(true)}
+            onNo={() => handleJobDescriptionPrompt(false)}
+          />
+        );
+      case 5: // Job Description Input
+        return (
+          <JobDescriptionInput 
+            onAnalyze={handleJobDescriptionInput}
+            onBack={handleBackToPrompt}
+            isLoading={isLoading}
+          />
+        );      case 6: // Job vs CV Analysis (or CV Optimization if no JD)
+        if (jobAnalysis) {
+          return (
+            <InteractiveCVOptimizer
+              jobAnalysis={jobAnalysis}
+              currentCVData={editableSections}
+              onOptimize={handleOptimizationComplete}
+              isLoading={isLoading}
+            />
+          );
+        } else {
+          // No job analysis, go directly to review
+          setCurrentStep(7);
+          return null;
+        }
+      case 7: // Review & Edit
         return flowResponse ? (
           <ReviewPage 
             isLoading={isLoading}
@@ -503,7 +538,7 @@ const MainAppContent: React.FC = () => {
             resetFlow={resetFlow}
           />
         ) : null;
-      case 5:
+      case 8: // Result
         return pdfUrl ? (
           <ResultPage 
             pdfUrl={pdfUrl} 
@@ -514,11 +549,13 @@ const MainAppContent: React.FC = () => {
         return null;
     }
   };
-
   const stepsLabels = [
     "Upload CV",
-    "Analysis",
+    "CV Analysis", 
     "Recommendations",
+    "Job Description?",
+    "Job Description Input",
+    "CV Optimization",
     "Review & Edit",
     "Result"
   ];

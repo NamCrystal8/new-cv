@@ -18,8 +18,7 @@ import {
   EducationSection,
   ExperienceSection,
   SkillsSection,
-  ProjectsSection,
-  LanguagesSection
+  ProjectsSection
 } from '../components/cv-editors/new-editors';
 import { Button } from '@/components/ui/button';
 
@@ -34,15 +33,15 @@ const ImprovementSuggestions: React.FC<{ suggestions: string[] }> = ({ suggestio
   if (!suggestions || suggestions.length === 0) return null;
 
   return (
-    <div className="card bg-base-200 hover:shadow-md transition-shadow mb-6">
-      <div className="card-body">
-        <h3 className="card-title text-lg flex gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow mb-6">
+      <div className="p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex gap-2 items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
           Suggestions for Enhancement
         </h3>
-        <ul className="list-disc list-inside space-y-2 text-base-content/80">
+        <ul className="list-disc list-inside space-y-2 text-gray-600">
           {suggestions.map((suggestion, index) => (
             <li key={`suggestion-${index}`} className="pl-1">{suggestion}</li>
           ))}
@@ -156,7 +155,7 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
                 return (
                   <LanguagesEditorNew 
                     key={section.id} 
-                    section={section as LanguagesSection}
+                    section={section as any}
                     onChange={(updatedSection) => updateSection(index, updatedSection)} 
                   />
                 );

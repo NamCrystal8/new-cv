@@ -20,7 +20,6 @@ const UploadPage: React.FC<UploadPageProps> = ({
   errorMessage: propErrorMessage,
   analyzePdf 
 }) => {
-  const [jobDescription, setJobDescription] = React.useState<string>("");
 
   // Function to set error message (handles both cases)
   const handleSetError = (message: string | null) => {
@@ -60,25 +59,9 @@ const UploadPage: React.FC<UploadPageProps> = ({
         </h2>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
           Upload your existing CV in PDF format. Our AI will analyze it and suggest improvements to make it stand out.
-        </p>
-      </div>
+        </p>      </div>
       
-      {/* Job Description Input */}
-      <div className="space-y-2">
-        <label htmlFor="job-description" className="block font-medium text-gray-700">
-          Optional: Paste a Job Description
-        </label>
-        <textarea
-          id="job-description"
-          className="w-full min-h-[100px] border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
-          placeholder="Paste the job description here to get a tailored analysis (skills gap, course suggestions, etc.)"
-          value={jobDescription}
-          onChange={e => setJobDescription(e.target.value)}
-          disabled={isLoading}
-        />
-      </div>
-      
-      <div 
+      <div
         {...getRootProps()} 
         className={cn(
           "flex flex-col items-center justify-center p-8 sm:p-12 border-2 border-dashed rounded-xl transition-all duration-200",
@@ -166,7 +149,7 @@ const UploadPage: React.FC<UploadPageProps> = ({
           </div>
           
           <Button
-            onClick={() => analyzePdf(jobDescription)}
+            onClick={() => analyzePdf()}
             disabled={isLoading}
             size="lg"
             className="w-full max-w-md"

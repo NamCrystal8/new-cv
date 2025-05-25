@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
 import ListInputField from '../ui/ListInputField';
 
 // Types from the original editor
@@ -81,12 +80,26 @@ const SkillsEditorNew: React.FC<{
     };
     onChange({ ...section, categories: newCategories });
   };
-
   return (
-    <div className="card bg-base-100 shadow-sm border border-base-300 mb-6">
-      <div className="card-body">
-        <h3 className="card-title text-lg mb-4">{section.name}</h3>
-        
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-6 overflow-hidden">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white rounded-lg shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-800">{section.name}</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              {section.categories.length} categor{section.categories.length === 1 ? 'y' : 'ies'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6">
         {/* Existing categories */}
         <AnimatePresence>
           {section.categories.map((category, index) => {
@@ -100,22 +113,29 @@ const SkillsEditorNew: React.FC<{
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.3 }}
-                className={`mb-4 p-4 ${isAnimating ? 'bg-red-50 border border-red-200' : 'bg-base-200'} rounded-lg relative`}
+                className={`mb-6 p-5 ${
+                  isAnimating 
+                    ? 'bg-red-50 border-2 border-red-200' 
+                    : 'bg-gray-50 border border-gray-200'
+                } rounded-xl relative group hover:shadow-md transition-all duration-200`}
               >
                 <button 
                   onClick={() => handleRemoveCategory(index)} 
-                  className="btn btn-circle btn-xs btn-error absolute top-2 right-2"
+                  className="absolute top-3 right-3 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+                  aria-label="Remove category"
                 >
-                  ✕
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
                 </button>
                 
-                <div className="form-control mb-4">
-                  <label className="label">
-                    <span className="label-text font-medium">Category Name</span>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category Name
                   </label>
                   <input 
                     type="text"
-                    className="input input-bordered w-full md:w-1/2" 
+                    className="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                     value={category.name}
                     onChange={(e) => handleCategoryNameChange(index, e.target.value)}
                     placeholder="e.g., Technical, Languages, etc."
@@ -124,8 +144,8 @@ const SkillsEditorNew: React.FC<{
                 
                 {/* Skills list for this category */}
                 <div>
-                  <label className="label">
-                    <span className="label-text font-medium">Skills</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Skills
                   </label>
                   <ListInputField
                     label=""
@@ -146,27 +166,32 @@ const SkillsEditorNew: React.FC<{
           initial={{ opacity: 0.8 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2 }}
-          className="mt-4 p-4 bg-base-200/50 rounded-lg border-2 border-dashed border-base-300"
+          className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-blue-300"
         >
-          <h4 className="font-medium mb-4">Add New Skill Category</h4>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            <h4 className="font-medium text-gray-800">Add New Skill Category</h4>
+          </div>
+          <div className="flex gap-3">
             <input
               type="text"
-              className="input input-bordered flex-1"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
               value={newCategory.name}
               onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
               placeholder="Category name (e.g., Technical, Languages, etc.)"
             />
-            <Button
+            <button
               onClick={handleAddCategory}
               disabled={!newCategory.name.trim()}
-              className="btn btn-primary btn-sm"
+              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-medium rounded-lg transition-all duration-200 flex items-center gap-2 disabled:cursor-not-allowed"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
               </svg>
               Add Category
-            </Button>
+            </button>
           </div>
         </motion.div>
       </div>

@@ -103,6 +103,10 @@ export interface RecommendedCourse {
   platform: string;
   url: string;
   reason: string;
+  skill_addressed?: string;
+  estimated_time?: string;
+  level?: string;
+  is_free?: boolean;
 }
 
 export interface JobDescriptionAnalysis {

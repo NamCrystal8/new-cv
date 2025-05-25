@@ -331,11 +331,138 @@ class GeminiService:
         except Exception as e:
             print(f"Error enhancing CV: {str(e)}")
             # In case of any error, return the original CV data with proper structure
-            return self.ensure_cv_structure(cv_data)
+            return self.ensure_cv_structure(cv_data)    
+        
+    async def analyze_cv_against_job_description(self, cv_data: dict, job_description: str) -> dict:
+        """
+        Analyze a CV against a job description to identify gaps, strengths, and learning recommendations.
+        This is the main method used by the frontend for job description analysis.
+        """
+        try:
+            prompt = f"""
+            You are an expert career counselor and technical recruiter. Analyze the following CV against the provided job description.
+            
+            Provide a comprehensive analysis that helps the candidate understand:
+            1. What requirements they're missing or weak in
+            2. Specific areas where their CV doesn't align with the job requirements
+            3. Targeted learning recommendations with specific courses
+            
+            CV Data:
+            {json.dumps(cv_data, indent=2)}
+            
+            Job Description:
+            {job_description}
+            
+            Focus your analysis on:
+            - Technical skills gaps (programming languages, frameworks, tools)
+            - Experience gaps (years of experience, specific roles, responsibilities)
+            - Educational requirements (degrees, certifications)
+            - Soft skills and competencies
+            - Industry-specific knowledge
+            
+            For course recommendations, prioritize:
+            - Free courses where possible (Coursera free courses, edX, YouTube, documentation)
+            - Industry-recognized certifications
+            - Hands-on project-based learning
+            - Platform-specific training (AWS, Google Cloud, Microsoft Learn)
+            
+            Provide your response as a JSON object with this structure:
+            {{
+              "missing_requirements": [
+                "Clear, specific requirement that's missing or weak in the CV"
+              ],
+              "weaknesses": [
+                {{
+                  "category": "Skills|Experience|Education|Certification",
+                  "description": "Detailed explanation of what's lacking and why it matters for this role"
+                }}
+              ],
+              "recommended_courses": [
+                {{
+                  "title": "Specific Course Title",
+                  "platform": "Platform Name (Coursera, Udemy, edX, LinkedIn Learning, YouTube, etc.)",
+                  "url": "Direct course URL or 'Search for: course keywords'",
+                  "reason": "Specific reason why this course addresses a gap for this job",
+                  "skill_addressed": "Which missing skill/requirement this course addresses",
+                  "estimated_time": "Time commitment (e.g., '4-6 weeks', '20 hours')",
+                  "level": "Beginner|Intermediate|Advanced",
+                  "is_free": true/false
+                }}
+              ]
+            }}
+            
+            Make recommendations specific and actionable. Include both free and paid options when possible.
+            """
+
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+            )
+
+            response_text = response.text
+            print(f"[DEBUG] Job Description Analysis Response: {response_text}")
+            
+            # Extract JSON from response
+            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(1)
+                
+            try:
+                result = json.loads(response_text)
+                
+                # Ensure all required keys exist
+                if "missing_requirements" not in result:
+                    result["missing_requirements"] = []
+                if "weaknesses" not in result:
+                    result["weaknesses"] = []
+                if "recommended_courses" not in result:
+                    result["recommended_courses"] = []
+                    
+                # Validate and enhance course recommendations
+                for course in result["recommended_courses"]:
+                    if "title" not in course:
+                        course["title"] = "Course recommendation"
+                    if "platform" not in course:
+                        course["platform"] = "Online platform"
+                    if "url" not in course:
+                        course["url"] = f"Search for: {course['title']}"
+                    if "reason" not in course:
+                        course["reason"] = "Addresses skill gap identified in analysis"
+                    if "skill_addressed" not in course:
+                        course["skill_addressed"] = "General skill improvement"
+                    if "estimated_time" not in course:
+                        course["estimated_time"] = "Variable"
+                    if "level" not in course:
+                        course["level"] = "Intermediate"
+                    if "is_free" not in course:
+                        course["is_free"] = False
+                        
+                return result
+                
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error in job description analysis: {e}")
+                return {
+                    "missing_requirements": ["Unable to parse analysis results"],
+                    "weaknesses": [{
+                        "category": "Analysis Error",
+                        "description": "Could not properly analyze CV against job description"
+                    }],
+                    "recommended_courses": []
+                }
+                
+        except Exception as e:
+            print(f"Error in analyze_cv_against_job_description: {str(e)}")
+            return {
+                "error": f"Error analyzing CV against job description: {str(e)}",
+                "missing_requirements": [],
+                "weaknesses": [],
+                "recommended_courses": []
+            }
 
     async def compare_cv_to_jd_full(self, cv_data: dict, job_description: str) -> dict:
         """
         Compare the CV to a job description and return matches, missing, not_needed, and recommended courses.
+        This is an alternative analysis method that provides a different perspective.
         """
         try:
             prompt = f"""
@@ -375,7 +502,7 @@ class GeminiService:
 
             response_text = response.text
             print(response_text)
-            json_match = re.search(r'```json\\s*(.*?)\\s*```', response_text, re.DOTALL)
+            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
             if json_match:
                 response_text = json_match.group(1)
             try:
