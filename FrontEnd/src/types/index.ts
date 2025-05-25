@@ -1,14 +1,10 @@
 // Types related to CV analysis and flow responses
 import {
-  EducationItem,
   EducationSection,
-  ExperienceItem,
   ExperienceSection,
-  SkillCategory,
   SkillsSection,
-  ProjectItem,
   ProjectsSection,
-  LanguageItem,
+  Language,
   LanguagesSection
 } from '../components/cv-editors/new-editors';
 

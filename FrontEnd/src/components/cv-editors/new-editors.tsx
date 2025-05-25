@@ -34,6 +34,6 @@ export type {
 } from './ProjectsEditorNew';
 
 export type {
-  LanguageItem,
+  Language,
   LanguagesSection
-} from './LanguagesEditorNew'; 
+} from './LanguagesEditorNew';

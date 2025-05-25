@@ -18,7 +18,8 @@ import {
   EducationSection,
   ExperienceSection,
   SkillsSection,
-  ProjectsSection
+  ProjectsSection,
+  LanguagesSection
 } from '../components/cv-editors/new-editors';
 import { Button } from '@/components/ui/button';
 
@@ -57,7 +58,27 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
   completeCvFlow,
   resetFlow
 }) => {
-  const [editableSections, setEditableSections] = useState<EditableSection[]>(flowResponse.editable_sections || []);
+  // Transform language sections from backend format to frontend format
+  const transformedSections = (flowResponse.editable_sections || []).map(section => {
+    if (section.id === 'languages' && section.type === 'list') {
+      return {
+        ...section,
+        type: 'languages' as const,
+        items: (section.items || []).map((item: any, index: number) => ({
+          id: item.id || `language_${index}`,
+          name: item.language || item.name || '',
+          level: item.proficiency || item.level || 'Intermediate'
+        })),
+        template: {
+          name: '',
+          level: 'Intermediate'
+        }
+      };
+    }
+    return section;
+  });
+  
+  const [editableSections, setEditableSections] = useState<EditableSection[]>(transformedSections);
 
   const updateSection = (index: number, updatedSection: EditableSection) => {
     const newSections = [...editableSections];
@@ -151,16 +172,16 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
                     onChange={(updatedSection) => updateSection(index, updatedSection)} 
                   />
                 );
-              } else if (section.id === 'languages') {
-                return (
-                  <LanguagesEditorNew 
-                    key={section.id} 
-                    section={section as any}
-                    onChange={(updatedSection) => updateSection(index, updatedSection)} 
-                  />
-                );
               }
               return null;
+            case 'languages':
+              return (
+                <LanguagesEditorNew 
+                  key={section.id} 
+                  section={section as LanguagesSection}
+                  onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                />
+              );
             case 'nested_list':
               return (
                 <SkillsEditorNew 

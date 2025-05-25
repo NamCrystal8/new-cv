@@ -261,7 +261,7 @@ def json_to_latex(json_data):
                  
                  # Add clear spacing between job entries
                  if i < len(items) - 1:
-                     section_latex += "\\vspace{20pt}\n"  # Extra space between experience items
+                     section_latex += "\\vspace{10pt}\n"  # Extra space between experience items
 
         # --- Projects Section with Enhanced Formatting ---
         elif section_key == "projects":
@@ -313,7 +313,7 @@ def json_to_latex(json_data):
                  
                  # Add clear spacing between project entries
                  if i < len(items) - 1:
-                     section_latex += "\\vspace{20pt}\n"  # Extra space between project items
+                     section_latex += "\\vspace{10pt}\n"  # Extra space between project items
 
         # --- Skills Section with Better Formatting ---
         elif section_key == "skills":

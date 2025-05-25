@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LANGUAGE_PROFICIENCY_LEVELS, DEFAULT_PROFICIENCY } from '../../constants/languageProficiency';
 
 export interface Language {
   id: string;
@@ -19,11 +20,10 @@ interface LanguagesEditorNewProps {
   onChange: (section: LanguagesSection) => void;
 }
 
-const LanguagesEditorNew: React.FC<LanguagesEditorNewProps> = ({ section, onChange }) => {
-  // Ensure template has safe default values
+const LanguagesEditorNew: React.FC<LanguagesEditorNewProps> = ({ section, onChange }) => {  // Ensure template has safe default values
   const safeTemplate = {
     name: section.template?.name || '',
-    level: section.template?.level || 'Basic'
+    level: section.template?.level || DEFAULT_PROFICIENCY
   };
   
   const [newLanguage, setNewLanguage] = useState<Omit<Language, 'id'>>(safeTemplate);
@@ -42,11 +42,10 @@ const LanguagesEditorNew: React.FC<LanguagesEditorNewProps> = ({ section, onChan
     const languageName = newLanguage?.name || '';
     if (!languageName.trim()) return;
     
-    const newId = `language_${Date.now()}`;
-    const languageToAdd = { 
+    const newId = `language_${Date.now()}`;    const languageToAdd = { 
       id: newId, 
       name: languageName,
-      level: newLanguage?.level || 'Basic'
+      level: newLanguage?.level || DEFAULT_PROFICIENCY
     };
     onChange({ ...section, items: [...section.items, languageToAdd] });
     setNewLanguage(safeTemplate);
@@ -109,14 +108,11 @@ const LanguagesEditorNew: React.FC<LanguagesEditorNewProps> = ({ section, onChan
                     id={`level-${language.id}`}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                     value={language.level}
-                    onChange={(e) => handleLanguageChange(index, 'level', e.target.value)}
-                  >
+                    onChange={(e) => handleLanguageChange(index, 'level', e.target.value)}                  >
                     <option value="">Select level</option>
-                    <option value="Basic">Basic</option>
-                    <option value="Conversational">Conversational</option>
-                    <option value="Proficient">Proficient</option>
-                    <option value="Fluent">Fluent</option>
-                    <option value="Native">Native</option>
+                    {LANGUAGE_PROFICIENCY_LEVELS.map(level => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -149,14 +145,11 @@ const LanguagesEditorNew: React.FC<LanguagesEditorNewProps> = ({ section, onChan
                 id="new-language-level"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                 value={newLanguage?.level || ''}
-                onChange={(e) => handleNewLanguageChange('level', e.target.value)}
-              >
+                onChange={(e) => handleNewLanguageChange('level', e.target.value)}              >
                 <option value="">Select proficiency level</option>
-                <option value="Basic">Basic</option>
-                <option value="Conversational">Conversational</option>
-                <option value="Proficient">Proficient</option>
-                <option value="Fluent">Fluent</option>
-                <option value="Native">Native</option>
+                {LANGUAGE_PROFICIENCY_LEVELS.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
               </select>
             </div>
           </div>

@@ -114,13 +114,13 @@ CV_STRUCTURE = '''{
                     "url": "Course URL",
                     "date": {"start": "Start Date", "end": "End Date"}
                   }
-                ]
-              },
+                ]              },
               "languages": {
                 "section_title": "Languages",
                 "items": [
                   {"name": "Language", "proficiency": "Proficiency Level"}
-                ]
+                ],
+                "available_proficiency_levels": ["Native/Bilingual", "Fluent", "Advanced", "Intermediate", "Basic/Elementary"]
               },
               "volunteer": {
                 "section_title": "Volunteer Experience",

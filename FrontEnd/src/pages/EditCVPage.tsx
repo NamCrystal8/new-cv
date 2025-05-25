@@ -13,7 +13,8 @@ import {
   EducationSection,
   ExperienceSection,
   SkillsSection,
-  ProjectsSection
+  ProjectsSection,
+  LanguagesSection
 } from '../components/cv-editors/new-editors';
 import { Button } from '@/components/ui/button';
 import { 
@@ -21,6 +22,7 @@ import {
   RawInputSection,
   EditableSection
 } from '../types';
+import { DEFAULT_PROFICIENCY } from '../constants/languageProficiency';
 
 const EditCVPage: React.FC = () => {
   const { cvId } = useParams<{ cvId: string }>();
@@ -182,12 +184,12 @@ const EditCVPage: React.FC = () => {
         type: 'languages',
         items: languageItems.map((item: any, index: number) => ({
           id: `language_${index}`,
-          name: item.language || '',
-          level: item.proficiency || 'Intermediate'
+          name: item.name || item.language || '',
+          level: item.proficiency || item.level || DEFAULT_PROFICIENCY
         })),
         template: {
           name: '',
-          level: 'Intermediate'
+          level: DEFAULT_PROFICIENCY
         }
       } as any);
     }
@@ -243,9 +245,12 @@ const EditCVPage: React.FC = () => {
           }
           break;
         case 'list':
-          if (['education', 'experience', 'projects', 'languages'].includes(section.id)) {
+          if (['education', 'experience', 'projects'].includes(section.id)) {
             formattedData[section.id] = JSON.stringify(section.items);
           }
+          break;
+        case 'languages':
+          formattedData[section.id] = JSON.stringify(section.items);
           break;
         case 'nested_list':
           if (section.id === 'skills') {
@@ -475,7 +480,7 @@ const EditCVPage: React.FC = () => {
                       return (
                         <LanguagesEditorNew 
                           key={section.id} 
-                          section={section as any}
+                          section={section as LanguagesSection}
                           onChange={(updatedSection) => updateSection(index, updatedSection)} 
                         />
                       );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LANGUAGE_PROFICIENCY_LEVELS, DEFAULT_PROFICIENCY } from '../../constants/languageProficiency';
 
 // Language item structure
 export interface LanguageItem {
@@ -20,12 +21,12 @@ const LanguagesEditorNew: React.FC<{
   section: LanguagesSection, 
   onChange: (section: LanguagesSection) => void 
 }> = ({ section, onChange }) => {  // Provide safe default template with guaranteed non-null values
-  const defaultTemplate = { language: '', proficiency: 'Intermediate' };
+  const defaultTemplate = { language: '', proficiency: DEFAULT_PROFICIENCY };
   
   // Create safe template ensuring no undefined values
   const safeTemplate = {
     language: (section.template?.language ?? '') || '',
-    proficiency: (section.template?.proficiency ?? '') || 'Intermediate'
+    proficiency: (section.template?.proficiency ?? '') || DEFAULT_PROFICIENCY
   };
   
   const [newLanguage, setNewLanguage] = useState<Omit<LanguageItem, 'id'>>(() => ({
@@ -39,20 +40,18 @@ const LanguagesEditorNew: React.FC<{
     const languageValue = newLanguage.language || '';
     if (!languageValue.trim()) return;
       // Generate a unique ID
-    const newId = `language_${Date.now()}`;
-    const languageToAdd = { 
+    const newId = `language_${Date.now()}`;    const languageToAdd = { 
       id: newId, 
       language: newLanguage.language || '',
-      proficiency: newLanguage.proficiency || 'Intermediate' // default value
+      proficiency: newLanguage.proficiency || DEFAULT_PROFICIENCY // default value
     };
     
     onChange({ 
       ...section, 
-      items: [...section.items, languageToAdd] 
-    });      // Reset form with guaranteed safe values
+      items: [...section.items, languageToAdd]    });      // Reset form with guaranteed safe values
     setNewLanguage({ 
       language: '',
-      proficiency: 'Intermediate'
+      proficiency: DEFAULT_PROFICIENCY
     });
     
     // Animate
@@ -74,7 +73,6 @@ const LanguagesEditorNew: React.FC<{
       setAnimatingItemId(null);
     }, 300);
   };
-
   // Update language field
   const handleLanguageChange = (index: number, field: keyof Omit<LanguageItem, 'id'>, value: string) => {
     const newItems = [...section.items];
@@ -84,15 +82,6 @@ const LanguagesEditorNew: React.FC<{
     };
     onChange({ ...section, items: newItems });
   };
-
-  // Proficiency options
-  const proficiencyOptions = [
-    'Native/Bilingual', 
-    'Fluent', 
-    'Advanced', 
-    'Intermediate', 
-    'Basic/Elementary'
-  ];
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-6 overflow-hidden">
@@ -161,13 +150,12 @@ const LanguagesEditorNew: React.FC<{
                       Proficiency
                     </label>
                     <select
-                      id={`proficiency-${index}`}
-                      aria-label="Language proficiency level"
+                      id={`proficiency-${index}`}                      aria-label="Language proficiency level"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                       value={item.proficiency}
                       onChange={(e) => handleLanguageChange(index, 'proficiency', e.target.value)}
                     >
-                      {proficiencyOptions.map(option => (
+                      {LANGUAGE_PROFICIENCY_LEVELS.map((option: string) => (
                         <option key={option} value={option}>{option}</option>
                       ))}
                     </select>
@@ -209,12 +197,10 @@ const LanguagesEditorNew: React.FC<{
               </label>              <select
                 id="new-language-proficiency"
                 aria-label="Select proficiency level for new language"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                value={newLanguage?.proficiency ?? 'Intermediate'}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"                value={newLanguage?.proficiency ?? DEFAULT_PROFICIENCY}
                 onChange={(e) => setNewLanguage({ ...newLanguage, proficiency: e.target.value })}
-              >
-                <option value="" disabled>Select proficiency</option>
-                {proficiencyOptions.map(option => (
+              ><option value="" disabled>Select proficiency</option>
+                {LANGUAGE_PROFICIENCY_LEVELS.map((option: string) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
