@@ -269,11 +269,31 @@ const EditCVPage: React.FC = () => {
   const handleSave = async () => {
     if (!cvId) return;
     
-    setIsSaving(true);
-    setErrorMessage(null);
-    
     try {
-      const formattedSections = formatSectionsForBackend(editableSections);
+      setIsSaving(true);
+      setErrorMessage(null);
+      
+      // DEBUG: Log the sections being saved
+      console.log('🔍 DEBUG: Saving CV with sections:', editableSections);
+      const experienceSection = editableSections.find(s => s.id === 'experience');
+      console.log('🔍 DEBUG: Experience section being saved:', experienceSection);
+      if (experienceSection && 'items' in experienceSection) {
+        console.log('🔍 DEBUG: Experience items count:', experienceSection.items.length);
+        experienceSection.items.forEach((item: any, index: number) => {
+          console.log(`🔍 DEBUG: Experience item ${index + 1}:`, {
+            title: item.title,
+            company: item.company,
+            achievements: item.achievements
+          });
+        });
+      }
+
+      const formattedData = formatSectionsForBackend(editableSections);
+      // DEBUG: Log formatted data
+      console.log('🔍 DEBUG: Formatted data for backend:', formattedData);
+      if (formattedData.experience) {
+        console.log('🔍 DEBUG: Experience JSON string:', formattedData.experience);
+      }
       
       const response = await fetch(`/api/cv/${cvId}/update`, {
         method: 'POST',
@@ -282,7 +302,7 @@ const EditCVPage: React.FC = () => {
         },
         body: JSON.stringify({
           flow_id: flowId,
-          additional_inputs: formattedSections
+          additional_inputs: formattedData
         })
       });
       

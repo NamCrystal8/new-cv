@@ -231,29 +231,52 @@ def json_to_latex(json_data):
                      
                  # Add proper spacing between education entries
                  if i < len(items) - 1:
-                     section_latex += "\\vspace{14pt}\n"
-
-        # --- Experience Section with Enhanced Formatting ---
+                     section_latex += "\\vspace{14pt}\n"        # --- Experience Section with Enhanced Formatting ---
         elif section_key == "experience":
+            print(f"🔍 LATEX DEBUG: Processing experience section")
             items = section_content.get("items", [])
+            print(f"🔍 LATEX DEBUG: Experience items: {items}")
             if not isinstance(items, list): items = []
             for i, item in enumerate(items):
                  if not isinstance(item, dict): continue
+                 print(f"🔍 LATEX DEBUG: Processing experience item {i + 1}: {item}")
                  company = escape_latex(item.get("company", ""))
                  location = escape_latex(item.get("location", ""))
                  title = escape_latex(item.get("title", ""))
                  dates_str = format_dates(item.get("dates", {}))
                  achievements = item.get("achievements", [])
+                 print(f"🔍 LATEX DEBUG: Item {i + 1} achievements: {achievements}")
                  technologies = item.get("technologies", [])
                  if not isinstance(technologies, list): technologies = []
 
                  # Harvard-style job entry
                  section_latex += f"\\textbf{{{company}}} \\hfill {location}\n\n"
                  section_latex += f"\\textit{{{title}}} \\hfill {dates_str}\n\n"  # Add extra newline for spacing
-                 
-                 # Properly formatted achievements list
+                   # Properly formatted achievements list
                  if achievements:
-                     section_latex += generate_latex_list(achievements)
+                     print(f"🔍 LATEX DEBUG: Raw achievements type: {type(achievements)}")
+                     print(f"🔍 LATEX DEBUG: Raw achievements value: {achievements}")
+                     
+                     # Handle both string and list formats
+                     if isinstance(achievements, str):
+                         # If it's a string, treat it as a single achievement
+                         achievements_list = [achievements]
+                         print(f"🔍 LATEX DEBUG: Converted string to list: {achievements_list}")
+                     elif isinstance(achievements, list):
+                         # If it's already a list, use it as is
+                         achievements_list = achievements
+                         print(f"🔍 LATEX DEBUG: Using existing list: {achievements_list}")
+                     else:
+                         # Fallback for other types
+                         achievements_list = [str(achievements)]
+                         print(f"🔍 LATEX DEBUG: Converted other type to list: {achievements_list}")
+                     
+                     print(f"🔍 LATEX DEBUG: Generating LaTeX list for {len(achievements_list)} achievements")
+                     achievements_latex = generate_latex_list(achievements_list)
+                     print(f"🔍 LATEX DEBUG: Generated achievements LaTeX: {achievements_latex}")
+                     section_latex += achievements_latex
+                 else:
+                     print(f"🔍 LATEX DEBUG: No achievements found for item {i + 1}")
                  
                  # Add technologies if present
                  if technologies:

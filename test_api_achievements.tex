@@ -1,0 +1,80 @@
+
+\documentclass[letterpaper,11pt]{article}
+
+% Harvard Style CV Template
+% Document formatting
+\usepackage[top=0.75in, bottom=0.75in, left=0.75in, right=0.75in]{geometry}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern} % Load a font with all the characters
+\usepackage{titlesec}
+\usepackage{xcolor}
+
+% Set font to Palatino, which is elegant and readable
+\usepackage{palatino}
+
+% Define Harvard colors
+\definecolor{harvardcrimson}{RGB}{165,28,48}
+
+% Customize section formatting
+\titleformat{\section}
+  {\normalfont\Large\bfseries}
+  {}
+  {0em}
+  {\centering}[\titlerule]
+
+\titlespacing*{\section}
+  {0pt}
+  {16pt}  % Space before section
+  {10pt}  % Space after section
+
+% Remove paragraph indentation
+\setlength{\parindent}{0pt}
+
+% Add paragraph spacing
+\setlength{\parskip}{6pt}
+
+% Customize hyperref settings
+\hypersetup{
+    colorlinks=true,
+    linkcolor=harvardcrimson,
+    filecolor=harvardcrimson,
+    urlcolor=harvardcrimson,
+    pdftitle={Harvard Style CV},
+    pdfpagemode=FullScreen,
+}
+
+\begin{document}
+\begin{center}
+    {\Large\textbf{Test User}}\\[6pt]
+    \hrulefill
+\end{center}
+\begin{center}
+    Remote, USA {\large\textbullet} \href{mailto:test@example.com}{test@example.com} {\large\textbullet} \href{tel:+1 234 567 8900}{+1 234 567 8900}
+\end{center}
+
+
+\section{Experience}
+\textbf{API Test Company} \hfill Remote, USA
+
+\textit{Senior Software Engineer} \hfill Jan 2023 -- Present
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,parsep=2pt,topsep=4pt]
+    \item API TEST: Led development of microservices architecture serving 2M+ users
+    \item API TEST: Implemented CI/CD pipeline reducing deployment time by 60\%
+    \item API TEST: Mentored 5 junior developers and improved team productivity by 35\%
+\end{itemize}
+\vspace{10pt}
+\textbf{Previous Company} \hfill San Francisco, CA
+
+\textit{Full Stack Developer} \hfill Jun 2021 -- Dec 2022
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,parsep=2pt,topsep=4pt]
+    \item API TEST: Built React-based dashboard with real-time analytics
+    \item API TEST: Optimized database queries improving response time by 45\%
+\end{itemize}
+
+\end{document}

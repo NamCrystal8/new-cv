@@ -464,7 +464,7 @@ async def analyze_cv_weaknesses(
 async def complete_cv_flow(
     request: CompleteFlowRequest,
     user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_db)  # Inject async DB session
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Complete the CV flow with additional inputs and generate an enhanced CV.

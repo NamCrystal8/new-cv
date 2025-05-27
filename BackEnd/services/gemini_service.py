@@ -189,6 +189,10 @@ class GeminiService:
             3. For Skills: Use field format like "skills.0.2" where first number is category index and second is skill index
             4. For new items: Use field="new_item" and suggested value should be a valid JSON object for that section
             5. Make recommendations SPECIFIC and ACTIONABLE with clear improvements
+            6. The current and suggested field should have same type (string, list, dict)
+            7. ensure that the type of data is followed this structure:
+            
+            {CV_STRUCTURE}
             
             Ensure each recommendation can be directly applied to the CV.
             """
@@ -215,8 +219,7 @@ class GeminiService:
                     detailed_analysis["weaknesses"] = []
                 if "recommendations" not in detailed_analysis:
                     detailed_analysis["recommendations"] = []
-                    
-                # Ensure all recommendations have IDs and are properly categorized
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               # Ensure all recommendations have IDs and are properly categorized
                 for i, rec in enumerate(detailed_analysis["recommendations"]):
                     # Set ID if missing
                     if "id" not in rec or not rec["id"]:
@@ -251,15 +254,40 @@ class GeminiService:
                     else:
                         rec["section"] = "General"
                     
-                    # Set default values for missing fields
+                    # Normalize fields to strings - this ensures consistency in the UI
                     if "field" not in rec or not rec["field"]:
                         rec["field"] = "general"
+                    else:
+                        rec["field"] = str(rec["field"])
+                        
                     if "current" not in rec:
                         rec["current"] = "empty"
+                    else:
+                        # Convert current content to string representation
+                        current_value = rec["current"]
+                        if isinstance(current_value, dict) or isinstance(current_value, list):
+                            rec["current"] = json.dumps(current_value, indent=2)
+                        elif current_value is None:
+                            rec["current"] = "empty"
+                        else:
+                            rec["current"] = str(current_value)
+                            
                     if "suggested" not in rec:
                         rec["suggested"] = ""
+                    else:
+                        # Convert suggested content to string representation  
+                        suggested_value = rec["suggested"]
+                        if isinstance(suggested_value, dict) or isinstance(suggested_value, list):
+                            rec["suggested"] = json.dumps(suggested_value, indent=2)
+                        elif suggested_value is None:
+                            rec["suggested"] = ""
+                        else:
+                            rec["suggested"] = str(suggested_value)
+                            
                     if "reason" not in rec:
                         rec["reason"] = "Improves your CV's professional appearance"
+                    else:
+                        rec["reason"] = str(rec["reason"])
                         
                 return detailed_analysis
             except json.JSONDecodeError as e:

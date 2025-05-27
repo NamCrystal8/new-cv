@@ -1,5 +1,6 @@
 import React from 'react';
 import GenericListEditor, { FieldConfig } from '../ui/GenericListEditor';
+import { normalizeAchievements, preprocessExperienceData } from '../../utils/achievementNormalizer';
 
 // Types from the original editor
 export interface ExperienceItem {
@@ -25,6 +26,9 @@ const ExperienceEditorNew: React.FC<{
   section: ExperienceSection, 
   onChange: (section: ExperienceSection) => void 
 }> = ({ section, onChange }) => {
+  // Preprocess the section to ensure achievements are always arrays
+  const normalizedSection = preprocessExperienceData(section);
+  
   // Define field configuration for experience items
   const fields: FieldConfig[] = [
     { 
@@ -73,15 +77,21 @@ const ExperienceEditorNew: React.FC<{
     ...section.template,
     achievements: Array.isArray(section.template.achievements) ? 
       section.template.achievements : []
-  };
-
-  // Handle changes to the experience items
+  };  // Handle changes to the experience items
   const handleItemsChange = (newItems: ExperienceItem[]) => {
     // Ensure each item has an achievements array
     const validatedItems = newItems.map(item => ({
       ...item,
-      achievements: Array.isArray(item.achievements) ? item.achievements : []
+      achievements: normalizeAchievements(item.achievements)
     }));
+
+    // DEBUG: Log changes to experience items
+    console.log('🔍 EXPERIENCE DEBUG: Items changed:', validatedItems);
+    validatedItems.forEach((item, index) => {
+      if (item.achievements && item.achievements.length > 0) {
+        console.log(`🔍 EXPERIENCE DEBUG: Item ${index + 1} (${item.company}) has ${item.achievements.length} achievements:`, item.achievements);
+      }
+    });
 
     onChange({
       ...section,
@@ -92,7 +102,7 @@ const ExperienceEditorNew: React.FC<{
   return (
     <GenericListEditor
       title="Experience"
-      items={section.items}
+      items={normalizedSection.items}
       onChange={handleItemsChange}
       template={ensuredTemplate}
       fields={fields}

@@ -1,45 +1,285 @@
 import React, { useState, useEffect } from 'react';
-import { RecommendationItem } from '@/types';
+import { RecommendationItem, EditableSection } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import ListInputField from '@/components/ui/ListInputField';
+import { normalizeAchievements } from '../../utils/achievementNormalizer';
 
 interface RecommendationsCarouselProps {
   recommendations: RecommendationItem[];
+  currentCVData: EditableSection[];
   onComplete: (updatedRecommendations: RecommendationItem[]) => void;
 }
 
-// Helper function to extract section part from field
-const getSectionFromField = (field: string): string => {
-  if (field.includes('.')) {
-    return field.split('.')[0];
-  }
-  return field;
+// Smart input component that can handle both list and text input based on content type
+const SmartInputField: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  suggestedContent: string;
+  placeholder?: string;
+}> = ({ value, onChange, suggestedContent, placeholder = "Enter your own version or leave empty to accept suggestion" }) => {
+  const [inputMode, setInputMode] = useState<'auto' | 'list' | 'text'>('auto');
+  const [listItems, setListItems] = useState<string[]>([]);
+
+  // Reset internal state when value is cleared externally
+  useEffect(() => {
+    if (!value.trim()) {
+      setListItems([]);
+      setInputMode('auto');
+    }
+  }, [value]);
+
+  // Determine if the suggested content is a JSON array
+  const isSuggestedList = React.useMemo(() => {
+    const content = String(suggestedContent);
+    if (content.startsWith('[') && content.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(content);
+        return Array.isArray(parsed);
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }, [suggestedContent]);
+
+  // Initialize list items from value or suggested content
+  useEffect(() => {
+    if (value) {
+      // Try to parse the current value as JSON array
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          setListItems(parsed.map(String));
+          return;
+        }
+      } catch {
+        // If not JSON, split by newlines and filter empty lines
+        const lines = value.split('\n').map(line => line.trim()).filter(Boolean);
+        if (lines.length > 1) {
+          setListItems(lines);
+          return;
+        }
+      }
+    }
+    
+    // If no value, initialize from suggested content if it's a list
+    if (isSuggestedList && !value) {
+      try {
+        const parsed = JSON.parse(suggestedContent);
+        if (Array.isArray(parsed)) {
+          setListItems(parsed.map(String));
+        }
+      } catch {
+        setListItems([]);
+      }
+    }
+  }, [value, suggestedContent, isSuggestedList]);
+
+  // Determine current input mode
+  const currentMode = React.useMemo(() => {
+    if (inputMode !== 'auto') return inputMode;
+    
+    // Auto-detect based on content
+    if (isSuggestedList || listItems.length > 0) {
+      return 'list';
+    }
+    return 'text';
+  }, [inputMode, isSuggestedList, listItems.length]);
+
+  // Handle list changes
+  const handleListChange = (newItems: string[]) => {
+    setListItems(newItems);
+    // Convert back to appropriate format
+    if (newItems.length === 0) {
+      onChange('');
+    } else if (newItems.length === 1) {
+      onChange(newItems[0]);
+    } else {
+      // If original was JSON array, keep as JSON, otherwise use newlines
+      if (isSuggestedList) {
+        onChange(JSON.stringify(newItems));
+      } else {
+        onChange(newItems.join('\n'));
+      }
+    }
+  };
+
+  // Handle text area changes
+  const handleTextChange = (newValue: string) => {
+    onChange(newValue);
+    // Update list items if switching modes
+    const lines = newValue.split('\n').map(line => line.trim()).filter(Boolean);
+    if (lines.length > 1) {
+      setListItems(lines);
+    }
+  };
+
+  useEffect(() => {
+    console.log("SmartInputField initialized with mode:", currentMode, "and items:", listItems);
+  },[]);
+
+  return (
+    <div className="space-y-3">
+      {/* Mode toggle buttons */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-500">Input mode:</span>
+        <div className="flex rounded-md border border-gray-200 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setInputMode('text')}
+            className={`px-3 py-1 text-xs font-medium transition-colors ${
+              currentMode === 'text' 
+                ? 'bg-blue-100 text-blue-700 border-blue-200' 
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            Text
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode('list')}
+            className={`px-3 py-1 text-xs font-medium transition-colors border-l ${
+              currentMode === 'list' 
+                ? 'bg-blue-100 text-blue-700 border-blue-200' 
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            List
+          </button>
+        </div>
+      </div>
+
+      {/* Input field based on current mode */}
+      {currentMode === 'list' ? (
+        <ListInputField<string[]>
+          label=""
+          items={listItems}
+          onChange={handleListChange}
+          placeholder="Add item"
+          isObjectList={false}
+          addButtonText="Add Item"
+          className="border border-gray-300 rounded-lg p-3 bg-white"
+        />
+      ) : (
+        <textarea 
+          className="w-full p-3 bg-white rounded border border-gray-300 text-gray-800"
+          rows={3}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => handleTextChange(e.target.value)}
+        />
+      )}
+    </div>
+  );
 };
 
-// Safely render any value that might be an object
-const safeRender = (value: any): string => {
-  if (value === null || value === undefined) {
-    return '';
-  }
-  if (typeof value === 'object') {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return '[Object]';
+
+
+// Enhanced content renderer that can parse and display JSON strings as formatted content
+const SmartContentRenderer: React.FC<{ content: any; className?: string }> = ({ content, className = "" }) => {
+  const renderContent = () => {
+    if (content === null || content === undefined) {
+      return <span className="text-gray-400 italic">No content</span>;
     }
-  }
-  return String(value);
+
+    const contentStr = String(content);
+    
+    // Try to parse as JSON if it looks like JSON
+    if ((contentStr.startsWith('[') && contentStr.endsWith(']')) || 
+        (contentStr.startsWith('{') && contentStr.endsWith('}'))) {
+      try {
+        const parsed = JSON.parse(contentStr);
+        
+        // Handle arrays
+        if (Array.isArray(parsed)) {
+          if (parsed.length === 0) {
+            return <span className="text-gray-400 italic">Empty list</span>;
+          }
+          return (
+            <div className="space-y-1">
+              {parsed.map((item, index) => (
+                <div key={index} className="flex items-start gap-2">
+                  <span className="text-blue-500 font-bold text-xs mt-1">•</span>
+                  <span className="flex-1">{String(item)}</span>
+                </div>
+              ))}
+            </div>
+          );
+        }
+        
+        // Handle objects
+        if (typeof parsed === 'object') {
+          const entries = Object.entries(parsed);
+          if (entries.length === 0) {
+            return <span className="text-gray-400 italic">Empty object</span>;
+          }
+          return (
+            <div className="space-y-2">
+              {entries.map(([key, val], index) => (
+                <div key={index} className="border-l-2 border-gray-200 pl-3">
+                  <div className="text-sm font-medium text-gray-600 capitalize">
+                    {key.replace(/_/g, ' ')}:
+                  </div>
+                  <div className="text-gray-800">
+                    {Array.isArray(val) ? (
+                      <div className="ml-2 space-y-1">
+                        {val.map((item, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="text-blue-500 text-xs mt-1">•</span>
+                            <span>{String(item)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      String(val)
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        }
+      } catch (e) {
+        // If parsing fails, fall through to plain text rendering
+      }
+    }
+    
+    // Handle plain text with line breaks
+    const lines = contentStr.split('\n').filter(line => line.trim());
+    if (lines.length > 1) {
+      return (
+        <div className="space-y-1">
+          {lines.map((line, index) => (
+            <div key={index} className="flex items-start gap-2">
+              <span className="text-blue-500 font-bold text-xs mt-1">•</span>
+              <span className="flex-1">{line.trim()}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    // Single line text
+    return <span>{contentStr}</span>;
+  };
+
+  return (
+    <div className={className}>
+      {renderContent()}
+    </div>
+  );
 };
 
 // Component to render a preview of how the entire section will look with the changes
 const CVSectionPreview: React.FC<{
   section: string;
   field: string;
-  current: string;
   suggested: string;
   userInput: string;
   recommendations: RecommendationItem[];
-}> = ({ section, field, current, suggested, userInput, recommendations }) => {
+  currentCVData: EditableSection[];
+}> = ({ section, field, suggested, userInput, recommendations, currentCVData }) => {
   // The content to display (either user input or suggestion)
   const newContent = userInput.trim() || suggested;
   
@@ -77,45 +317,63 @@ const CVSectionPreview: React.FC<{
         );
     }
   };
-  
-  // Render header section with all contact info
+    // Render header section with all contact info
   const renderHeaderSection = (changedField: string, changedContent: string) => {
-    // Build mock header data
-    const mockHeader = {
-      name: "John Doe",
-      email: "john.doe@example.com",
-      phone: "+1 (555) 123-4567",
-      location: "San Francisco, CA"
+    // Find the header section from current CV data
+    const headerSection = currentCVData.find(section => section.id === 'header' || section.name?.toLowerCase().includes('header'));
+    
+    // Initialize with actual header data or fallback values
+    const actualHeader = {
+      name: "",
+      email: "",
+      phone: "",
+      location: ""
     };
+    
+    // Extract data from the actual CV structure
+    if (headerSection && headerSection.type === 'object') {
+      const fields = (headerSection as any).fields || [];
+      fields.forEach((field: any) => {
+        const fieldId = field.id?.toLowerCase() || field.name?.toLowerCase() || '';
+        if (fieldId.includes('name') || fieldId === 'full_name') {
+          actualHeader.name = field.value || '';
+        } else if (fieldId.includes('email')) {
+          actualHeader.email = field.value || '';
+        } else if (fieldId.includes('phone')) {
+          actualHeader.phone = field.value || '';
+        } else if (fieldId.includes('location') || fieldId.includes('address')) {
+          actualHeader.location = field.value || '';
+        }
+      });
+    }
     
     // Apply the current change
     if (changedField === 'name') {
-      mockHeader.name = changedContent;
+      actualHeader.name = changedContent;
     } else if (changedField === 'email') {
-      mockHeader.email = changedContent;
+      actualHeader.email = changedContent;
     } else if (changedField === 'phone') {
-      mockHeader.phone = changedContent;
+      actualHeader.phone = changedContent;
     } else if (changedField === 'location') {
-      mockHeader.location = changedContent;
+      actualHeader.location = changedContent;
     }
     
     // Apply other pending changes from recommendations
     getSectionRecommendations().forEach(rec => {
       if (rec.field === 'name' && rec.field !== changedField) {
-        mockHeader.name = rec.suggested;
+        actualHeader.name = rec.suggested;
       } else if (rec.field === 'email' && rec.field !== changedField) {
-        mockHeader.email = rec.suggested;
+        actualHeader.email = rec.suggested;
       } else if (rec.field === 'phone' && rec.field !== changedField) {
-        mockHeader.phone = rec.suggested;
+        actualHeader.phone = rec.suggested;
       } else if (rec.field === 'location' && rec.field !== changedField) {
-        mockHeader.location = rec.suggested;
+        actualHeader.location = rec.suggested;
       }
-    });
-    
+    });    
     return (
       <div className="p-4 bg-white rounded-md">
         <h2 className={`text-xl font-bold ${changedField === 'name' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-800'}`}>
-          {mockHeader.name}
+          {actualHeader.name || 'Your Name'}
         </h2>
         <div className="mt-3 flex flex-col sm:flex-row sm:flex-wrap gap-y-1 gap-x-4">
           <div className={`flex items-center ${changedField === 'email' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-600'}`}>
@@ -123,68 +381,54 @@ const CVSectionPreview: React.FC<{
               <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
               <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
             </svg>
-            <span>{mockHeader.email}</span>
+            <span>{actualHeader.email || 'your.email@example.com'}</span>
           </div>
           
           <div className={`flex items-center ${changedField === 'phone' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-600'}`}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
             </svg>
-            <span>{mockHeader.phone}</span>
+            <span>{actualHeader.phone || '+1 (555) 000-0000'}</span>
           </div>
           
           <div className={`flex items-center ${changedField === 'location' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-600'}`}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
             </svg>
-            <span>{mockHeader.location}</span>
+            <span>{actualHeader.location || 'Your City, State'}</span>
           </div>
         </div>
       </div>
     );
   };
-  
-  // Render education section
+    // Render education section
   const renderEducationSection = (changedField: string, changedContent: string) => {
-    // Create sample education items with proper typing
-    type MockEducationItem = {
-      id: string;
-      institution: string;
-      degree: string;
-      location: string;
-      graduation_date: string;
-      dates: string;
-      relevant_coursework: string;
-      gpa: string;
-      honors: string;
-      [key: string]: string; // Allow string indexing
-    };
+    // Find the education section from current CV data
+    const educationSection = currentCVData.find(section => 
+      section.id === 'education' || section.name?.toLowerCase().includes('education')
+    );
     
-    const mockEducation: MockEducationItem[] = [
-      {
+    // Initialize with actual education data or fallback values
+    let actualEducation: any[] = [];
+    
+    if (educationSection && educationSection.type === 'list') {
+      actualEducation = (educationSection as any).items || [];
+    }
+    
+    // If no actual data, provide a fallback template
+    if (actualEducation.length === 0) {
+      actualEducation = [{
         id: "education_0",
-        institution: "Stanford University",
-        degree: "Master of Science in Computer Science",
-        location: "Stanford, CA",
-        graduation_date: "2022",
+        institution: "Your University",
+        degree: "Your Degree",
+        location: "City, State",
+        graduation_date: "Year",
         dates: "",
         relevant_coursework: "",
         gpa: "",
         honors: ""
-      },
-      {
-        id: "education_1",
-        institution: "MIT",
-        degree: "Bachelor of Science in Computer Science",
-        location: "Cambridge, MA",
-        graduation_date: "2020",
-        dates: "",
-        relevant_coursework: "",
-        gpa: "",
-        honors: ""
-      }
-    ];
-    
+      }];
+    }    
     // Parse the field to extract index and property if it follows pattern like "education.0.institution"
     let targetIndex = -1;
     let targetProperty = "";
@@ -195,11 +439,11 @@ const CVSectionPreview: React.FC<{
         targetIndex = parseInt(parts[1]);
         targetProperty = parts[2];
         
-        // Apply the change to the mock data
-        if (targetIndex >= 0 && targetIndex < mockEducation.length) {
-          // Check if the property exists on our mock object before setting it
-          if (Object.prototype.hasOwnProperty.call(mockEducation[targetIndex], targetProperty)) {
-            mockEducation[targetIndex][targetProperty] = changedContent;
+        // Apply the change to the actual data
+        if (targetIndex >= 0 && targetIndex < actualEducation.length) {
+          // Check if the property exists on our object before setting it
+          if (Object.prototype.hasOwnProperty.call(actualEducation[targetIndex], targetProperty)) {
+            actualEducation[targetIndex][targetProperty] = changedContent;
           }
         }
       }
@@ -209,20 +453,20 @@ const CVSectionPreview: React.FC<{
       <div className="p-4 bg-white rounded-md">
         <h3 className="text-lg font-semibold mb-3 text-gray-700 border-b pb-1">Education</h3>
         <div className="space-y-4">
-          {mockEducation.map((edu, index) => (
-            <div key={edu.id} className={index === targetIndex ? "border-l-2 border-blue-500 pl-3" : "pl-3"}>
+          {actualEducation.map((edu: any, index: number) => (
+            <div key={edu.id || `education_${index}`} className={index === targetIndex ? "border-l-2 border-blue-500 pl-3" : "pl-3"}>
               <h4 className={`font-bold ${targetIndex === index && targetProperty === 'institution' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-800'}`}>
-                {edu.institution}
+                {edu.institution || 'Institution Name'}
               </h4>
               <p className={`${targetIndex === index && targetProperty === 'degree' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-800'} italic`}>
-                {edu.degree}
+                {edu.degree || 'Degree Title'}
               </p>
               <div className="flex justify-between text-sm text-gray-600 mt-1">
                 <span className={targetIndex === index && targetProperty === 'location' ? 'text-blue-800 bg-blue-50 px-1' : ''}>
-                  {edu.location}
+                  {edu.location || 'Location'}
                 </span>
                 <span className={targetIndex === index && targetProperty === 'graduation_date' ? 'text-blue-800 bg-blue-50 px-1' : ''}>
-                  {edu.graduation_date}
+                  {edu.graduation_date || edu.end_date || 'Year'}
                 </span>
               </div>
               
@@ -247,50 +491,42 @@ const CVSectionPreview: React.FC<{
           ))}
         </div>
       </div>
-    );
-  };
-  
+    );  };
+
   // Render experience section
   const renderExperienceSection = (changedField: string, changedContent: string) => {
-    // Create sample experience items with proper typing
-    type MockExperienceItem = {
-      id: string;
-      company: string;
-      title: string;
-      location: string;
-      start_date: string;
-      end_date: string;
-      achievements: string[];
-      [key: string]: string | string[];
-    };
+    // Find the experience section from current CV data
+    const experienceSection = currentCVData.find(section => 
+      section.id === 'experience' || section.name?.toLowerCase().includes('experience')
+    );
     
-    // Create sample experience items
-    const mockExperience: MockExperienceItem[] = [
-      {
+    // Initialize with actual experience data or fallback values
+    let actualExperience: any[] = [];
+    
+    if (experienceSection && experienceSection.type === 'list') {
+      actualExperience = (experienceSection as any).items || [];
+    }
+    
+    // If no actual data, provide a fallback template
+    if (actualExperience.length === 0) {
+      actualExperience = [{
         id: "experience_0",
-        company: "Google",
-        title: "Senior Software Engineer",
-        location: "Mountain View, CA",
-        start_date: "2020",
-        end_date: "Present",
-        achievements: [
-          "Led development of a major feature that increased user engagement by 25%",
-          "Mentored 5 junior engineers and improved team productivity by 15%"
-        ]
-      },
-      {
-        id: "experience_1",
-        company: "Microsoft",
-        title: "Software Engineer",
-        location: "Redmond, WA",
-        start_date: "2018",
-        end_date: "2020",
-        achievements: [
-          "Developed backend services that scaled to millions of users",
-          "Optimized database queries resulting in 30% performance improvement"
-        ]
-      }
-    ];
+        company: "Your Company",
+        title: "Your Job Title",
+        location: "City, State",
+        start_date: "Start Date",
+        end_date: "End Date",
+        achievements: ["Your key achievement here"]
+      }];
+    }
+    
+    // Normalize achievements data for all experience items
+    actualExperience = actualExperience.map(exp => ({
+      ...exp,
+      achievements: normalizeAchievements(exp.achievements)
+    }));
+    
+    console.log("[Recommendations] Normalized experience data:", actualExperience);
     
     // Parse the field to extract index and property
     let targetIndex = -1;
@@ -302,15 +538,16 @@ const CVSectionPreview: React.FC<{
         targetIndex = parseInt(parts[1]);
         targetProperty = parts[2];
         
-        // Apply the change to the mock data
-        if (targetIndex >= 0 && targetIndex < mockExperience.length) {
+        // Apply the change to the actual data
+        if (targetIndex >= 0 && targetIndex < actualExperience.length) {
           if (targetProperty === 'achievements') {
-            // Handle achievements as an array
-            // Ensure changedContent is treated as a string before splitting
-            mockExperience[targetIndex].achievements = String(changedContent).split('\n').map(a => a.trim()).filter(a => a);
-          } else if (Object.prototype.hasOwnProperty.call(mockExperience[targetIndex], targetProperty)) {
+            // Handle achievements as an array - parse if it's a JSON string
+            const newAchievements = normalizeAchievements(changedContent);
+            actualExperience[targetIndex].achievements = newAchievements;
+            console.log("[Recommendations] Updated achievements for experience", targetIndex, ":", newAchievements);
+          } else if (Object.prototype.hasOwnProperty.call(actualExperience[targetIndex], targetProperty)) {
             // Safe indexing for string properties
-            (mockExperience[targetIndex] as any)[targetProperty] = changedContent;
+            (actualExperience[targetIndex] as any)[targetProperty] = changedContent;
           }
         }
       }
@@ -320,26 +557,25 @@ const CVSectionPreview: React.FC<{
       <div className="p-4 bg-white rounded-md">
         <h3 className="text-lg font-semibold mb-3 text-gray-700 border-b pb-1">Experience</h3>
         <div className="space-y-4">
-          {mockExperience.map((exp, index) => (
-            <div key={exp.id} className={index === targetIndex ? "border-l-2 border-blue-500 pl-3" : "pl-3"}>
+          {actualExperience.map((exp: any, index: number) => (
+            <div key={exp.id || `experience_${index}`} className={index === targetIndex ? "border-l-2 border-blue-500 pl-3" : "pl-3"}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <h4 className={`font-bold ${targetIndex === index && targetProperty === 'company' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-800'}`}>
-                  {exp.company}
+                  {exp.company || 'Company Name'}
                 </h4>
                 <div className="text-sm text-gray-600">
                   <span className={targetIndex === index && (targetProperty === 'start_date' || targetProperty === 'end_date') ? 'text-blue-800 bg-blue-50 px-1' : ''}>
-                    {exp.start_date} - {exp.end_date}
+                    {exp.start_date || 'Start'} - {exp.end_date || 'End'}
                   </span>
                 </div>
               </div>
               <p className={`${targetIndex === index && targetProperty === 'title' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-800'} font-medium`}>
-                {exp.title}
+                {exp.title || 'Job Title'}
               </p>
               <p className={`text-sm text-gray-600 mb-1 ${targetIndex === index && targetProperty === 'location' ? 'text-blue-800 bg-blue-50 px-1' : ''}`}>
-                {exp.location}
-              </p>
-              <ul className={`list-disc list-inside text-gray-700 text-sm space-y-1 ${targetIndex === index && targetProperty === 'achievements' ? 'bg-blue-50 px-2 py-1 rounded' : ''}`}>
-                {exp.achievements.map((achievement, i) => (
+                {exp.location || 'Location'}
+              </p>              <ul className={`list-disc list-inside text-gray-700 text-sm space-y-1 ${targetIndex === index && targetProperty === 'achievements' ? 'bg-blue-50 px-2 py-1 rounded' : ''}`}>
+                {normalizeAchievements(exp.achievements).map((achievement: string, i: number) => (
                   <li key={i}>{achievement}</li>
                 ))}
               </ul>
@@ -349,27 +585,30 @@ const CVSectionPreview: React.FC<{
       </div>
     );
   };
-  
-  // Render skills section
+    // Render skills section
   const renderSkillsSection = (changedField: string, changedContent: string) => {
-    // Create sample skills categories
-    const mockSkills = [
-      {
-        id: "skill_category_0",
-        name: "Programming Languages",
-        items: ["JavaScript", "TypeScript", "Python", "Java", "C++"]
-      },
-      {
-        id: "skill_category_1",
-        name: "Frameworks & Libraries",
-        items: ["React", "Angular", "Vue", "Node.js", "Express", "Django"]
-      },
-      {
-        id: "skill_category_2",
-        name: "Tools & Platforms",
-        items: ["Git", "Docker", "Kubernetes", "AWS", "Azure", "GCP"]
-      }
-    ];
+    // Find the skills section from current CV data
+    const skillsSection = currentCVData.find(section => 
+      section.id === 'skills' || section.name?.toLowerCase().includes('skill')
+    );
+    
+    // Initialize with actual skills data or fallback values
+    let actualSkills: any[] = [];
+    
+    if (skillsSection && skillsSection.type === 'list') {
+      actualSkills = (skillsSection as any).items || [];
+    }
+    
+    // If no actual data, provide fallback template
+    if (actualSkills.length === 0) {
+      actualSkills = [
+        {
+          id: "skill_category_0",
+          name: "Technical Skills",
+          items: ["Add your skills here"]
+        }
+      ];
+    }
     
     // Parse the field to extract category index and skill index if applicable
     let targetCategoryIndex = -1;
@@ -381,12 +620,12 @@ const CVSectionPreview: React.FC<{
         targetCategoryIndex = parseInt(parts[1]);
         targetSkillIndex = parseInt(parts[2]);
         
-        // Apply the change to the mock data
-        if (targetCategoryIndex >= 0 && targetCategoryIndex < mockSkills.length) {
-          if (targetSkillIndex >= 0 && targetSkillIndex < mockSkills[targetCategoryIndex].items.length) {
-            mockSkills[targetCategoryIndex].items[targetSkillIndex] = changedContent;
+        // Apply the change to the actual data
+        if (targetCategoryIndex >= 0 && targetCategoryIndex < actualSkills.length) {
+          if (targetSkillIndex >= 0 && actualSkills[targetCategoryIndex].items && targetSkillIndex < actualSkills[targetCategoryIndex].items.length) {
+            actualSkills[targetCategoryIndex].items[targetSkillIndex] = changedContent;
           } else if (changedField.endsWith('.name')) {
-            mockSkills[targetCategoryIndex].name = changedContent;
+            actualSkills[targetCategoryIndex].name = changedContent;
           }
         }
       }
@@ -396,13 +635,13 @@ const CVSectionPreview: React.FC<{
       <div className="p-4 bg-white rounded-md">
         <h3 className="text-lg font-semibold mb-3 text-gray-700 border-b pb-1">Skills</h3>
         <div className="space-y-3">
-          {mockSkills.map((category, catIndex) => (
-            <div key={category.id} className={catIndex === targetCategoryIndex ? "border-l-2 border-blue-500 pl-3" : "pl-3"}>
+          {actualSkills.map((category, catIndex) => (
+            <div key={category.id || `skill_category_${catIndex}`} className={catIndex === targetCategoryIndex ? "border-l-2 border-blue-500 pl-3" : "pl-3"}>
               <h4 className={`font-medium mb-1 ${catIndex === targetCategoryIndex && targetSkillIndex === -1 ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-700'}`}>
-                {category.name}
+                {category.name || 'Skill Category'}
               </h4>
               <div className="flex flex-wrap gap-2">
-                {category.items.map((skill, skillIndex) => (
+                {(category.items || []).map((skill: string, skillIndex: number) => (
                   <span 
                     key={skillIndex} 
                     className={`px-2 py-1 rounded-full text-sm ${
@@ -421,50 +660,32 @@ const CVSectionPreview: React.FC<{
       </div>
     );
   };
-  
-  // Render projects section
+    // Render projects section
   const renderProjectsSection = (changedField: string, changedContent: string) => {
-    // Create sample projects with proper typing
-    type MockProjectItem = {
-      id: string;
-      title: string;
-      description: string;
-      start_date: string;
-      end_date: string;
-      technologies: string[];
-      contributions: string[];
-      [key: string]: string | string[];
-    };
+    // Find the projects section from current CV data
+    const projectsSection = currentCVData.find(section => 
+      section.id === 'projects' || section.name?.toLowerCase().includes('project')
+    );
     
-    // Create sample projects
-    const mockProjects: MockProjectItem[] = [
-      {
+    // Initialize with actual projects data or fallback values
+    let actualProjects: any[] = [];
+    
+    if (projectsSection && projectsSection.type === 'list') {
+      actualProjects = (projectsSection as any).items || [];
+    }
+    
+    // If no actual data, provide a fallback template
+    if (actualProjects.length === 0) {
+      actualProjects = [{
         id: "project_0",
-        title: "E-commerce Platform",
-        description: "A full-stack e-commerce application with React and Node.js",
-        start_date: "Jan 2021",
-        end_date: "Jun 2021",
-        technologies: ["React", "Node.js", "MongoDB", "Express"],
-        contributions: [
-          "Implemented the shopping cart and checkout functionality",
-          "Developed the user authentication system",
-          "Created responsive UI components"
-        ]
-      },
-      {
-        id: "project_1",
-        title: "Machine Learning Image Classifier",
-        description: "An image classification application using TensorFlow",
-        start_date: "Jul 2020",
-        end_date: "Dec 2020",
-        technologies: ["Python", "TensorFlow", "Keras", "Flask"],
-        contributions: [
-          "Trained a custom CNN model with 95% accuracy",
-          "Built a Flask API for serving predictions",
-          "Created a web interface for uploading and classifying images"
-        ]
-      }
-    ];
+        title: "Your Project Title",
+        description: "Project description here",
+        start_date: "Start Date",
+        end_date: "End Date",
+        technologies: ["Technology 1", "Technology 2"],
+        contributions: ["Your key contribution here"]
+      }];
+    }
     
     // Parse the field to extract index and property
     let targetIndex = -1;
@@ -476,17 +697,17 @@ const CVSectionPreview: React.FC<{
         targetIndex = parseInt(parts[1]);
         targetProperty = parts[2];
         
-        // Apply the change to the mock data
-        if (targetIndex >= 0 && targetIndex < mockProjects.length) {
+        // Apply the change to the actual data
+        if (targetIndex >= 0 && targetIndex < actualProjects.length) {
           if (targetProperty === 'technologies') {
             // Handle technologies as an array
-            mockProjects[targetIndex].technologies = String(changedContent).split(',').map(t => t.trim());
+            actualProjects[targetIndex].technologies = String(changedContent).split(',').map((t: string) => t.trim());
           } else if (targetProperty === 'contributions') {
             // Handle contributions as an array
-            mockProjects[targetIndex].contributions = String(changedContent).split('\n').map(c => c.trim()).filter(c => c);
-          } else if (Object.prototype.hasOwnProperty.call(mockProjects[targetIndex], targetProperty)) {
+            actualProjects[targetIndex].contributions = String(changedContent).split('\n').map((c: string) => c.trim()).filter((c: string) => c);
+          } else if (Object.prototype.hasOwnProperty.call(actualProjects[targetIndex], targetProperty)) {
             // Safe indexing for string properties
-            (mockProjects[targetIndex] as any)[targetProperty] = changedContent;
+            (actualProjects[targetIndex] as any)[targetProperty] = changedContent;
           }
         }
       }
@@ -496,41 +717,45 @@ const CVSectionPreview: React.FC<{
       <div className="p-4 bg-white rounded-md">
         <h3 className="text-lg font-semibold mb-3 text-gray-700 border-b pb-1">Projects</h3>
         <div className="space-y-4">
-          {mockProjects.map((project, index) => (
-            <div key={project.id} className={index === targetIndex ? "border-l-2 border-blue-500 pl-3" : "pl-3"}>
+          {actualProjects.map((project, index) => (
+            <div key={project.id || `project_${index}`} className={index === targetIndex ? "border-l-2 border-blue-500 pl-3" : "pl-3"}>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <h4 className={`font-bold ${targetIndex === index && targetProperty === 'title' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-800'}`}>
-                  {project.title}
+                  {project.title || 'Project Title'}
                 </h4>
                 <div className="text-xs text-gray-600">
                   <span className={targetIndex === index && (targetProperty === 'start_date' || targetProperty === 'end_date') ? 'text-blue-800 bg-blue-50 px-1' : ''}>
-                    {project.start_date} - {project.end_date}
+                    {project.start_date || 'Start'} - {project.end_date || 'End'}
                   </span>
                 </div>
               </div>
               <p className={`mt-1 text-sm ${targetIndex === index && targetProperty === 'description' ? 'text-blue-800 bg-blue-50 px-1' : 'text-gray-700'}`}>
-                {project.description}
+                {project.description || 'Project description'}
               </p>
               
-              <div className={`mt-2 ${targetIndex === index && targetProperty === 'technologies' ? 'bg-blue-50 px-2 py-1 rounded' : ''}`}>
-                <span className="text-xs font-medium text-gray-500">Technologies: </span>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {project.technologies.map((tech, i) => (
-                    <span key={i} className="px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded text-xs">
-                      {tech}
-                    </span>
-                  ))}
+              {project.technologies && project.technologies.length > 0 && (
+                <div className={`mt-2 ${targetIndex === index && targetProperty === 'technologies' ? 'bg-blue-50 px-2 py-1 rounded' : ''}`}>
+                  <span className="text-xs font-medium text-gray-500">Technologies: </span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {project.technologies.map((tech: string, i: number) => (
+                      <span key={i} className="px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded text-xs">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               
-              <div className={`mt-2 ${targetIndex === index && targetProperty === 'contributions' ? 'bg-blue-50 px-2 py-1 rounded' : ''}`}>
-                <span className="text-xs font-medium text-gray-500">Key Contributions:</span>
-                <ul className="list-disc list-inside text-gray-700 text-sm space-y-1 mt-1">
-                  {project.contributions.map((contribution, i) => (
-                    <li key={i}>{contribution}</li>
-                  ))}
-                </ul>
-              </div>
+              {project.contributions && project.contributions.length > 0 && (
+                <div className={`mt-2 ${targetIndex === index && targetProperty === 'contributions' ? 'bg-blue-50 px-2 py-1 rounded' : ''}`}>
+                  <span className="text-xs font-medium text-gray-500">Key Contributions:</span>
+                  <ul className="list-disc list-inside text-gray-700 text-sm space-y-1 mt-1">
+                    {project.contributions.map((contribution: string, i: number) => (
+                      <li key={i}>{contribution}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -553,6 +778,7 @@ const CVSectionPreview: React.FC<{
 
 const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
   recommendations,
+  currentCVData,
   onComplete
 }) => {
   // Group recommendations by section
@@ -599,6 +825,7 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
       setUserInput(''); // Reset user input
     } else {
       // We've reached the end of all categories
+      console.log("[Recommendations] Task completed with edited recommendations:", editedRecommendations);
       onComplete(editedRecommendations);
     }
   };
@@ -622,6 +849,13 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
           return { ...rec, suggested: userInput };
         }
         return rec;
+      });
+      
+      console.log("[Recommendations] User edited recommendation:", {
+        section: currentCategory,
+        field: currentRec.field,
+        originalValue: currentRec.suggested,
+        newValue: userInput
       });
       
       setEditedRecommendations(updatedRecommendations);
@@ -696,52 +930,53 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
         ></div>
       </div>
       
-      <Card className="w-full border-blue-200">
-        <CardHeader className="pb-2">
+      <Card className="w-full border-blue-200">        <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            {safeRender(currentRecommendation.section)}
+            <SmartContentRenderer content={currentRecommendation.section} className="font-bold" />
           </CardTitle>
           <CardDescription>
-            {safeRender(currentRecommendation.field)}
+            <span className="text-sm font-medium text-gray-600">Field: </span>
+            <SmartContentRenderer content={currentRecommendation.field} className="inline" />
           </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </CardHeader><CardContent className="space-y-4">
           <div>
             <h4 className="text-sm font-medium text-gray-500 mb-1">Current Content:</h4>
             <div className="p-3 bg-gray-50 rounded border border-gray-200 text-gray-800">
-              {safeRender(currentRecommendation.current)}
+              <SmartContentRenderer content={currentRecommendation.current} />
             </div>
           </div>
           
           <div>
             <h4 className="text-sm font-medium text-gray-500 mb-1">Suggested Improvement:</h4>
             <div className="p-3 bg-blue-50 rounded border border-blue-200 text-blue-800">
-              {safeRender(currentRecommendation.suggested)}
+              <SmartContentRenderer content={currentRecommendation.suggested} />
             </div>
           </div>
           
           <div>
-            <h4 className="text-sm font-medium text-gray-500 mb-1">Your Edited Version (Optional):</h4>
-            <textarea 
-              className="w-full p-3 bg-white rounded border border-gray-300 text-gray-800"
-              rows={3}
-              placeholder="Enter your own version or leave empty to accept suggestion"
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-            />
+            <h4 className="text-sm font-medium text-gray-500 mb-1">Reason for Change:</h4>
+            <div className="p-2 bg-yellow-50 rounded border border-yellow-200 text-yellow-800 text-sm">
+              <SmartContentRenderer content={currentRecommendation.reason} />
+            </div>
           </div>
-          
-          {/* Updated Preview Section */}
-          <CVSectionPreview 
+            <div>
+            <h4 className="text-sm font-medium text-gray-500 mb-1">Your Edited Version (Optional):</h4>
+            <SmartInputField
+              value={userInput}
+              onChange={setUserInput}
+              suggestedContent={currentRecommendation.suggested}
+              placeholder="Enter your own version or leave empty to accept suggestion"
+            />
+          </div><CVSectionPreview 
             section={currentRecommendation.section}
             field={currentRecommendation.field}
-            current={currentRecommendation.current}
             suggested={currentRecommendation.suggested}
             userInput={userInput}
             recommendations={recommendations}
+            currentCVData={currentCVData}
           />
         </CardContent>
         <CardFooter className="justify-between space-x-2 border-t border-gray-100 pt-4">
@@ -775,4 +1010,4 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
   );
 };
 
-export default RecommendationsCarousel; 
+export default RecommendationsCarousel;

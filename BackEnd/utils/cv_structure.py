@@ -122,38 +122,6 @@ CV_STRUCTURE = '''{
                 ],
                 "available_proficiency_levels": ["Native/Bilingual", "Fluent", "Advanced", "Intermediate", "Basic/Elementary"]
               },
-              "volunteer": {
-                "section_title": "Volunteer Experience",
-                "items": [
-                  {
-                    "title": "Volunteer Role",
-                    "organization": "Organization Name",
-                    "location": "City, Country",
-                    "dates": {"start": "Start Date", "end": "End Date"},
-                    "achievements": ["Achievement 1"]
-                  }
-                ]
-              },
-              "achievements": {
-                "section_title": "Awards & Achievements",
-                "items": [
-                  {
-                    "organization": "Example Organization",
-                    "description": "Achievement description",
-                    "date": "2023-01-01"
-                  }
-                ]
-              },
-              "publications": {
-                "section_title": "Publications",
-                "items": [
-                  {
-                    "title": "Publication Title",
-                    "url": "Publication URL",
-                    "date": "Publication Date"
-                  }
-                ]
-              },
               "interests": {
                 "section_title": "Interests",
                 "items": ["Interest 1", "Interest 2"]
@@ -192,17 +160,6 @@ CV_STRUCTURE = '''{
                   }
                 ]
               },
-              "custom": {
-                "section_title": "Custom Section",
-                "items": [
-                  {
-                    "title": "Custom Item Title",
-                    "description": "Custom Item Description",
-                    "url": "Custom Item URL",
-                    "date": "2023-01-01"
-                  }
-                ]
-              }
             },
             "rendering_rules": {
               "date_format": "MMM YYYY",

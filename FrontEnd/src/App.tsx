@@ -492,11 +492,11 @@ const MainAppContent: React.FC = () => {
                   : [])}
             onNext={proceedToRecommendations}
           />
-        ) : null;
-      case 3: // Recommendations
+        ) : null;      case 3: // Recommendations
         return flowResponse ? (
           <RecommendationsCarousel 
             recommendations={flowResponse.detailed_analysis.recommendations}
+            currentCVData={editableSections}
             onComplete={handleRecommendationsComplete}
           />
         ) : null;

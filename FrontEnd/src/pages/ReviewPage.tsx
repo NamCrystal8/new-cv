@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   FlowResponse, 
   EditableSection,
@@ -22,6 +22,7 @@ import {
   LanguagesSection
 } from '../components/cv-editors/new-editors';
 import { Button } from '@/components/ui/button';
+import { preprocessExperienceData } from '../utils/achievementNormalizer';
 
 interface ReviewPageProps {
   isLoading: boolean;
@@ -75,6 +76,13 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
         }
       };
     }
+    
+    // Apply achievement normalization to experience sections
+    if (section.id === 'experience' && section.type === 'list') {
+      console.log("[ReviewPage] Normalizing achievements for experience section");
+      return preprocessExperienceData(section);
+    }
+    
     return section;
   });
   
@@ -88,8 +96,22 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
 
   // Handle submission with current edited sections
   const handleSubmit = () => {
-    completeCvFlow(editableSections);
+    // Normalize achievements in experience sections before final submission
+    const normalizedSections = editableSections.map(section => {
+      if (section.id === 'experience' && section.type === 'list') {
+        console.log("[ReviewPage] Final normalization of experience achievements before submission");
+        return preprocessExperienceData(section);
+      }
+      return section;
+    });
+    
+    console.log("[Review] Submitting final CV sections:", normalizedSections);
+    completeCvFlow(normalizedSections);
   };
+
+  useEffect(() => {
+    console.log("Flow response analysis: %o", flowResponse.editable_sections);
+  },[]);
 
   return (
     <div className="space-y-6">
