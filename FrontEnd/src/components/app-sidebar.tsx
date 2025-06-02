@@ -1,8 +1,9 @@
 import React from "react";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn, LogOut, UserPlus, BadgeCheck, FileText, Home } from "lucide-react";
+import { LogIn, LogOut, UserPlus, BadgeCheck, FileText, Home, Crown } from "lucide-react";
 import { useAuth } from "@/App";
+import { SubscriptionStatus } from "./SubscriptionStatus";
 
 export function AppSidebar() {
   const { isAuthenticated, setIsAuthenticated } = useAuth();
@@ -29,7 +30,8 @@ export function AppSidebar() {
           </div>
           
           {/* Main navigation items */}
-          {isAuthenticated && (            <div className="flex flex-col gap-2">
+          {isAuthenticated && (
+            <div className="flex flex-col gap-2">
               <Link 
                 to="/" 
                 className="flex items-center gap-2 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors duration-200 w-full"
@@ -42,6 +44,19 @@ export function AppSidebar() {
               >
                 <FileText className="h-5 w-5" /> My CVs
               </Link>
+              <Link 
+                to="/subscription" 
+                className="flex items-center gap-2 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors duration-200 w-full"
+              >
+                <Crown className="h-5 w-5" /> Subscription
+              </Link>
+            </div>
+          )}
+          
+          {/* Subscription Status */}
+          {isAuthenticated && (
+            <div className="mt-4">
+              <SubscriptionStatus />
             </div>
           )}
           

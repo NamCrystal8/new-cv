@@ -11,6 +11,9 @@ from core.security import current_active_user
 from models import User, CV  # Add CV import
 from core.database import get_async_db  # Import async session dependency
 from sqlalchemy.ext.asyncio import AsyncSession
+from services.subscription_service import SubscriptionService, get_subscription_service
+from subscription_models import AnalysisType
+import hashlib
 
 router = APIRouter()
 
@@ -28,13 +31,27 @@ class JobDescriptionRequest(BaseModel):
 @router.post("/analyze-cv-weaknesses")
 async def analyze_cv_weaknesses(
     file: UploadFile = File(...),
-    user: User = Depends(current_active_user)
+    user: User = Depends(current_active_user),
+    subscription_service: SubscriptionService = Depends(get_subscription_service)
 ):
     """
     Analyze a CV for weaknesses and suggest improvements.
     """
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    # Check usage limits
+    can_proceed = await subscription_service.check_usage_limits(user.id, "cv_analysis")
+    if not can_proceed:
+        usage_stats = await subscription_service.get_usage_stats(user.id)
+        raise HTTPException(
+            status_code=429, 
+            detail={
+                "message": "Usage limit exceeded. Please upgrade your subscription.",
+                "usage_stats": usage_stats,
+                "upgrade_required": True
+            }
+        )
     
     try:
         pdf_content = await file.read()
@@ -823,22 +840,26 @@ async def get_user_cvs(
     from sqlalchemy import select
     
     try:
-        # Query to get all CVs for the current user
-        query = select(CV).where(CV.user_id == user.id).order_by(CV.id.desc())
+        # Query to get all CVs for the current user ordered by creation date (oldest first for proper numbering)
+        query = select(CV).where(CV.user_id == user.id).order_by(CV.id.asc())
         result = await db.execute(query)
         user_cvs = result.scalars().all()
         
-        # Convert to response format
+        # Convert to response format with user-specific CV numbers
         cvs_response = []
-        for cv in user_cvs:
+        for index, cv in enumerate(user_cvs):
+            user_cv_number = index + 1  # User-specific CV number starting from 1
             cvs_response.append({
-                "id": cv.id,
+                "id": cv.id,  # Keep the global ID for backend operations
+                "user_cv_number": user_cv_number,  # Add user-specific CV number
                 "file_url": cv.file_url,
                 "has_structure": cv.cv_structure is not None,  # Flag to indicate if this CV can be re-edited
                 # Add created_at if you have that field
                 # "created_at": cv.created_at,
             })
         
+        # Return in reverse order (newest first) for display purposes
+        cvs_response.reverse()
         return {"cvs": cvs_response}
     except Exception as e:
         print(f"Error fetching user CVs: {str(e)}")
@@ -1142,32 +1163,68 @@ async def update_cv(
 async def analyze_cv_with_job_description(
     file: UploadFile = File(...),
     job_description: str = None,
-    user: User = Depends(current_active_user)
+    user: User = Depends(current_active_user),
+    subscription_service: SubscriptionService = Depends(get_subscription_service)
 ):
     """
     Analyze a CV for weaknesses and compare it to a job description if provided.
     """
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    # Check usage limits based on analysis type
+    analysis_type = "job_description_analysis" if job_description else "cv_analysis"
+    can_proceed = await subscription_service.check_usage_limits(user.id, analysis_type)
+    if not can_proceed:
+        usage_stats = await subscription_service.get_usage_stats(user.id)
+        raise HTTPException(
+            status_code=429, 
+            detail={
+                "message": "Usage limit exceeded. Please upgrade your subscription.",
+                "usage_stats": usage_stats,
+                "upgrade_required": True
+            }
+        )
+    
     try:
         pdf_content = await file.read()
         extracted_cv_data = await gemini_service.extract_pdf_text(pdf_content=pdf_content)
         if isinstance(extracted_cv_data, dict) and "error" in extracted_cv_data:
             raise Exception(extracted_cv_data["error"])
-        if job_description:
-            # Compare CV to job description
+        
+        if job_description:            # Compare CV to job description
             job_analysis = await gemini_service.analyze_cv_against_job_description(extracted_cv_data, job_description)
+              # Track usage for job description analysis
+            await subscription_service.increment_usage(user.id, "job_analysis")
+            await subscription_service.save_analysis_result(
+                user_id=user.id,
+                cv_id=None,  # No CV ID available in uploaded file analysis
+                analysis_type=AnalysisType.JOB_DESCRIPTION_ANALYSIS,
+                analysis_data={"result": job_analysis, "cv_data": extracted_cv_data},
+                job_description=job_description
+            )
+            
             return {
                 "cv_data": extracted_cv_data,
                 "job_analysis": job_analysis
-            }
+                        }
         else:
             # Fallback to normal analysis
             detailed_analysis = await gemini_service.generate_detailed_analysis(extracted_cv_data)
+            
+            # Track usage for CV analysis
+            await subscription_service.increment_usage(user.id, "cv_analysis")
+            await subscription_service.save_analysis_result(
+                user_id=user.id,
+                cv_id=None,  # No CV ID available in uploaded file analysis
+                analysis_type=AnalysisType.CV_ANALYSIS,
+                analysis_data={"result": detailed_analysis, "cv_data": extracted_cv_data}
+            )
+            
             return {
                 "cv_data": extracted_cv_data,
                 "detailed_analysis": detailed_analysis
-            }   
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing PDF: {str(e)}")
     finally:
@@ -1180,51 +1237,25 @@ class JobDescriptionRequest(BaseModel):
 @router.post("/analyze-stored-cv-with-job-description")
 async def analyze_stored_cv_with_job_description(
     request: JobDescriptionRequest,
-    user: User = Depends(current_active_user)
+    user: User = Depends(current_active_user),
+    subscription_service: SubscriptionService = Depends(get_subscription_service)
 ):
     """
     Analyze a previously stored CV against a job description using the flow_id.
     """
-    try:
-        # Get the stored CV data from the flow
-        if request.flow_id not in cv_flows:
-            raise HTTPException(status_code=404, detail="CV flow not found. Please upload your CV again.")
-        
-        flow_data = cv_flows[request.flow_id]
-        extracted_cv_data = flow_data.get("extracted_text")
-        
-        if not extracted_cv_data:
-            raise HTTPException(status_code=404, detail="CV data not found in flow. Please upload your CV again.")
-        
-        # Ensure we have proper CV structure
-        if isinstance(extracted_cv_data, dict) and "cv_template" not in extracted_cv_data:
-            extracted_cv_data = gemini_service.ensure_cv_structure(extracted_cv_data)
-        
-        # Analyze CV against job description
-        job_analysis = await gemini_service.analyze_cv_against_job_description(
-            extracted_cv_data, 
-            request.job_description
+    # Check usage limits for job description analysis
+    can_proceed = await subscription_service.check_usage_limits(user.id, "job_description_analysis")
+    if not can_proceed:
+        usage_stats = await subscription_service.get_usage_stats(user.id)
+        raise HTTPException(
+            status_code=429, 
+            detail={
+                "message": "Usage limit exceeded. Please upgrade your subscription.",
+                "usage_stats": usage_stats,
+                "upgrade_required": True
+            }
         )
-        
-        return {
-            "cv_data": extracted_cv_data,
-            "job_analysis": job_analysis,
-            "flow_id": request.flow_id
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error analyzing CV against job description: {str(e)}")
-
-@router.post("/analyze-stored-cv-with-job-description")
-async def analyze_stored_cv_with_job_description(
-    request: JobDescriptionRequest,
-    user: User = Depends(current_active_user)
-):
-    """
-    Analyze a previously stored CV against a job description using the flow_id.
-    """
+    
     try:
         # Get the stored CV data from the flow
         if request.flow_id not in cv_flows:
@@ -1244,6 +1275,29 @@ async def analyze_stored_cv_with_job_description(
         job_analysis = await gemini_service.analyze_cv_against_job_description(
             extracted_cv_data, 
             request.job_description
+        )        # Track usage for job description analysis
+        await subscription_service.increment_usage(user.id, "job_analysis")
+          # Extract and structure analysis data for saving
+        analysis_data = {}
+        if isinstance(job_analysis, dict):
+            if "experience_analysis" in job_analysis:
+                analysis_data["experience_analysis"] = job_analysis["experience_analysis"]
+            # Map skill analysis data from direct keys (not nested under skill_analysis)
+            if "matches" in job_analysis:
+                analysis_data["skill_matches"] = job_analysis.get("matches", [])
+            if "missing" in job_analysis:
+                analysis_data["missing_skills"] = {"missing": job_analysis.get("missing", [])}
+            if "weaknesses" in job_analysis:
+                analysis_data["weaknesses"] = job_analysis["weaknesses"]
+            if "recommended_courses" in job_analysis:
+                analysis_data["recommended_courses"] = job_analysis["recommended_courses"]
+        
+        await subscription_service.save_analysis_result(
+            user_id=user.id,
+            cv_id=None,  # No CV ID available in flow-based analysis
+            analysis_type=AnalysisType.JOB_DESCRIPTION_ANALYSIS,
+            analysis_data=analysis_data,
+            job_description=request.job_description
         )
         
         return {

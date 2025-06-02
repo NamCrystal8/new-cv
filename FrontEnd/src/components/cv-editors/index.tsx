@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { SocialMediaLink } from '../ui/SocialMediaInputs';
 import SocialMediaInputs from '../ui/SocialMediaInputs';
-import { EducationSection } from './EducationEditor';
-import { ExperienceSection } from './ExperienceEditor';
-import { LanguagesSection } from './LanguagesEditor';
-import { ProjectsSection } from './ProjectsEditor';
-import { SkillsSection } from './SkillsEditor';
+import { EducationSection } from './EducationEditorNew';
+import { ExperienceSection } from './ExperienceEditorNew';
+import { LanguagesSection } from './LanguagesEditorNew';
+import { ProjectsSection } from './ProjectsEditorNew';
+import { SkillsSection } from './SkillsEditorNew';
 
 // Define interfaces for the components
 export interface Field {
@@ -32,27 +32,27 @@ export interface RawInputSection {
 export type {
   EducationItem,
   EducationSection
-} from './EducationEditor';
+} from './EducationEditorNew';
 
 export type {
   ExperienceItem,
   ExperienceSection
-} from './ExperienceEditor';
+} from './ExperienceEditorNew';
 
 export type {
   SkillCategory,
   SkillsSection
-} from './SkillsEditor';
+} from './SkillsEditorNew';
 
 export type {
   ProjectItem,
   ProjectsSection
-} from './ProjectsEditor';
+} from './ProjectsEditorNew';
 
 export type {
   Language,
   LanguagesSection
-} from './LanguagesEditor';
+} from './LanguagesEditorNew';
 
 export type EditableSection = 
   | ContactSection

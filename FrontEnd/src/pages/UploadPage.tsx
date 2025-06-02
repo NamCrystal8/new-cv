@@ -1,7 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface UploadPageProps {
   isLoading: boolean;
@@ -20,6 +21,41 @@ const UploadPage: React.FC<UploadPageProps> = ({
   errorMessage: propErrorMessage,
   analyzePdf 
 }) => {
+  const [showUsageWarning, setShowUsageWarning] = useState(false);
+  const [usageLimitType, setUsageLimitType] = useState<'near-limit' | 'at-limit'>('near-limit');
+  const { usage, checkUsageLimit } = useSubscription();
+
+  // Check usage limits when component mounts
+  useEffect(() => {
+    if (usage) {
+      const canProceed = checkUsageLimit('cv_analysis');
+      const cvUsagePercent = usage.cv_analyses_used / (usage.cv_analyses_used + usage.cv_analyses_remaining) * 100;
+      
+      if (!canProceed) {
+        setUsageLimitType('at-limit');
+        setShowUsageWarning(true);
+      } else if (cvUsagePercent >= 80) {
+        setUsageLimitType('near-limit');
+        setShowUsageWarning(true);
+      }
+    }
+  }, [usage, checkUsageLimit]);
+
+  // Enhanced analyzePdf function that handles usage limits
+  const handleAnalyzePdf = async () => {
+    // Check usage limits before analysis
+    if (usage) {
+      const canProceed = checkUsageLimit('cv_analysis');
+      if (!canProceed) {
+        setUsageLimitType('at-limit');
+        setShowUsageWarning(true);
+        return;
+      }
+    }
+    
+    // Proceed with analysis
+    analyzePdf();
+  };
 
   // Function to set error message (handles both cases)
   const handleSetError = (message: string | null) => {
@@ -147,10 +183,9 @@ const UploadPage: React.FC<UploadPageProps> = ({
               </svg>
             </Button>
           </div>
-          
-          <Button
-            onClick={() => analyzePdf()}
-            disabled={isLoading}
+            <Button
+            onClick={handleAnalyzePdf}
+            disabled={isLoading || (showUsageWarning && usageLimitType === 'at-limit')}
             size="lg"
             className="w-full max-w-md"
           >
@@ -193,9 +228,65 @@ const UploadPage: React.FC<UploadPageProps> = ({
                   />
                 </svg>
                 Analyze CV
-              </>
-            )}
+              </>            )}
           </Button>
+            {/* Usage Limit Warning */}
+          {showUsageWarning && (
+            <div className="w-full max-w-md">
+              <div className={`p-4 rounded-lg border ${
+                usageLimitType === 'at-limit' 
+                  ? 'bg-red-50 border-red-200 text-red-800' 
+                  : 'bg-orange-50 border-orange-200 text-orange-800'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <svg 
+                    className="h-5 w-5 mt-0.5 flex-shrink-0" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth="2" 
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" 
+                    />
+                  </svg>
+                  <div className="flex-1">
+                    <h4 className="font-medium">
+                      {usageLimitType === 'at-limit' ? 'Usage Limit Reached' : 'Usage Limit Warning'}
+                    </h4>
+                    <p className="text-sm mt-1">
+                      {usageLimitType === 'at-limit' 
+                        ? "You've reached your CV analysis limit for this billing period."
+                        : "You're running low on CV analyses."}
+                    </p>
+                    {usage && (
+                      <p className="text-sm mt-2">
+                        Usage: {usage.cv_analyses_used} / {usage.cv_analyses_used + usage.cv_analyses_remaining}
+                      </p>
+                    )}
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        size="sm"
+                        onClick={() => window.location.href = '/subscription'}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        Upgrade Plan
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowUsageWarning(false)}
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

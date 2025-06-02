@@ -1,8 +1,8 @@
-import EducationEditor from './EducationEditor';
-import ExperienceEditor from './ExperienceEditor';
-import SkillsEditor from './SkillsEditor';
-import ProjectsEditor from './ProjectsEditor';
-import LanguagesEditor from './LanguagesEditor';
+import EducationEditor from './EducationEditorNew';
+import ExperienceEditor from './ExperienceEditorNew';
+import SkillsEditor from './SkillsEditorNew';
+import ProjectsEditor from './ProjectsEditorNew';
+import LanguagesEditor from './LanguagesEditorNew';
 
 export {
   EducationEditor,
@@ -16,24 +16,24 @@ export {
 export type {
   EducationItem,
   EducationSection
-} from './EducationEditor';
+} from './EducationEditorNew';
 
 export type {
   ExperienceItem,
   ExperienceSection
-} from './ExperienceEditor';
+} from './ExperienceEditorNew';
 
 export type {
   SkillCategory,
   SkillsSection
-} from './SkillsEditor';
+} from './SkillsEditorNew';
 
 export type {
   ProjectItem,
   ProjectsSection
-} from './ProjectsEditor';
+} from './ProjectsEditorNew';
 
 export type {
   Language,
   LanguagesSection
-} from './LanguagesEditor';
+} from './LanguagesEditorNew';

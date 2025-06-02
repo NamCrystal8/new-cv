@@ -1,8 +1,10 @@
+// filepath: c:\DATN\new-cv\FrontEnd\src\components\ui\RecommendationsCarousel.tsx
 import React, { useState, useEffect } from 'react';
 import { RecommendationItem, EditableSection } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import ListInputField from '@/components/ui/ListInputField';
+import { normalizeAchievements } from '../../utils/achievementNormalizer';
 
 interface RecommendationsCarouselProps {
   recommendations: RecommendationItem[];
@@ -555,10 +557,10 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
           <span className="text-gray-500">
             {currentRecommendationIndex + 1} of {orderedRecommendations.length} recommendations
           </span>
-        </div>        <div className="w-full bg-gray-200 rounded-full h-2">
-          {/* eslint-disable-next-line react/forbid-dom-props */}
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
             style={{ width: `${progress}%` }}
           />
         </div>

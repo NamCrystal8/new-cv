@@ -110,6 +110,63 @@ export interface JobDescriptionAnalysis {
   weaknesses: JobDescriptionWeakness[];
   recommended_courses: RecommendedCourse[];
   error?: string;
+  // Add grading system properties - support both old and new formats
+  matches?: SkillMatchOrString[];
+  missing?: SkillMatchOrString[];
+  not_needed?: SkillMatchOrString[];
+  overall_grade?: CVGrade;
+  experience_analysis?: ExperienceAnalysis;
+}
+
+// Experience analysis interfaces
+export interface CandidateExperience {
+  years: number;
+  months: number;
+  level: string;
+}
+
+export interface JobRequirements {
+  minimum_years: number;
+  preferred_years: number;
+  seniority_level: string;
+  specific_requirements: string[];
+  special_requirements: string[];
+}
+
+export interface ExperienceAnalysisDetails {
+  meets_minimum: boolean;
+  experience_gap_years: number;
+  level_match: string;
+  strengths: string[];
+  gaps: string[];
+  recommendations: string[];
+}
+
+export interface ExperienceAnalysis {
+  candidate_total_experience: CandidateExperience;
+  job_requirements: JobRequirements;
+  experience_analysis: ExperienceAnalysisDetails;
+  notable_requirements: string[];
+  error?: string;
+}
+
+// New interfaces for grading system
+export interface SkillMatch {
+  category: string;
+  description: string;
+  skill?: string;
+}
+
+// For backward compatibility, allow both object and string formats
+export type SkillMatchOrString = SkillMatch | string;
+
+export type GradeLevel = 'PASS' | 'NEGOTIABLE' | 'NOT_RECOMMEND';
+
+export interface CVGrade {
+  level: GradeLevel;
+  score: number; // 0-100
+  feedback: string;
+  color: string;
 }
 
 export interface JobDescriptionFlowResponse {

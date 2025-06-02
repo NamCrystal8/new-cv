@@ -3,7 +3,7 @@ import { JobDescriptionAnalysis, EditableSection } from '../../types';
 import { Button } from './button';
 import { Card, CardHeader, CardTitle, CardContent } from './card';
 import { Badge } from './badge';
-import { Trash2, Plus, Edit3, Check, X, User, Award, Briefcase, GraduationCap, FileText, AlertCircle, TrendingUp, BookOpen } from 'lucide-react';
+import { Trash2, Plus, Edit3, Check, X, Award, Briefcase, FileText, AlertCircle, TrendingUp, BookOpen } from 'lucide-react';
 
 interface InteractiveCVOptimizerProps {
   jobAnalysis: JobDescriptionAnalysis;
@@ -73,14 +73,18 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
   const [newSkillInput, setNewSkillInput] = useState<string>('');
   const [newAchievements, setNewAchievements] = useState<Record<string, string>>({});  const [newTechnologies, setNewTechnologies] = useState<Record<string, string>>({});
   const [newContributions, setNewContributions] = useState<Record<string, string>>({});
-  const [activeTab, setActiveTab] = useState<'skills' | 'experience' | 'projects' | 'education' | 'contact'>('skills');
-  const [popupState, setPopupState] = useState<PopupState>({
+  const [activeTab, setActiveTab] = useState<'skills' | 'experience' | 'projects'>('skills');  const [popupState, setPopupState] = useState<PopupState>({
     show: false,
     x: 0,
     y: 0,
     suggestions: [],
     itemType: 'skill',
     itemId: ''
+  });
+  const [notification, setNotification] = useState<{show: boolean, message: string, type: 'success' | 'info' | 'warning'}>({
+    show: false,
+    message: '',
+    type: 'success'
   });
   const popupRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -140,8 +144,15 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
     if (popupState.show) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [popupState.show]);
+    }  }, [popupState.show]);
+
+  // Show notification
+  const showNotification = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   // Generate optimization suggestions for a specific item
   const generateOptimizationSuggestions = (itemType: 'skill' | 'experience' | 'project' | 'education', itemData: any): OptimizationSuggestion[] => {
@@ -307,7 +318,6 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
       itemId
     });
   };
-
   // Get unified skills list (flatten all categories)
   const getUnifiedSkills = (): string[] => {
     const skillsSection = optimizedSections.find(section => section.id === 'skills' && section.type === 'nested_list') as any;
@@ -321,8 +331,65 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
     });
     return allSkills;
   };
+  // Get skill categorization based on job analysis
+  const getSkillCategory = (skill: string): 'match' | 'not_needed' | 'missing' | 'neutral' => {
+    if (!jobAnalysis) return 'neutral';
+    
+    // Check if skill matches job requirements
+    const isMatch = jobAnalysis.matches?.some(match => {
+      // Handle both old format (object with description/category) and new format (string)
+      if (typeof match === 'string') {
+        return match.toLowerCase().includes(skill.toLowerCase()) || skill.toLowerCase().includes(match.toLowerCase());
+      } else {
+        return match.description?.toLowerCase().includes(skill.toLowerCase()) ||
+               match.category?.toLowerCase().includes(skill.toLowerCase()) ||
+               match.skill?.toLowerCase().includes(skill.toLowerCase());
+      }
+    });
+    if (isMatch) return 'match';
+    
+    // Check if skill is not needed for the job
+    const isNotNeeded = jobAnalysis.not_needed?.some(notNeeded => {
+      // Handle both old format (object with description/category) and new format (string)
+      if (typeof notNeeded === 'string') {
+        return notNeeded.toLowerCase().includes(skill.toLowerCase()) || skill.toLowerCase().includes(notNeeded.toLowerCase());
+      } else {
+        return notNeeded.description?.toLowerCase().includes(skill.toLowerCase()) ||
+               notNeeded.category?.toLowerCase().includes(skill.toLowerCase()) ||
+               notNeeded.skill?.toLowerCase().includes(skill.toLowerCase());
+      }
+    });
+    if (isNotNeeded) return 'not_needed';
+    
+    // Check if skill is missing/recommended
+    const isMissing = jobAnalysis.missing?.some(missing => {
+      // Handle both old format (object with description/category) and new format (string)
+      if (typeof missing === 'string') {
+        return missing.toLowerCase().includes(skill.toLowerCase()) || skill.toLowerCase().includes(missing.toLowerCase());
+      } else {
+        return missing.description?.toLowerCase().includes(skill.toLowerCase()) ||
+               missing.category?.toLowerCase().includes(skill.toLowerCase()) ||
+               missing.skill?.toLowerCase().includes(skill.toLowerCase());
+      }
+    });
+    if (isMissing) return 'missing';
+    
+    return 'neutral';
+  };
 
-  // Add skill to unified skills list
+  // Get skill color based on category
+  const getSkillColor = (category: 'match' | 'not_needed' | 'missing' | 'neutral'): string => {
+    switch (category) {
+      case 'match':
+        return 'border-green-500 bg-green-50 text-green-800 hover:bg-green-100';
+      case 'not_needed':
+        return 'border-yellow-500 bg-yellow-50 text-yellow-800 hover:bg-yellow-100';
+      case 'missing':
+        return 'border-red-500 bg-red-50 text-red-800 hover:bg-red-100';
+      default:
+        return 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100';
+    }
+  };  // Add skill to unified skills list
   const addSkillToCV = (skillToAdd: SkillToAdd) => {
     const skillsSection = optimizedSections.find(section => section.id === 'skills' && section.type === 'nested_list') as any;
     if (!skillsSection) return;
@@ -346,22 +413,28 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
       const unifiedCategory = section.categories[0];
       if (!unifiedCategory.items.includes(skillToAdd.name)) {
         unifiedCategory.items.push(skillToAdd.name);
+        
+        setOptimizedSections(updatedSections);
+        
+        // Remove the skill from suggested skills list
+        setSuggestedSkills(prevSkills => 
+          prevSkills.filter(skill => skill.name !== skillToAdd.name)
+        );
+          // Track change
+        const change: OptimizationChange = {
+          id: `add_skill_${Date.now()}`,
+          type: 'add_skill',
+          section: 'Skills',
+          description: `Added "${skillToAdd.name}" - ${skillToAdd.reason}`,
+          applied: true
+        };
+        setAppliedChanges(prev => [...prev, change]);
+        
+        // Show notification
+        showNotification(`Added "${skillToAdd.name}" to your CV skills`, 'success');
       }
-      
-      setOptimizedSections(updatedSections);
-      
-      // Track change
-      const change: OptimizationChange = {
-        id: `add_skill_${Date.now()}`,
-        type: 'add_skill',
-        section: 'Skills',
-        description: `Added "${skillToAdd.name}" - ${skillToAdd.reason}`,
-        applied: true
-      };
-      setAppliedChanges([...appliedChanges, change]);
     }
   };
-
   // Remove skill from unified list
   const removeSkillFromCV = (skillIndex: number) => {
     const skillsSection = optimizedSections.find(section => section.id === 'skills' && section.type === 'nested_list') as any;
@@ -386,11 +459,10 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
           description: `Removed "${skillName}" (not required for this job)`,
           applied: true
         };
-        setAppliedChanges([...appliedChanges, change]);
+        setAppliedChanges(prev => [...prev, change]);
       }
     }
   };
-
   // Update skill in unified list
   const updateSkillInCV = (skillIndex: number, newValue: string) => {
     const skillsSection = optimizedSections.find(section => section.id === 'skills' && section.type === 'nested_list') as any;
@@ -415,7 +487,7 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
           description: `Updated "${oldSkill}" to "${newValue}"`,
           applied: true
         };
-        setAppliedChanges([...appliedChanges, change]);
+        setAppliedChanges(prev => [...prev, change]);
       }
     }
   };
@@ -686,9 +758,39 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
   const handleOptimize = () => {
     onOptimize(optimizedSections, appliedChanges.filter(change => change.applied));
   };
-
   // Get the current unified skills
   const unifiedSkills = getUnifiedSkills();
+
+  // Calculate dynamic CV match score based on current skills
+  const calculateDynamicScore = () => {
+    const currentSkills = getUnifiedSkills();
+    const matchingSkills = currentSkills.filter(skill => getSkillCategory(skill) === 'match').length;
+    const missingSkills = jobAnalysis.missing?.length || 0;
+    const totalRequired = matchingSkills + missingSkills;
+    
+    if (totalRequired === 0) return { score: 100, matchRate: 100, level: 'PASS', color: '#16a34a' };
+    
+    const matchRate = (matchingSkills / totalRequired) * 100;
+    const weaknessCount = jobAnalysis.weaknesses?.length || 0;
+    const weaknessPenalty = Math.min(weaknessCount * 2, 10);
+    const finalScore = Math.max(0, Math.min(100, matchRate - weaknessPenalty));
+    
+    let level: string, color: string;
+    if (matchRate >= 80) {
+      level = 'PASS';
+      color = '#16a34a';
+    } else if (matchRate >= 60) {
+      level = 'NEGOTIABLE';
+      color = '#eab308';
+    } else {
+      level = 'NOT_RECOMMEND';
+      color = '#dc2626';
+    }
+    
+    return { score: Math.round(finalScore), matchRate: Math.round(matchRate), level, color };
+  };
+
+  const dynamicScore = calculateDynamicScore();
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -697,16 +799,11 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
         <p className="text-gray-600">
           Optimize your CV sections to better match the job requirements. Make changes across all sections of your CV.
         </p>
-      </div>
-
-      {/* Section Navigation Tabs */}
-      <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-50 rounded-lg">
-        {[
+      </div>      {/* Section Navigation Tabs */}
+      <div className="flex flex-wrap justify-center gap-2 p-2 bg-gray-50 rounded-lg">        {[
           { id: 'skills' as const, label: 'Skills', icon: Award },
           { id: 'experience' as const, label: 'Experience', icon: Briefcase },
-          { id: 'projects' as const, label: 'Projects', icon: FileText },
-          { id: 'education' as const, label: 'Education', icon: GraduationCap },
-          { id: 'contact' as const, label: 'Contact', icon: User }
+          { id: 'projects' as const, label: 'Projects', icon: FileText }
         ].map(tab => (
           <button
             key={tab.id}
@@ -721,7 +818,96 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
             {tab.label}
           </button>
         ))}
-      </div>
+      </div>      {/* CV Grade Display - Dynamic Score */}
+      {jobAnalysis.overall_grade && (
+        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-2">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center gap-6">
+              {/* Grade Circle - Using Dynamic Score */}
+              <div className={`relative w-32 h-32 rounded-full border-8 flex items-center justify-center ${
+                dynamicScore.level === 'PASS' ? 'border-green-500 bg-green-100' :
+                dynamicScore.level === 'NEGOTIABLE' ? 'border-yellow-500 bg-yellow-100' :
+                'border-red-500 bg-red-100'
+              }`}>
+                <div className="text-center">
+                  <div className={`text-lg font-bold ${
+                    dynamicScore.level === 'PASS' ? 'text-green-700' :
+                    dynamicScore.level === 'NEGOTIABLE' ? 'text-yellow-700' :
+                    'text-red-700'
+                  }`}>
+                    {dynamicScore.level}
+                  </div>
+                  <div className={`text-sm font-semibold ${
+                    dynamicScore.level === 'PASS' ? 'text-green-600' :
+                    dynamicScore.level === 'NEGOTIABLE' ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}>
+                    {dynamicScore.score}/100
+                  </div>
+                </div>
+                {/* Progress Ring - Dynamic */}
+                <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    className="text-gray-200"
+                  />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeDasharray={`${(dynamicScore.score / 100) * 326.7} 326.7`}
+                    className={
+                      dynamicScore.level === 'PASS' ? 'text-green-500' :
+                      dynamicScore.level === 'NEGOTIABLE' ? 'text-yellow-500' :
+                      'text-red-500'
+                    }
+                  />
+                </svg>
+              </div>
+                {/* Grade Details - Dynamic */}
+              <div className="flex-1 space-y-3">
+                <h3 className="text-xl font-bold text-gray-800">
+                  CV Match Score 
+                  <span className="text-sm font-normal text-gray-500 ml-2">(Updates in real-time)</span>
+                </h3>
+                <p className="text-gray-700">
+                  {dynamicScore.level === 'PASS' ? 
+                    `Excellent match! ${dynamicScore.matchRate}% of required skills found in your CV.` :
+                    dynamicScore.level === 'NEGOTIABLE' ?
+                    `Good potential (${dynamicScore.matchRate}% match). Address missing requirements to strengthen your application.` :
+                    `Significant gaps found (${dynamicScore.matchRate}% match). Consider developing missing skills before applying.`
+                  }
+                </p>
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span>Skills Match ({unifiedSkills.filter(skill => getSkillCategory(skill) === 'match').length})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span>Missing ({jobAnalysis.missing?.length || 0})</span>
+                  </div>
+                  {appliedChanges.filter(c => c.applied && c.type === 'add_skill').length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                      <span className="text-blue-600 font-medium">
+                        +{appliedChanges.filter(c => c.applied && c.type === 'add_skill').length} skills added
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>)}
 
       {/* Skills Section */}
       {activeTab === 'skills' && (
@@ -731,86 +917,114 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Edit3 className="h-5 w-5" />
-                Current Skills
+                Current Skills (Color-Coded)
               </CardTitle>
+              <div className="text-sm text-gray-600 space-y-1">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded border border-green-600"></div>
+                    <span>Job Match</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded border border-yellow-600"></div>
+                    <span>Not Needed</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded border border-red-600"></div>
+                    <span>Missing</span>
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                {unifiedSkills.map((skill: string, skillIndex: number) => (
-                  <div key={skillIndex} className="group relative">
-                    {editingSkill?.index === skillIndex ? (
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="text"
-                          value={editingSkill.value}
-                          onChange={(e) => setEditingSkill({...editingSkill, value: e.target.value})}
-                          className="px-2 py-1 text-xs border rounded"
-                          placeholder="Edit skill name"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                {unifiedSkills.map((skill: string, skillIndex: number) => {
+                  const skillCategory = getSkillCategory(skill);
+                  const skillColorClass = getSkillColor(skillCategory);
+                  
+                  return (
+                    <div key={skillIndex} className="group relative">
+                      {editingSkill?.index === skillIndex ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            value={editingSkill.value}
+                            onChange={(e) => setEditingSkill({...editingSkill, value: e.target.value})}
+                            className="px-2 py-1 text-xs border rounded"
+                            placeholder="Edit skill name"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                updateSkillInCV(skillIndex, editingSkill.value);
+                                setEditingSkill(null);
+                              }
+                              if (e.key === 'Escape') {
+                                setEditingSkill(null);
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
                               updateSkillInCV(skillIndex, editingSkill.value);
                               setEditingSkill(null);
-                            }
-                            if (e.key === 'Escape') {
-                              setEditingSkill(null);
-                            }
-                          }}
-                          autoFocus
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            updateSkillInCV(skillIndex, editingSkill.value);
-                            setEditingSkill(null);
-                          }}
-                        >
-                          <Check className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditingSkill(null)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="cursor-pointer hover:bg-gray-200 group relative"
-                        onClick={() => setEditingSkill({index: skillIndex, value: skill})}
-                        onContextMenu={(e) => showOptimizationPopup(e, 'skill', skill, `skill_${skillIndex}`)}
-                      >
-                        {skill}
-                        <div className="flex items-center gap-1 ml-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-blue-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showOptimizationPopup(e, 'skill', skill, `skill_${skillIndex}`);
                             }}
-                            title="Show optimization suggestions"
                           >
-                            <Edit3 className="h-3 w-3 text-blue-500" />
+                            <Check className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeSkillFromCV(skillIndex);
-                            }}
+                            onClick={() => setEditingSkill(null)}
                           >
-                            <Trash2 className="h-3 w-3 text-red-500" />
+                            <X className="h-3 w-3" />
                           </Button>
                         </div>
-                      </Badge>
-                    )}
-                  </div>
-                ))}
+                      ) : (                        <div
+                          className={`cursor-pointer group relative px-3 py-1 rounded-full text-sm font-medium border-2 transition-all duration-200 ${skillColorClass} ${
+                            appliedChanges.some(change => 
+                              change.applied && 
+                              change.type === 'add_skill' && 
+                              change.description.includes(skill)
+                            ) ? 'ring-2 ring-blue-300 animate-pulse' : ''
+                          }`}
+                          onClick={() => setEditingSkill({index: skillIndex, value: skill})}
+                          onContextMenu={(e) => showOptimizationPopup(e, 'skill', skill, `skill_${skillIndex}`)}
+                          title={`${skill} - ${skillCategory === 'match' ? 'Matches job requirements' : 
+                                                skillCategory === 'not_needed' ? 'Not needed for this job' :
+                                                skillCategory === 'missing' ? 'Missing from job requirements' : 'Neutral skill'}`}
+                        >
+                          {skill}
+                          <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-4 w-4 p-0 hover:bg-blue-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showOptimizationPopup(e, 'skill', skill, `skill_${skillIndex}`);
+                              }}
+                              title="Show optimization suggestions"
+                            >
+                              <Edit3 className="h-3 w-3 text-blue-500" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-4 w-4 p-0 hover:bg-red-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeSkillFromCV(skillIndex);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3 text-red-500" />
+                            </Button>
+                          </div>                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               
               {/* Add custom skill */}
@@ -841,10 +1055,9 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
                 Suggested Skills for This Job
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {suggestedSkills.length > 0 ? (
+            <CardContent className="space-y-3">              {suggestedSkills.length > 0 ? (
                 suggestedSkills.map((skillSuggestion, index) => (
-                  <div key={index} className="border rounded-lg p-3 space-y-2">
+                  <div key={index} className="border rounded-lg p-3 space-y-2 hover:border-blue-300 transition-all duration-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Badge variant={skillSuggestion.priority === 'high' ? 'destructive' : 'secondary'}>
@@ -856,7 +1069,9 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
                         size="sm"
                         onClick={() => addSkillToCV(skillSuggestion)}
                         variant="outline"
+                        className="hover:bg-green-50 hover:border-green-500 hover:text-green-700 transition-colors"
                       >
+                        <Plus className="h-3 w-3 mr-1" />
                         Add
                       </Button>
                     </div>
@@ -864,14 +1079,191 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-center py-4">
-                  No specific skill suggestions available
-                </p>
-              )}
-            </CardContent>
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                    <Check className="h-8 w-8 text-green-600" />
+                  </div>
+                  <p className="text-gray-500 font-medium">All suggested skills have been added!</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Your CV now includes the key skills for this job
+                  </p>
+                </div>
+              )}</CardContent>
           </Card>
         </div>
-      )}      {/* Experience Section */}
+      )}
+
+      {/* Skills Breakdown Display */}
+      {activeTab === 'skills' && jobAnalysis.overall_grade && (
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              Skills Analysis Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Skills Match */}
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                  <h4 className="font-semibold text-green-800">Skills Match</h4>
+                  <span className="text-sm text-green-600">
+                    ({unifiedSkills.filter(skill => getSkillCategory(skill) === 'match').length})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {unifiedSkills.filter(skill => getSkillCategory(skill) === 'match').length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {unifiedSkills
+                        .filter(skill => getSkillCategory(skill) === 'match')
+                        .slice(0, 8)
+                        .map((skill, index) => (
+                          <span 
+                            key={index}
+                            className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      {unifiedSkills.filter(skill => getSkillCategory(skill) === 'match').length > 8 && (
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                          +{unifiedSkills.filter(skill => getSkillCategory(skill) === 'match').length - 8} more
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-green-600">No matching skills found</p>
+                  )}
+                  <p className="text-xs text-green-700 mt-2">
+                    These skills align perfectly with job requirements
+                  </p>
+                </div>
+              </div>
+
+              {/* Not Needed Skills */}
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                  <h4 className="font-semibold text-yellow-800">Not Needed</h4>
+                  <span className="text-sm text-yellow-600">
+                    ({unifiedSkills.filter(skill => getSkillCategory(skill) === 'not_needed').length})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {unifiedSkills.filter(skill => getSkillCategory(skill) === 'not_needed').length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {unifiedSkills
+                        .filter(skill => getSkillCategory(skill) === 'not_needed')
+                        .slice(0, 8)
+                        .map((skill, index) => (
+                          <span 
+                            key={index}
+                            className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      {unifiedSkills.filter(skill => getSkillCategory(skill) === 'not_needed').length > 8 && (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                          +{unifiedSkills.filter(skill => getSkillCategory(skill) === 'not_needed').length - 8} more
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-yellow-600">All skills are relevant</p>
+                  )}
+                  <p className="text-xs text-yellow-700 mt-2">
+                    Consider removing these to save space
+                  </p>
+                </div>
+              </div>
+
+              {/* Missing Skills */}
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                  <h4 className="font-semibold text-red-800">Missing Skills</h4>
+                  <span className="text-sm text-red-600">
+                    ({jobAnalysis.missing?.length || 0})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {jobAnalysis.missing && jobAnalysis.missing.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">                      {jobAnalysis.missing
+                        .slice(0, 8)
+                        .map((missing, index) => (
+                          <span 
+                            key={index}
+                            className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
+                            title={typeof missing === 'string' ? missing : missing.description}
+                          >
+                            {typeof missing === 'string' ? missing : (missing.skill || missing.category)}
+                          </span>
+                        ))}
+                      {(jobAnalysis.missing?.length || 0) > 8 && (
+                        <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                          +{(jobAnalysis.missing?.length || 0) - 8} more
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-red-600">No missing skills identified</p>
+                  )}
+                  <p className="text-xs text-red-700 mt-2">
+                    Consider learning these skills to improve your match
+                  </p>
+                </div>
+              </div>
+            </div>            {/* Skills Summary Stats - Dynamic Updates */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-semibold text-gray-800 mb-3">
+                Skills Summary 
+                <span className="text-sm font-normal text-gray-500 ml-2">(Updates in real-time)</span>
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-gray-900">{unifiedSkills.length}</div>
+                  <div className="text-sm text-gray-600">Total Skills</div>
+                </div>                <div>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="text-2xl font-bold text-green-600">
+                      {unifiedSkills.filter(skill => getSkillCategory(skill) === 'match').length}
+                    </div>
+                    {appliedChanges.filter(c => c.applied && c.type === 'add_skill').length > 0 && (
+                      <div className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full animate-pulse">
+                        +{appliedChanges.filter(c => c.applied && c.type === 'add_skill').length}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600">Matching</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {jobAnalysis.missing?.length || 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Missing</div>
+                </div>                <div>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {dynamicScore.matchRate}%
+                    </div>
+                    {appliedChanges.filter(c => c.applied && c.type === 'add_skill').length > 0 && (
+                      <div className="text-xs text-green-600">
+                        ↗
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600">Match Rate</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Experience Section */}
       {activeTab === 'experience' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Current Experience Items */}
@@ -987,9 +1379,7 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
                       ))}
                     </div>
                   </div>
-                )}
-
-                {/* Experience Weaknesses */}
+                )}                {/* Experience Weaknesses */}
                 {jobAnalysis.weaknesses && jobAnalysis.weaknesses.filter(w => w.category?.toLowerCase().includes('experience')).length > 0 && (
                   <div className="space-y-2">
                     <h4 className="font-medium text-orange-700 flex items-center gap-2">
@@ -1005,6 +1395,80 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
                             <p className="text-sm text-orange-800">{weakness.description}</p>
                           </div>
                         ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Experience Analysis */}
+                {jobAnalysis.experience_analysis && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-purple-700 flex items-center gap-2">
+                      <Award className="h-4 w-4" />
+                      Experience Requirements Analysis
+                    </h4>
+                    <div className="space-y-3">
+                      {/* Experience Summary */}
+                      <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-purple-800">Your Experience</span>
+                          <span className="text-sm text-purple-700">
+                            {jobAnalysis.experience_analysis.candidate_total_experience.years} years 
+                            ({jobAnalysis.experience_analysis.candidate_total_experience.level})
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-purple-800">Job Requirement</span>
+                          <span className="text-sm text-purple-700">
+                            {jobAnalysis.experience_analysis.job_requirements.minimum_years}+ years 
+                            ({jobAnalysis.experience_analysis.job_requirements.seniority_level})
+                          </span>
+                        </div>
+                        <div className="mt-2 text-center">
+                          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                            jobAnalysis.experience_analysis.experience_analysis.meets_minimum 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {jobAnalysis.experience_analysis.experience_analysis.meets_minimum ? '✓ Meets Requirements' : '⚠ Experience Gap'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Experience Gaps */}
+                      {jobAnalysis.experience_analysis.experience_analysis.gaps.length > 0 && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm font-medium text-red-800 mb-2">Experience Gaps:</p>
+                          <ul className="text-sm text-red-700 space-y-1">
+                            {jobAnalysis.experience_analysis.experience_analysis.gaps.slice(0, 3).map((gap, index) => (
+                              <li key={index}>• {gap}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Experience Strengths */}
+                      {jobAnalysis.experience_analysis.experience_analysis.strengths.length > 0 && (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm font-medium text-green-800 mb-2">Experience Strengths:</p>
+                          <ul className="text-sm text-green-700 space-y-1">
+                            {jobAnalysis.experience_analysis.experience_analysis.strengths.slice(0, 3).map((strength, index) => (
+                              <li key={index}>• {strength}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Experience Recommendations */}
+                      {jobAnalysis.experience_analysis.experience_analysis.recommendations.length > 0 && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm font-medium text-blue-800 mb-2">Recommendations:</p>
+                          <ul className="text-sm text-blue-700 space-y-1">
+                            {jobAnalysis.experience_analysis.experience_analysis.recommendations.slice(0, 3).map((rec, index) => (
+                              <li key={index}>• {rec}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1245,41 +1709,7 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
                 )}
               </div>
             </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'education' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              Education Optimization
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600">
-              Education optimization features coming soon. Consider highlighting relevant coursework and academic achievements.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {activeTab === 'contact' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Contact Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600">
-              Contact information optimization features coming soon. Ensure your contact details are professional and up-to-date.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+          </Card>        </div>      )}
 
       {/* Applied Changes Summary */}
       {appliedChanges.filter(change => change.applied).length > 0 && (
@@ -1320,17 +1750,10 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
         >
           {isLoading ? 'Optimizing...' : 'Apply Optimizations & Continue'}
         </Button>
-      </div>      {/* Optimization Suggestions Popup */}
-      {popupState.show && (
+      </div>      {/* Optimization Suggestions Popup */}      {popupState.show && (
         <div
           ref={popupRef}
-          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-w-sm w-80"
-          style={
-            {
-              left: `${Math.min(popupState.x, window.innerWidth - 320)}px`,
-              top: `${Math.min(popupState.y, window.innerHeight - 400)}px`,
-            } as React.CSSProperties
-          }
+          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-w-sm w-80 top-4 right-4"
         >
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -1380,7 +1803,22 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
               <p className="text-xs text-gray-500 text-center">
                 Right-click or click the <Edit3 className="inline h-3 w-3" /> icon on any item for optimization tips
               </p>
-            </div>
+            </div>          </div>
+        </div>
+      )}
+      
+      {/* Notification Toast */}
+      {notification.show && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border-l-4 max-w-sm transform transition-all duration-300 ${
+          notification.type === 'success' ? 'bg-green-50 border-green-500 text-green-800' :
+          notification.type === 'warning' ? 'bg-yellow-50 border-yellow-500 text-yellow-800' :
+          'bg-blue-50 border-blue-500 text-blue-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            {notification.type === 'success' && <Check className="h-5 w-5 text-green-600" />}
+            {notification.type === 'warning' && <AlertCircle className="h-5 w-5 text-yellow-600" />}
+            {notification.type === 'info' && <Award className="h-5 w-5 text-blue-600" />}
+            <span className="font-medium">{notification.message}</span>
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import uuid
 # Update the import path for SQLAlchemyUserDatabase
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID, SQLAlchemyUserDatabase
 from sqlalchemy.orm import Mapped, mapped_column, relationship, Session
-from sqlalchemy import String, Boolean, ForeignKey, Integer, JSON
+from sqlalchemy import String, Boolean, ForeignKey, Integer, JSON, DateTime, Date, Text, Enum as SQLEnum, Float
 from typing import List, Optional, Dict, Any
 from core.database import Base, get_async_db # Import Base and get_async_db
 from fastapi import Depends
@@ -11,6 +11,8 @@ from pydantic import BaseModel
 from fastapi_users import schemas
 from sqlalchemy.ext.asyncio import AsyncSession # Import AsyncSession
 from sqlalchemy.future import select # Ensure select is imported if needed by SQLAlchemyUserDatabase internals
+from datetime import datetime, date
+import enum
 
 
 class MsgPayload(BaseModel):
@@ -41,6 +43,8 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     # Example: last_name: Mapped[str] = mapped_column(String(50), nullable=True)
     role: Mapped[str] = mapped_column(String(50), default="user") # Add role field (user/admin)
     cvs: Mapped[List["CV"]] = relationship(back_populates="owner") # Relationship to CVs
+      # Subscription relationships
+    subscriptions: Mapped[List["UserSubscription"]] = relationship("UserSubscription", back_populates="user")
 
 
 class CV(Base):
@@ -94,3 +98,9 @@ class CVRead(CVBase):
     class Config:
         from_attributes = True # Use this instead
 # --- Optional: Pydantic Schemas for CVs --- END ---
+
+# Import subscription models
+from subscription_models import (
+    SubscriptionTier, AnalysisType, SubscriptionPlan, UserSubscription, 
+    UsageTracking, CVAnalysisHistory
+)

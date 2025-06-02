@@ -10,14 +10,17 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import UserCVsPage from './pages/UserCVsPage';
 import EditCVPage from './pages/EditCVPage';
+import SubscriptionPage from './pages/SubscriptionPage';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { FlowResponse, EditableSection, RecommendationItem, JobDescriptionFlowResponse, JobDescriptionAnalysis } from './types';
 import WeaknessAnalysisDisplay from './components/ui/WeaknessAnalysisDisplay';
 import RecommendationsCarousel from './components/ui/RecommendationsCarousel';
 import JobDescriptionPrompt from './components/ui/JobDescriptionPrompt';
 import JobDescriptionInput from './components/ui/JobDescriptionInput';
 import InteractiveCVOptimizer from './components/ui/InteractiveCVOptimizer';
+import { UsageLimitWarning } from './components/UsageLimitWarning';
 
 // Auth context setup
 export const AuthContext = createContext({
@@ -83,9 +86,8 @@ const App: React.FC = () => {
       // Handle logout error if needed
     }
   };
-
   return (
-    <SidebarProvider>
+    <>
       {/* Modern background gradient */}
       <div className="relative min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-blue-100 text-foreground overflow-x-hidden">
         {/* Decorative blurred background shapes */}
@@ -126,6 +128,14 @@ const App: React.FC = () => {
                     }
                   />
                   <Route
+                    path="/subscription"
+                    element={
+                      <ProtectedRoute>
+                        <SubscriptionPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/*"
                     element={
                       <ProtectedRoute>
@@ -142,11 +152,10 @@ const App: React.FC = () => {
               © {new Date().getFullYear()} Smart CV Builder
               <span className="inline-block mx-2">•</span>
               AI-powered CV enhancement tool
-            </p>
-          </footer>
+            </p>          </footer>
         </main>
       </div>
-    </SidebarProvider>
+    </>
   );
 };
 
@@ -174,8 +183,7 @@ const MainAppContent: React.FC = () => {
     } else {
       setErrorMessage(defaultMessage);
     }
-  };
-  // Function to upload PDF and start CV analysis (no job description)
+  };  // Function to upload PDF and start CV analysis (no job description)
   const analyzePdf = async () => {
     if (!pdfFile) {
       setErrorMessage('Please upload a PDF file first');
@@ -196,6 +204,15 @@ const MainAppContent: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: `Server responded with status ${response.status}` }));
+        
+        // Check if it's a usage limit error (429 status)
+        if (response.status === 429 && errorData.detail?.upgrade_required) {
+          // Show usage limit warning instead of generic error
+          setErrorMessage(null);
+          // The UsageLimitWarning component will be shown in the upload page
+          return;
+        }
+        
         throw { response, ...errorData };
       }
 
@@ -353,7 +370,6 @@ const MainAppContent: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   // Function to analyze stored CV against job description
   const analyzeJobDescription = async (jobDescription: string) => {
     if (!flowId) {
@@ -378,6 +394,14 @@ const MainAppContent: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: `Server responded with status ${response.status}` }));
+        
+        // Check if it's a usage limit error (429 status)
+        if (response.status === 429 && errorData.detail?.upgrade_required) {
+          // Show usage limit warning instead of generic error
+          setErrorMessage('Usage limit exceeded for job description analysis. Please upgrade your subscription to continue.');
+          return;
+        }
+        
         throw { response, ...errorData };
       }
 
@@ -577,9 +601,11 @@ const MainAppContent: React.FC = () => {
 export default function AppWithProviders() {
   return (
     <AuthProvider>
-      <SidebarProvider>
-        <App />
-      </SidebarProvider>
+      <SubscriptionProvider>
+        <SidebarProvider>
+          <App />
+        </SidebarProvider>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

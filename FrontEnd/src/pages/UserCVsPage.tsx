@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 // Define the interface for CV item from backend
 interface CVItem {
   id: number;
+  user_cv_number: number; // User-specific CV number
   file_url: string;
   has_structure?: boolean; // Flag to indicate if this CV has structure data for editing
   created_at?: string;
@@ -158,7 +159,7 @@ const UserCVsPage: React.FC = () => {
                 <div className="relative h-64 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                   <iframe 
                     src={cv.file_url}
-                    title={`CV ${cv.id}`}
+                    title={`CV ${cv.user_cv_number}`}
                     className="w-full h-full pointer-events-none scale-[0.7] origin-top transition-transform duration-300 group-hover:scale-[0.75]"
                     style={{ border: 'none' }}
                   />
@@ -187,7 +188,7 @@ const UserCVsPage: React.FC = () => {
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">CV #{cv.id}</h3>
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">CV #{cv.user_cv_number}</h3>
                       {cv.created_at && (
                         <p className="text-sm text-gray-500">
                           Created {new Date(cv.created_at).toLocaleDateString('en-US', { 
@@ -234,7 +235,7 @@ const UserCVsPage: React.FC = () => {
                     )}
                     <a 
                       href={cv.file_url} 
-                      download={`CV_${cv.id}.pdf`}
+                      download={`CV_${cv.user_cv_number}.pdf`}
                       className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition-all duration-200 hover:scale-105"
                     >
                       <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
