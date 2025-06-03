@@ -2,7 +2,7 @@ import os
 import subprocess
 from fastapi import APIRouter, HTTPException, File, UploadFile
 from fastapi.responses import FileResponse
-from models import CVInput
+from schemas.common import CVInput
 from services.latex_service import convert_to_latex_service
 from core.app import gemini_service
 

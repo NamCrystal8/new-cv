@@ -2,7 +2,8 @@ import os
 import uuid
 from fastapi import FastAPI, Depends
 from core.app import app
-from models import User, CV, get_user_db, UserRead, UserCreate, UserUpdate
+from models.user import User, CV, get_user_db
+from schemas.user import UserRead, UserCreate, UserUpdate
 from core.database import Base, engine, get_async_db
 from routes import base_routes, pdf_routes, cv_routes, health_routes, subscription_routes
 from core.security import auth_backend, fastapi_users, current_active_user

@@ -4,7 +4,6 @@ import { RecommendationItem, EditableSection } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import ListInputField from '@/components/ui/ListInputField';
-import { normalizeAchievements } from '../../utils/achievementNormalizer';
 
 interface RecommendationsCarouselProps {
   recommendations: RecommendationItem[];

@@ -4,7 +4,6 @@ import {
   ExperienceSection,
   SkillsSection,
   ProjectsSection,
-  Language,
   LanguagesSection
 } from '../components/cv-editors/new-editors';
 

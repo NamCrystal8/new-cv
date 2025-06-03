@@ -11,12 +11,12 @@ from sqlalchemy.orm import selectinload
 
 from core.database import get_async_db
 from core.security import current_active_user
-from models import User
-from subscription_models import (
+from models.user import User
+from models.subscription import (
     SubscriptionPlan, UserSubscription, UsageTracking, 
     CVAnalysisHistory
 )
-from subscription_schemas import (
+from schemas.subscription import (
     SubscriptionPlanRead, UserSubscriptionRead, UserSubscriptionCreate,
     UserSubscriptionUpdate, UsageStatsResponse, AnalyticsOverview,
     SubscriptionUpgradeRequest, SubscriptionStatus, CVAnalysisHistoryRead

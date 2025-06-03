@@ -1,4 +1,3 @@
-import React from "react";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { Link, useNavigate } from "react-router-dom";
 import { LogIn, LogOut, UserPlus, BadgeCheck, FileText, Home, Crown } from "lucide-react";

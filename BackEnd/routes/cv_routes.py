@@ -8,11 +8,11 @@ from services.latex_service import convert_to_latex_service
 from core.app import gemini_service, cv_flows
 from core.cloudinary_config import upload_file_to_cloudinary
 from core.security import current_active_user
-from models import User, CV  # Add CV import
+from models.user import User, CV  # Import from models package
 from core.database import get_async_db  # Import async session dependency
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.subscription_service import SubscriptionService, get_subscription_service
-from subscription_models import AnalysisType
+from models.subscription import AnalysisType
 import hashlib
 
 router = APIRouter()

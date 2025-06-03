@@ -11,8 +11,15 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Import your SQLAlchemy models
-from models import Base
-from core.database import DATABASE_URL
+from core.database import Base, DATABASE_URL
+
+# Import all models to ensure they're included in migrations
+import models
+from models.user import User, CV
+from models.role import Role
+from models.subscription import (
+    SubscriptionPlan, UserSubscription, UsageTracking, CVAnalysisHistory
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

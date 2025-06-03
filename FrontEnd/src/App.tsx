@@ -20,7 +20,6 @@ import RecommendationsCarousel from './components/ui/RecommendationsCarousel';
 import JobDescriptionPrompt from './components/ui/JobDescriptionPrompt';
 import JobDescriptionInput from './components/ui/JobDescriptionInput';
 import InteractiveCVOptimizer from './components/ui/InteractiveCVOptimizer';
-import { UsageLimitWarning } from './components/UsageLimitWarning';
 
 // Auth context setup
 export const AuthContext = createContext({
@@ -69,23 +68,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const App: React.FC = () => {
-  const { isAuthenticated, setIsAuthenticated } = useAuth();
-  const navigate = useNavigate(); // Use navigate from hook
-  const location = useLocation();
-  
-  // Check if current path is login or register
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/jwt/logout', { method: 'POST' }); // Use Vite proxy
-      setIsAuthenticated(false);
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      // Handle logout error if needed
-    }
-  };
   return (
     <>
       {/* Modern background gradient */}
@@ -267,9 +249,8 @@ const MainAppContent: React.FC = () => {
               break;
             case 'list':
               // Handle education, experience, projects
-              if (['education', 'experience', 'projects', 'languages'].includes(section.id)) {
-                // Check if the recommendation is for a specific item or general
-                const [fieldType, itemIndex, subField] = recommendation.field.split('.');
+              if (['education', 'experience', 'projects', 'languages'].includes(section.id)) {                // Check if the recommendation is for a specific item or general
+                const [, itemIndex, subField] = recommendation.field.split('.');
                 if (itemIndex && subField && (section as any).items[parseInt(itemIndex)]) {
                   // It's for a specific item field like "experience.0.company"
                   (section as any).items[parseInt(itemIndex)][subField] = recommendation.suggested;

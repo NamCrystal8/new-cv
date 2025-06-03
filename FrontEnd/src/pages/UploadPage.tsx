@@ -18,7 +18,6 @@ const UploadPage: React.FC<UploadPageProps> = ({
   pdfFile, 
   setPdfFile, 
   setErrorMessage, 
-  errorMessage: propErrorMessage,
   analyzePdf 
 }) => {
   const [showUsageWarning, setShowUsageWarning] = useState(false);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import ListInputField from './ListInputField';
@@ -107,13 +107,12 @@ function GenericListEditor<T extends ListItem>({
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [key]: newArray };
     onChange(newItems);
-  };
-  // Render a field based on its type
+  };  // Render a field based on its type
   const renderField = (
     field: FieldConfig, 
     value: any, 
     onChange: (value: any) => void,
-    itemId?: string
+    _itemId?: string
   ) => {
     const fieldType = field.type || 'text';
     

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from models import MsgPayload
+from schemas.common import MsgPayload
 from core.app import messages_list
 
 router = APIRouter()

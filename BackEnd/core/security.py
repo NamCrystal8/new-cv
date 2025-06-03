@@ -5,7 +5,8 @@ from fastapi_users import FastAPIUsers, BaseUserManager, UUIDIDMixin
 from fastapi_users.authentication import CookieTransport, AuthenticationBackend, JWTStrategy
 # Update the import path for SQLAlchemyUserDatabase
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
-from models import User, get_user_db
+from models.user import User
+from models.user import get_user_db
 import dotenv
 
 dotenv.load_dotenv()

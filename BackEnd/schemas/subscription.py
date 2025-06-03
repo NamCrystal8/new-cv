@@ -4,7 +4,7 @@ Pydantic schemas for subscription system
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 from datetime import datetime, date
-from subscription_models import SubscriptionTier, AnalysisType
+from models.subscription import SubscriptionTier, AnalysisType
 import uuid
 
 

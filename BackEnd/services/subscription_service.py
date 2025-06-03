@@ -12,14 +12,14 @@ import hashlib
 import calendar
 
 from core.database import get_async_db
-from subscription_models import (
+from models.user import User, CV
+from models.subscription import (
     SubscriptionPlan, UserSubscription, UsageTracking, CVAnalysisHistory,
     SubscriptionTier, AnalysisType
 )
-from subscription_schemas import (
+from schemas.subscription import (
     UsageStatsResponse, AnalyticsOverview, SubscriptionStatus
 )
-from models import User, CV
 
 
 class SubscriptionService:

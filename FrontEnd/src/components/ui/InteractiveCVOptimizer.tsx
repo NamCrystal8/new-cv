@@ -69,7 +69,7 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
   const [optimizedSections, setOptimizedSections] = useState<EditableSection[]>([...currentCVData]);
   const [appliedChanges, setAppliedChanges] = useState<OptimizationChange[]>([]);
   const [suggestedSkills, setSuggestedSkills] = useState<SkillToAdd[]>([]);
-  const [suggestedExperiences, setSuggestedExperiences] = useState<ExperienceToAdd[]>([]);  const [suggestedProjects, setSuggestedProjects] = useState<ProjectToAdd[]>([]);  const [editingSkill, setEditingSkill] = useState<{index: number, value: string} | null>(null);
+  const [, setSuggestedExperiences] = useState<ExperienceToAdd[]>([]);  const [, setSuggestedProjects] = useState<ProjectToAdd[]>([]);  const [editingSkill, setEditingSkill] = useState<{index: number, value: string} | null>(null);
   const [newSkillInput, setNewSkillInput] = useState<string>('');
   const [newAchievements, setNewAchievements] = useState<Record<string, string>>({});  const [newTechnologies, setNewTechnologies] = useState<Record<string, string>>({});
   const [newContributions, setNewContributions] = useState<Record<string, string>>({});
