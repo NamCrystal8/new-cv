@@ -17,6 +17,7 @@ import {
   LanguagesSection
 } from '../components/cv-editors/new-editors';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { 
   ContactSection,
   RawInputSection,
@@ -27,10 +28,10 @@ import { DEFAULT_PROFICIENCY } from '../constants/languageProficiency';
 const EditCVPage: React.FC = () => {
   const { cvId } = useParams<{ cvId: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [cvData, setCvData] = useState<any>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [editableSections, setEditableSections] = useState<EditableSection[]>([]);
   const [flowId] = useState<string>(`edit-${Date.now()}`);
 
@@ -39,7 +40,6 @@ const EditCVPage: React.FC = () => {
       if (!cvId) return;
       
       setIsLoading(true);
-      setErrorMessage(null);
       
       try {
         const response = await fetch(`/api/cv/${cvId}`);
@@ -55,18 +55,26 @@ const EditCVPage: React.FC = () => {
           const sections = convertStructureToEditableSections(data.cv_structure);
           setEditableSections(sections);
         } else {
-          setErrorMessage('This CV does not have editable structure data');
+          toast({
+            title: "Limited editing available",
+            description: "This CV does not have editable structure data",
+            variant: "warning",
+          });
         }
       } catch (err: any) {
         console.error('Error fetching CV:', err);
-        setErrorMessage(err.message || 'Failed to fetch CV data');
+        toast({
+          title: "Error loading CV",
+          description: err.message || 'Failed to fetch CV data',
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCVData();
-  }, [cvId]);
+  }, [cvId, toast]);
 
   // Convert CV structure to editable sections
   const convertStructureToEditableSections = (structure: any): EditableSection[] => {
@@ -271,7 +279,6 @@ const EditCVPage: React.FC = () => {
     
     try {
       setIsSaving(true);
-      setErrorMessage(null);
       
       // DEBUG: Log the sections being saved
       console.log('🔍 DEBUG: Saving CV with sections:', editableSections);
@@ -313,6 +320,12 @@ const EditCVPage: React.FC = () => {
       
       const data = await response.json();
       
+      toast({
+        title: "CV updated successfully!",
+        description: "Your CV has been regenerated with the latest changes.",
+        variant: "success",
+      });
+      
       // Navigate to My CVs page with success message
       navigate('/my-cvs', { 
         state: { 
@@ -322,7 +335,11 @@ const EditCVPage: React.FC = () => {
       });
     } catch (err: any) {
       console.error('Error updating CV:', err);
-      setErrorMessage(err.message || 'Failed to update CV');
+      toast({
+        title: "Error updating CV",
+        description: err.message || 'Failed to update CV',
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -343,34 +360,6 @@ const EditCVPage: React.FC = () => {
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading Your CV</h3>
             <p className="text-gray-600">Preparing your CV for editing...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (errorMessage) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-lg border border-red-200 p-8 max-w-md w-full mx-4">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-red-900 mb-2">Unable to Load CV</h3>
-            <p className="text-red-700 mb-6">{errorMessage}</p>
-            <Button 
-              onClick={() => navigate('/my-cvs')}
-              variant="outline"
-              className="gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Back to My CVs
-            </Button>
           </div>
         </div>
       </div>

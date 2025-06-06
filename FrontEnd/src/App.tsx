@@ -14,6 +14,7 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
+import { Toaster } from '@/components/ui/toaster';
 import { FlowResponse, EditableSection, RecommendationItem, JobDescriptionFlowResponse, JobDescriptionAnalysis } from './types';
 import WeaknessAnalysisDisplay from './components/ui/WeaknessAnalysisDisplay';
 import RecommendationsCarousel from './components/ui/RecommendationsCarousel';
@@ -585,6 +586,7 @@ export default function AppWithProviders() {
       <SubscriptionProvider>
         <SidebarProvider>
           <App />
+          <Toaster />
         </SidebarProvider>
       </SubscriptionProvider>
     </AuthProvider>

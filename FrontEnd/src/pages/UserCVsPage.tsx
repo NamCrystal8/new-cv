@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 // Define the interface for CV item from backend
 interface CVItem {
@@ -13,12 +14,11 @@ interface CVItem {
 const UserCVsPage: React.FC = () => {
   const [cvs, setCvs] = useState<CVItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserCVs = async () => {
       setIsLoading(true);
-      setError(null);
       try {
         const response = await fetch('/api/user-cvs');
         if (!response.ok) {
@@ -28,7 +28,11 @@ const UserCVsPage: React.FC = () => {
         const data = await response.json();
         setCvs(data.cvs || []);
       } catch (err: any) {
-        setError(err.message || 'Failed to fetch your CVs');
+        toast({
+          title: "Error loading CVs",
+          description: err.message || 'Failed to fetch your CVs',
+          variant: "destructive",
+        });
         console.error('Error fetching CVs:', err);
       } finally {
         setIsLoading(false);
@@ -36,7 +40,7 @@ const UserCVsPage: React.FC = () => {
     };
 
     fetchUserCVs();
-  }, []);
+  }, [toast]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -79,8 +83,7 @@ const UserCVsPage: React.FC = () => {
               Create New CV
             </Link>
           </div>
-        </div>
-          {/* Loading State */}
+        </div>        {/* Loading State */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="relative">
@@ -88,28 +91,6 @@ const UserCVsPage: React.FC = () => {
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent absolute top-0"></div>
             </div>
             <p className="text-gray-600 mt-4 text-lg">Loading your CVs...</p>
-          </div>
-        ) : error ? (
-          /* Error State */
-          <div className="bg-white rounded-2xl shadow-sm border border-red-200 p-8">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h3>
-              <p className="text-gray-600 mb-6">{error}</p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors duration-200"
-              >
-                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Try Again
-              </button>
-            </div>
           </div>
         ) : cvs.length === 0 ? (
           /* Empty State */
