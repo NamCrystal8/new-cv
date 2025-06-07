@@ -11,6 +11,7 @@ import RegisterPage from './pages/RegisterPage';
 import UserCVsPage from './pages/UserCVsPage';
 import EditCVPage from './pages/EditCVPage';
 import SubscriptionPage from './pages/SubscriptionPage';
+import AdminPage from './pages/AdminPage';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
@@ -37,7 +38,20 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const checkAuth = async () => {
       try {
         const response = await fetch('/api/users/me');
-        setIsAuthenticated(response.ok);
+        if (response.ok) {
+          const userData = await response.json();
+          // Check if user is active
+          if (userData.is_active) {
+            setIsAuthenticated(true);
+          } else {
+            // User exists but is deactivated
+            setIsAuthenticated(false);
+            // Clear any existing session
+            await fetch('/api/auth/jwt/logout', { method: 'POST' }).catch(() => {});
+          }
+        } else {
+          setIsAuthenticated(false);
+        }
       } catch {
         setIsAuthenticated(false);
       }
@@ -115,6 +129,14 @@ const App: React.FC = () => {
                     element={
                       <ProtectedRoute>
                         <SubscriptionPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/*"
+                    element={
+                      <ProtectedRoute>
+                        <AdminPage />
                       </ProtectedRoute>
                     }
                   />

@@ -248,7 +248,7 @@ async def get_subscription_status(
     
     status_info = {
         "has_subscription": subscription is not None,
-        "current_tier": subscription.plan.tier if subscription else "free",
+        "current_tier": subscription.plan.name if subscription else "Free",
         "usage_stats": usage_stats,
         "features_available": {
             "advanced_analytics": subscription.plan.advanced_analytics if subscription else False,

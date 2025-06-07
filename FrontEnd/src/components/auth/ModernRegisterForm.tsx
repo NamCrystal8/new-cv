@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, UserPlus, Sparkles, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getRegistrationErrorMessage } from '@/utils/errorMessages';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,22 +68,13 @@ const ModernRegisterForm: React.FC = () => {
       });
 
       if (!response.ok) {
-        let errorMessage = 'Registration failed.';
         try {
           const errorData = await response.json();
-          if (errorData.detail) {
-            if (errorData.detail === 'REGISTER_USER_ALREADY_EXISTS') {
-              errorMessage = 'An account with this email already exists.';
-            } else if (errorData.detail.includes('validation error')) {
-              errorMessage = 'Invalid input. Please check your email and password.';
-            } else {
-              errorMessage = errorData.detail;
-            }
-          }
+          throw new Error(getRegistrationErrorMessage(errorData));
         } catch (parseError) {
           console.error("Could not parse error response:", parseError);
+          throw new Error('Registration failed. Please try again.');
         }
-        throw new Error(errorMessage);
       }
 
       toast({

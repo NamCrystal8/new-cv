@@ -23,31 +23,29 @@ export const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ classNam
     return null;
   }
 
-  const getTierIcon = (tier: string) => {
-    switch (tier.toUpperCase()) {
-      case 'PRO':
-        return <Crown className="h-4 w-4 text-yellow-500" />;
-      case 'PREMIUM':
-        return <Sparkles className="h-4 w-4 text-purple-500" />;
-      default:
-        return <Zap className="h-4 w-4 text-blue-500" />;
+  const getTierIcon = (planName: string) => {
+    const name = planName.toUpperCase();
+    if (name.includes('PRO')) {
+      return <Crown className="h-4 w-4 text-yellow-500" />;
+    } else if (name.includes('PREMIUM')) {
+      return <Sparkles className="h-4 w-4 text-purple-500" />;
+    } else {
+      return <Zap className="h-4 w-4 text-blue-500" />;
     }
   };
 
-  const getTierColor = (tier: string) => {
-    switch (tier.toUpperCase()) {
-      case 'PRO':
-        return 'bg-gradient-to-r from-yellow-400 to-orange-500';
-      case 'PREMIUM':
-        return 'bg-gradient-to-r from-purple-500 to-pink-500';
-      default:
-        return 'bg-gradient-to-r from-blue-500 to-indigo-500';
+  const getTierColor = (planName: string) => {
+    const name = planName.toUpperCase();
+    if (name.includes('PRO')) {
+      return 'bg-gradient-to-r from-yellow-400 to-orange-500';
+    } else if (name.includes('PREMIUM')) {
+      return 'bg-gradient-to-r from-purple-500 to-pink-500';
+    } else {
+      return 'bg-gradient-to-r from-blue-500 to-indigo-500';
     }
   };
 
   const usage = status.usage_stats;
-  const cvUsagePercent = usage.cv_analyses_used > 0 ? 
-    (usage.cv_analyses_used / (usage.cv_analyses_used + usage.cv_analyses_remaining)) * 100 : 0;
   const jobUsagePercent = usage.job_analyses_used > 0 ?
     (usage.job_analyses_used / (usage.job_analyses_used + usage.job_analyses_remaining)) * 100 : 0;
 
@@ -61,7 +59,7 @@ export const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ classNam
             {status.current_tier}
           </span>
         </div>
-        <Badge 
+        <Badge
           className={`text-white ${getTierColor(status.current_tier)} border-0`}
         >
           {status.current_tier.toUpperCase()}
@@ -70,22 +68,6 @@ export const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ classNam
 
       {/* Usage Stats */}
       <div className="space-y-2">
-        {/* CV Analysis Usage */}
-        <div>
-          <div className="flex justify-between text-xs text-gray-600 mb-1">
-            <span>CV Analyses</span>
-            <span>
-              {usage.cv_analyses_used} / {usage.cv_analyses_used + usage.cv_analyses_remaining}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5">
-            <div 
-              className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(cvUsagePercent, 100)}%` }}
-            ></div>
-          </div>
-        </div>
-
         {/* Job Analysis Usage */}
         <div>
           <div className="flex justify-between text-xs text-gray-600 mb-1">
@@ -95,27 +77,9 @@ export const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ classNam
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5">
-            <div 
+            <div
               className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${Math.min(jobUsagePercent, 100)}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* CV Storage */}
-        <div>
-          <div className="flex justify-between text-xs text-gray-600 mb-1">
-            <span>CVs Stored</span>
-            <span>
-              {usage.cvs_stored} / {usage.cvs_stored + usage.cv_storage_remaining}
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5">
-            <div 
-              className="bg-purple-500 h-1.5 rounded-full transition-all duration-300"
-              style={{ 
-                width: `${Math.min((usage.cvs_stored / (usage.cvs_stored + usage.cv_storage_remaining)) * 100, 100)}%` 
-              }}
             ></div>
           </div>
         </div>

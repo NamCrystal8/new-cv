@@ -1,6 +1,6 @@
 import os
 import uuid
-from fastapi import Depends, Request
+from fastapi import Depends, Request, HTTPException, status
 from fastapi_users import FastAPIUsers, BaseUserManager, UUIDIDMixin
 from fastapi_users.authentication import CookieTransport, AuthenticationBackend, JWTStrategy
 # Update the import path for SQLAlchemyUserDatabase
@@ -28,6 +28,38 @@ auth_backend = AuthenticationBackend(
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
+
+    async def authenticate(self, credentials):
+        """
+        Custom authenticate method to handle inactive users properly
+        """
+        try:
+            user = await self.get_by_email(credentials.username)
+        except Exception:
+            # Run the hasher to mitigate timing attack
+            # Inspired from Django: https://code.djangoproject.com/ticket/20760
+            self.password_helper.hash(credentials.password)
+            return None
+
+        verified, updated_password_hash = self.password_helper.verify_and_update(
+            credentials.password, user.hashed_password
+        )
+        if not verified:
+            return None
+
+        # Update password hash to a more robust one if needed
+        if updated_password_hash is not None:
+            await self.user_db.update(user, {"hashed_password": updated_password_hash})
+
+        # Check if user is inactive and raise specific error
+        if not user.is_active:
+            print(f"User {user.email} attempted login but account is inactive")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="ACCOUNT_INACTIVE"
+            )
+
+        return user
 
     async def on_after_register(self, user: User, request: Request | None = None):
         print(f"User {user.id} has registered.")
@@ -57,3 +89,13 @@ fastapi_users = FastAPIUsers[User, uuid.UUID](
 # Define the dependency for getting the current active user here
 # This remains the same
 current_active_user = fastapi_users.current_user(active=True)
+
+# Admin role dependency
+async def current_admin_user(user: User = Depends(current_active_user)) -> User:
+    """Dependency to ensure the current user is an admin (role_id = 1)"""
+    if user.role_id != 1:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return user

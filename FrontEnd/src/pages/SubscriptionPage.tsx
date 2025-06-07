@@ -15,9 +15,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
-import { 
-  useSubscriptionPlans, 
-  useUserSubscription, 
+import { useToast } from '../hooks/use-toast';
+import {
+  useSubscriptionPlans,
+  useUserSubscription,
   useUsageStats,
   useAnalytics,
   upgradeSubscription
@@ -26,43 +27,59 @@ import { UpgradeRequest } from '../types/subscription';
 
 const SubscriptionPage: React.FC = () => {
   const { plans, loading: plansLoading } = useSubscriptionPlans();
-  const { subscription, loading: subLoading } = useUserSubscription();
+  const { subscription, loading: subLoading, refetch: refetchSubscription } = useUserSubscription();
   const { usage, loading: usageLoading } = useUsageStats();
   const { analytics, loading: analyticsLoading } = useAnalytics();
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const handleUpgrade = async (targetTier: 'PREMIUM' | 'PRO') => {
+  const { toast } = useToast();
+  const handleUpgrade = async (targetTier: string) => {
     try {
       setUpgrading(targetTier);
       const request: UpgradeRequest = {
-        target_tier: targetTier,
+        target_tier: targetTier as any, // Allow any tier string
         billing_cycle: billingCycle
       };
-      
+
       const result = await upgradeSubscription(request);
-      
+
       // Show success notification
       if (result.success) {
-        alert(`🎉 ${result.message}\n\nYou now have access to ${result.plan_name} features!`);
-        // Refresh the page to show updated subscription
-        window.location.reload();
+        toast({
+          title: "🎉 Upgrade Successful!",
+          description: `${result.message} You now have access to ${result.plan_name} features!`,
+          variant: "success",
+        });
+
+        // Refresh subscription data
+        await refetchSubscription();
       }
-      
+
     } catch (error) {
-      alert('Failed to upgrade subscription. Please try again.');
+      toast({
+        title: "Upgrade Failed",
+        description: "Failed to upgrade subscription. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setUpgrading(null);
     }
   };
 
-  const getTierIcon = (tier: string) => {
-    switch (tier.toUpperCase()) {
-      case 'PRO':
-        return <Crown className="h-6 w-6 text-yellow-500" />;
-      case 'PREMIUM':
-        return <Sparkles className="h-6 w-6 text-purple-500" />;
-      default:
-        return <Zap className="h-6 w-6 text-blue-500" />;
+  const getTierIcon = (planName: string) => {
+    // Dynamic icon assignment based on plan name
+    const name = planName.toUpperCase();
+
+    if (name.includes('PRO') || name.includes('ULTIMATE')) {
+      return <Crown className="h-6 w-6 text-yellow-500" />;
+    } else if (name.includes('PREMIUM') || name.includes('BUSINESS')) {
+      return <Sparkles className="h-6 w-6 text-purple-500" />;
+    } else if (name.includes('ENTERPRISE')) {
+      return <Settings className="h-6 w-6 text-red-500" />;
+    } else if (name.includes('BASIC')) {
+      return <Zap className="h-6 w-6 text-blue-500" />;
+    } else {
+      return <Zap className="h-6 w-6 text-blue-500" />; // Default for Free and others
     }
   };
 
@@ -86,8 +103,8 @@ const SubscriptionPage: React.FC = () => {
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-96 bg-gray-200 rounded-lg"></div>
             ))}
           </div>
@@ -96,7 +113,7 @@ const SubscriptionPage: React.FC = () => {
     );
   }
 
-  const currentTier = subscription?.plan?.tier || 'FREE';
+  const currentPlanName = subscription?.plan?.name || 'Free';
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
@@ -205,11 +222,18 @@ const SubscriptionPage: React.FC = () => {
       )}
 
       {/* Pricing Plans */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className={`grid gap-6 ${
+        plans.length <= 2 ? 'grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto' :
+        plans.length === 3 ? 'grid-cols-1 md:grid-cols-3' :
+        plans.length === 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' :
+        'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+      }`}>
         {plans.map((plan) => {
-          const isCurrentPlan = plan.tier === currentTier;
+          const isCurrentPlan = plan.name === currentPlanName;
           const price = billingCycle === 'monthly' ? plan.price_monthly : plan.price_yearly;
-          const isPopular = plan.tier === 'PREMIUM';
+          // Make the middle plan popular for odd numbers, or the second plan for even numbers
+          const popularIndex = Math.floor(plans.length / 2);
+          const isPopular = plans.indexOf(plan) === popularIndex;
           
           return (
             <Card 
@@ -236,7 +260,7 @@ const SubscriptionPage: React.FC = () => {
               
               <CardHeader className="text-center space-y-4">
                 <div className="flex justify-center">
-                  {getTierIcon(plan.tier)}
+                  {getTierIcon(plan.name)}
                 </div>
                 <div>
                   <CardTitle className="text-2xl">{plan.name}</CardTitle>
@@ -318,7 +342,7 @@ const SubscriptionPage: React.FC = () => {
                       <CreditCard className="h-4 w-4 mr-2" />
                       Current Plan
                     </Button>
-                  ) : plan.tier === 'FREE' ? (
+                  ) : plan.name.toUpperCase().includes('FREE') ? (
                     <Button 
                       className="w-full" 
                       variant="outline"
@@ -333,7 +357,7 @@ const SubscriptionPage: React.FC = () => {
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600' 
                           : ''
                       }`}
-                      onClick={() => handleUpgrade(plan.tier as 'PREMIUM' | 'PRO')}
+                      onClick={() => handleUpgrade(plan.tier)}
                       disabled={upgrading === plan.tier}
                     >
                       {upgrading === plan.tier ? (

@@ -12,8 +12,12 @@ import enum
 
 class SubscriptionTier(str, enum.Enum):
     FREE = "free"
+    BASIC = "basic"
     PREMIUM = "premium"
     PRO = "pro"
+    BUSINESS = "business"
+    ENTERPRISE = "enterprise"
+    ULTIMATE = "ultimate"
 
 
 class AnalysisType(str, enum.Enum):

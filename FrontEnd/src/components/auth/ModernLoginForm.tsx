@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, LogIn, Sparkles } from 'lucide-react';
 import { useAuth } from '@/App';
 import { useToast } from '@/hooks/use-toast';
+import { getLoginErrorMessage } from '@/utils/errorMessages';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,11 +38,11 @@ const ModernLoginForm: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Login failed');
+        throw new Error(getLoginErrorMessage(errorData));
       }
 
       setIsAuthenticated(true);
-      
+
       toast({
         variant: "success",
         title: "Welcome back!",
