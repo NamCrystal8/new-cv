@@ -26,6 +26,9 @@ RUN pip install --upgrade pip && \
 COPY build.sh start.sh test_database.sh ./
 RUN chmod +x build.sh start.sh test_database.sh
 
+# Ensure scripts remain executable after copying other files
+RUN chmod +x ./build.sh ./start.sh ./test_database.sh
+
 # Copy the rest of the application
 COPY . .
 

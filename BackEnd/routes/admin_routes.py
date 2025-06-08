@@ -284,6 +284,20 @@ async def get_subscription_plans(
     return plans
 
 
+@router.post("/plans/initialize")
+async def initialize_default_subscription_plans(
+    admin_user: User = Depends(current_admin_user),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Initialize default subscription plans (Free, Premium, Pro)"""
+    from services.subscription_service import SubscriptionService
+
+    subscription_service = SubscriptionService(db)
+    await subscription_service.create_default_subscription_plans()
+
+    return {"message": "Default subscription plans initialized successfully"}
+
+
 @router.post("/plans", response_model=SubscriptionPlanRead)
 async def create_subscription_plan(
     plan_data: SubscriptionPlanCreate,

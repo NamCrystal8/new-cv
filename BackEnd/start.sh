@@ -50,6 +50,15 @@ if [ -f "test_database.py" ]; then
   python test_database.py || echo "WARNING: Database connection test failed, but continuing startup..."
 fi
 
+# Initialize default subscription plans
+echo "====== Initializing Default Data ======"
+if [ -f "init_subscription_plans.py" ]; then
+  echo "Setting up default subscription plans..."
+  python init_subscription_plans.py || echo "WARNING: Failed to initialize subscription plans, but continuing startup..."
+else
+  echo "WARNING: init_subscription_plans.py not found, skipping subscription plans initialization"
+fi
+
 # Wait a moment for database to be fully available
 echo "====== Starting Application ======"
 echo "Waiting for database connection..."

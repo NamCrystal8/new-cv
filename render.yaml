@@ -7,7 +7,7 @@ services:
     dockerContext: ./BackEnd
     plan: free
     buildCommand: chmod +x ./build.sh && ./build.sh
-    startCommand: chmod +x ./start.sh && ./start.sh
+    startCommand: chmod +x ./start.sh && bash ./start.sh
     healthCheckPath: /health
     autoDeploy: true  # Enable automatic deployments
     envVars:
