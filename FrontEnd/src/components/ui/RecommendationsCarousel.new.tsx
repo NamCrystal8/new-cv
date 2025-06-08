@@ -21,14 +21,6 @@ const SmartInputField: React.FC<{
   const [inputMode, setInputMode] = useState<'auto' | 'list' | 'text'>('auto');
   const [listItems, setListItems] = useState<string[]>([]);
 
-  // Reset internal state when value is cleared externally
-  useEffect(() => {
-    if (!value.trim()) {
-      setListItems([]);
-      setInputMode('auto');
-    }
-  }, [value]);
-
   // Determine if the suggested content is a JSON array
   const isSuggestedList = React.useMemo(() => {
     const content = String(suggestedContent);
@@ -43,6 +35,21 @@ const SmartInputField: React.FC<{
     return false;
   }, [suggestedContent]);
 
+  // Reset internal state when value is cleared externally or when suggested content type changes
+  useEffect(() => {
+    if (!value.trim()) {
+      setListItems([]);
+      setInputMode('auto');
+    }
+  }, [value]);
+
+  // Reset state when suggested content type changes
+  useEffect(() => {
+    // Reset to auto mode when suggested content type changes
+    setInputMode('auto');
+    setListItems([]);
+  }, [isSuggestedList]);
+
   // Initialize list items from value or suggested content
   useEffect(() => {
     if (value) {
@@ -56,20 +63,28 @@ const SmartInputField: React.FC<{
         }
       } catch {
         // Not a JSON array, keep as text
+        setListItems([]);
+        if (inputMode === 'auto') {
+          setInputMode(isSuggestedList ? 'list' : 'text');
+        }
+      }
+    } else {
+      // No current value - initialize based on suggested content
+      if (isSuggestedList) {
+        try {
+          const parsed = JSON.parse(suggestedContent);
+          setListItems(parsed);
+          setInputMode('list');
+        } catch {
+          setListItems([]);
+          setInputMode('text');
+        }
+      } else {
+        setListItems([]);
+        setInputMode('text');
       }
     }
-    
-    // If suggested content is a list and no current value, initialize with it
-    if (!value && isSuggestedList) {
-      try {
-        const parsed = JSON.parse(suggestedContent);
-        setListItems(parsed);
-        setInputMode('list');
-      } catch {
-        // Fallback
-      }
-    }
-  }, [value, suggestedContent, isSuggestedList]);
+  }, [value, suggestedContent, isSuggestedList, inputMode]);
 
   const handleListChange = (newItems: string[]) => {
     setListItems(newItems);
@@ -614,6 +629,7 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
               <div>
                 <h4 className="text-sm font-medium text-gray-500 mb-1">Your Version (Optional):</h4>
                 <SmartInputField
+                  key={`${currentRecommendation.id}-${currentRecommendationIndex}`}
                   value={userInput}
                   onChange={setUserInput}
                   suggestedContent={currentRecommendation.suggested}

@@ -12,6 +12,8 @@ import UserCVsPage from './pages/UserCVsPage';
 import EditCVPage from './pages/EditCVPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import AdminPage from './pages/AdminPage';
+import CVPreviewTestPage from './pages/CVPreviewTestPage';
+import CVPreviewDebugPage from './pages/CVPreviewDebugPage';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
@@ -141,6 +143,22 @@ const App: React.FC = () => {
                     }
                   />
                   <Route
+                    path="/cv-preview-test"
+                    element={
+                      <ProtectedRoute>
+                        <CVPreviewTestPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/cv-preview-debug"
+                    element={
+                      <ProtectedRoute>
+                        <CVPreviewDebugPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/*"
                     element={
                       <ProtectedRoute>
@@ -222,9 +240,18 @@ const MainAppContent: React.FC = () => {
       }
 
       const data = await response.json() as FlowResponse;
+
+      // Debug: Log the actual backend response structure
+      console.log('🔍 Backend Response Data:', {
+        editableSections: data.editable_sections,
+        recommendations: data.detailed_analysis?.recommendations,
+        flowId: data.flow_id
+      });
+
       setFlowResponse(data);
       setFlowId(data.flow_id);
       if (data.editable_sections) {
+        console.log('📊 Setting editable sections:', data.editable_sections);
         setEditableSections(data.editable_sections);
       }
       setCurrentStep(2); // Move to weakness analysis
@@ -521,8 +548,15 @@ const MainAppContent: React.FC = () => {
             onNext={proceedToRecommendations}
           />
         ) : null;      case 3: // Recommendations
+        // Debug: Log the actual data structure being passed
+        console.log('🔍 Main App - Recommendations Data:', {
+          recommendations: flowResponse?.detailed_analysis.recommendations,
+          editableSections: editableSections,
+          flowResponse: flowResponse
+        });
+
         return flowResponse ? (
-          <RecommendationsCarousel 
+          <RecommendationsCarousel
             recommendations={flowResponse.detailed_analysis.recommendations}
             currentCVData={editableSections}
             onComplete={handleRecommendationsComplete}

@@ -1,0 +1,179 @@
+/* Harvard-style CV Preview Styles */
+.harvard-cv-preview {
+  font-family: 'Palatino', 'Times New Roman', serif;
+  line-height: 1.4;
+  color: #333;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.harvard-cv-preview h1 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  color: #1a1a1a;
+}
+
+.harvard-cv-preview h2 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #ccc;
+  color: #1a1a1a;
+}
+
+.harvard-cv-preview .contact-info {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.harvard-cv-preview .section-item {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+}
+
+.harvard-cv-preview .section-item:not(:last-child) {
+  border-bottom: 1px solid #eee;
+}
+
+.harvard-cv-preview .item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+.harvard-cv-preview .item-title {
+  font-weight: bold;
+  color: #1a1a1a;
+}
+
+.harvard-cv-preview .item-subtitle {
+  font-style: italic;
+  color: #444;
+}
+
+.harvard-cv-preview .item-meta {
+  font-size: 0.875rem;
+  color: #666;
+  text-align: right;
+}
+
+.harvard-cv-preview .achievements-list {
+  list-style-type: disc;
+  list-style-position: inside;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.harvard-cv-preview .achievements-list li {
+  margin-bottom: 0.25rem;
+  color: #444;
+}
+
+.harvard-cv-preview .technologies {
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.harvard-cv-preview .skills-category {
+  margin-bottom: 0.75rem;
+}
+
+.harvard-cv-preview .skills-category:last-child {
+  margin-bottom: 0;
+}
+
+.harvard-cv-preview .category-name {
+  font-weight: bold;
+  color: #1a1a1a;
+}
+
+.harvard-cv-preview .category-items {
+  color: #444;
+}
+
+.harvard-cv-preview .languages-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.harvard-cv-preview .language-name {
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.harvard-cv-preview .language-proficiency {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Highlight changes */
+.harvard-cv-preview .highlight-new {
+  background-color: #e6f3ff;
+  border-left: 3px solid #2563eb;
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.harvard-cv-preview .highlight-modified {
+  background-color: #fff3cd;
+  border-left: 3px solid #ffc107;
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Progress bar styles */
+.progress-bar {
+  transition: width 0.3s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .harvard-cv-preview {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .harvard-cv-preview h1 {
+    font-size: 1.5rem;
+  }
+
+  .harvard-cv-preview h2 {
+    font-size: 1.125rem;
+  }
+
+  .harvard-cv-preview .item-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .harvard-cv-preview .item-meta {
+    text-align: left;
+    margin-top: 0.25rem;
+  }
+}
