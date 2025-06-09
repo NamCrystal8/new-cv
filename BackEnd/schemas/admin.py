@@ -39,7 +39,7 @@ class UserUpdateAdmin(BaseModel):
     email: Optional[str] = None
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None
-    # role_id: Optional[int] = None  # TEMPORARILY COMMENTED OUT FOR DEPLOYMENT
+    role_id: Optional[int] = None
 
 
 class BulkUserAction(BaseModel):
@@ -127,7 +127,7 @@ class AdminAnalyticsOverview(BaseModel):
 class UserSearchFilter(BaseModel):
     """Search and filter parameters for users"""
     search: Optional[str] = None  # Search in name, email
-    # role_id: Optional[int] = None  # TEMPORARILY COMMENTED OUT FOR DEPLOYMENT
+    role_id: Optional[int] = None
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None
     created_after: Optional[date] = None

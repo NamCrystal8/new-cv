@@ -1,83 +1,24 @@
 import os
-import uuid
-from fastapi import FastAPI, Depends
 from core.app import app
-from models.user import User, CV, get_user_db
 from schemas.user import UserRead, UserCreate, UserUpdate
-from core.database import Base, engine, get_async_db
+from core.database import Base, engine
 from routes import base_routes, pdf_routes, cv_routes, health_routes, subscription_routes, admin_routes
-from core.security import auth_backend, fastapi_users, current_active_user
+from core.security import auth_backend, fastapi_users
 
 # --- Database Initialization --- START ---
 @app.on_event("startup")
 async def on_startup():
+    """Initialize database on startup"""
+    print("🚀 Starting application initialization...")
+
+    # Create tables from models
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # Create admin user if it doesn't exist
-    await create_default_admin()
+    # Note: Full migration is handled by migrate_database.py in start.sh
+    # This is just a safety check for basic table creation
+    print("✅ Database tables initialized")
 # --- Database Initialization --- END ---
-
-# --- Admin User Creation --- START ---
-async def create_default_admin():
-    """Create default admin user on startup"""
-    try:
-        from sqlalchemy import select, text
-        from models.user import User
-        from passlib.context import CryptContext
-
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        admin_email = "admin@cvbuilder.com"
-
-        async for db in get_async_db():
-            try:
-                # Check if admin exists
-                existing_admin = await db.execute(
-                    select(User).where(User.email == admin_email)
-                )
-
-                if not existing_admin.scalar_one_or_none():
-                    # Create admin user using raw SQL to handle role column
-                    admin_id = str(uuid.uuid4())
-                    hashed_password = pwd_context.hash("admin123")
-
-                    # Try to insert with role column first
-                    try:
-                        insert_query = """
-                            INSERT INTO "user" (id, email, hashed_password, is_active, is_superuser, is_verified, role)
-                            VALUES ($1, $2, $3, $4, $5, $6, $7)
-                        """
-                        await db.execute(text(insert_query), (
-                            admin_id, admin_email, hashed_password, True, True, True, "Admin"
-                        ))
-                        print(f"✅ Created admin user with role: {admin_email}")
-                    except Exception:
-                        # Fallback: try without role column
-                        admin_user = User(
-                            id=uuid.UUID(admin_id),
-                            email=admin_email,
-                            hashed_password=hashed_password,
-                            is_active=True,
-                            is_verified=True,
-                            is_superuser=True
-                        )
-                        db.add(admin_user)
-                        print(f"✅ Created admin user without role: {admin_email}")
-
-                    await db.commit()
-                else:
-                    print(f"ℹ️ Admin user already exists: {admin_email}")
-
-            except Exception as e:
-                print(f"❌ Error creating admin user: {e}")
-                await db.rollback()
-            finally:
-                await db.close()
-                break
-
-    except Exception as e:
-        print(f"❌ Error in admin creation: {e}")
-# --- Admin User Creation --- END ---
 
 # --- Include Routers --- START ---
 app.include_router(base_routes.router)

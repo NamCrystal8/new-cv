@@ -23,11 +23,11 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Make shell scripts executable
-COPY build.sh start.sh test_database.sh ./
-RUN chmod +x build.sh start.sh test_database.sh
+COPY build.sh start.sh test_database.sh run_migration.sh ./
+RUN chmod +x build.sh start.sh test_database.sh run_migration.sh
 
 # Ensure scripts remain executable after copying other files
-RUN chmod +x ./build.sh ./start.sh ./test_database.sh
+RUN chmod +x ./build.sh ./start.sh ./test_database.sh ./run_migration.sh
 
 # Copy the rest of the application
 COPY . .
