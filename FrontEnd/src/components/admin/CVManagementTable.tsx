@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Trash2, FileText, Download, User } from 'lucide-react';
+import { Eye, Trash2, Download, User } from 'lucide-react';
 import { DataTable, Column } from './DataTable';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 

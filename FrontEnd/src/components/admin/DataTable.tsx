@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, Filter, MoreHorizontal, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,7 +61,7 @@ export function DataTable<T>({
   selectable = false,
   loading = false,
   emptyMessage = "No data available",
-  getItemId = (item: T, index: number) => index,
+  getItemId = (_item: T, index: number) => index,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<Set<string | number>>(new Set());

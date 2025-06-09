@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "serve": "serve -s dist -l 3000",
+    "setup": "chmod +x setup-env.sh && ./setup-env.sh"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.13",
@@ -26,6 +28,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-dropzone": "^14.3.8",
+    "serve": "^14.2.3",
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {

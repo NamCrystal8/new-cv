@@ -8,13 +8,25 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  server: { // Add this server configuration
+  server: { // Add this server configuration for development
     proxy: {
       // Proxy /api requests to your backend server
       '/api': {
         target: 'http://127.0.0.1:8000', // Your backend address
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '') // Remove /api prefix when forwarding
+      }
+    }
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-label', '@radix-ui/react-select']
+        }
       }
     }
   },

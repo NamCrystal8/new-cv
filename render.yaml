@@ -1,7 +1,7 @@
 # render.yaml
 services:
   - type: web
-    name: new-cv-backend    
+    name: new-cv-backend
     env: docker
     dockerfilePath: ./BackEnd/Dockerfile
     dockerContext: ./BackEnd
@@ -29,6 +29,17 @@ services:
         value: "1"
       - key: PYTHONUNBUFFERED
         value: "1"
+
+  - type: web
+    name: new-cv-frontend
+    env: node
+    buildCommand: cd FrontEnd && chmod +x ./build.sh && ./build.sh
+    startCommand: cd FrontEnd && chmod +x ./start.sh && ./start.sh
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false  # You'll set this to your backend URL
 
 databases:
   - name: new-cv-db

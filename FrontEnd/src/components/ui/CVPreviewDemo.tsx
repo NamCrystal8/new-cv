@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // Demo component to showcase the CV Preview functionality
 const CVPreviewDemo: React.FC = () => {
   // Sample CV data for demonstration
-  const [sampleCVData] = useState<EditableSection[]>([
+  const [_sampleCVData] = useState<EditableSection[]>([
     {
       id: 'header',
       name: 'Contact Information',

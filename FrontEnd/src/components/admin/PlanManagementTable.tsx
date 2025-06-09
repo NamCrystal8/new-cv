@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, DollarSign, Users, Crown, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, DollarSign, Crown } from 'lucide-react';
 import { DataTable, Column } from './DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -709,7 +709,7 @@ export const PlanManagementTable: React.FC = () => {
           columns={columns}
           title="Subscription Plans"
           searchable={false}
-          pagination={null}
+          pagination={undefined}
           actions={getActions}
           selectable={false}
           loading={loading}

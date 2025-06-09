@@ -163,7 +163,7 @@ const CVPreviewTest: React.FC = () => {
                 <div>
                   <h4 className="font-medium mb-2">Applied Recommendations:</h4>
                   <ul className="text-sm space-y-1">
-                    {completedRecommendations.map((rec, index) => (
+                    {completedRecommendations.map((rec, _index) => (
                       <li key={rec.id} className="flex items-start gap-2">
                         <span className="text-green-500 mt-0.5">✓</span>
                         <span>
