@@ -15,13 +15,13 @@ if TYPE_CHECKING:
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
     """User model with role and subscription relationships"""
-    # Role relationship
-    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), default=2)  # Default to USER role (id=2)
-    role: Mapped["Role"] = relationship("Role")
-    
+    # Role relationship - TEMPORARILY COMMENTED OUT FOR DEPLOYMENT
+    # role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), default=2)  # Default to USER role (id=2)
+    # role: Mapped["Role"] = relationship("Role")
+
     # CV relationship
     cvs: Mapped[List["CV"]] = relationship(back_populates="owner")
-    
+
     # Subscription relationships
     subscriptions: Mapped[List["UserSubscription"]] = relationship("UserSubscription", back_populates="user")
 

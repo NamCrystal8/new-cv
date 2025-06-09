@@ -8,8 +8,8 @@ from fastapi_users import schemas
 
 class UserRead(schemas.BaseUser[uuid.UUID]):
     """Schema for reading user data"""
-    role_id: int
-    
+    # role_id: int  # TEMPORARILY COMMENTED OUT FOR DEPLOYMENT
+
     class Config:
         from_attributes = True
 
