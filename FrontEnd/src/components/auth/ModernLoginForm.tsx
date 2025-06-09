@@ -35,6 +35,7 @@ const ModernLoginForm: React.FC = () => {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
+        credentials: 'include', // Important for cookie-based auth
         body: formData.toString(),
       });
 

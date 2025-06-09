@@ -36,11 +36,15 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/jwt/logout", { method: "POST" });
+      await fetch("/api/auth/jwt/logout", {
+        method: "POST",
+        credentials: 'include' // Important for cookie-based auth
+      });
       setIsAuthenticated(false);
       navigate("/login");
     } catch (error) {
       // Optionally show error
+      console.error('Logout error:', error);
     }
   };
 

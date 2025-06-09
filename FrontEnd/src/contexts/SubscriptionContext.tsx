@@ -30,8 +30,8 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
 
       // Fetch subscription data in parallel
       const [statusRes, subscriptionRes] = await Promise.all([
-        fetch('/api/subscription/status'),
-        fetch('/api/subscription/current')
+        fetch('/api/subscription/status', { credentials: 'include' }),
+        fetch('/api/subscription/current', { credentials: 'include' })
       ]);
 
       // Handle status (includes usage stats in correct format)

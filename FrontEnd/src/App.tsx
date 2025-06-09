@@ -15,6 +15,7 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import AdminPage from './pages/AdminPage';
 import CVPreviewTestPage from './pages/CVPreviewTestPage';
 import CVPreviewDebugPage from './pages/CVPreviewDebugPage';
+import AuthDebug from './components/debug/AuthDebug';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
@@ -41,7 +42,9 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     const checkAuth = async () => {
       try {
         const apiBaseUrl = getApiBaseUrl();
-        const response = await fetch(`${apiBaseUrl}/users/me`);
+        const response = await fetch(`${apiBaseUrl}/users/me`, {
+          credentials: 'include', // Important for cookie-based auth
+        });
         if (response.ok) {
           const userData = await response.json();
           // Check if user is active
@@ -51,7 +54,10 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             // User exists but is deactivated
             setIsAuthenticated(false);
             // Clear any existing session
-            await fetch(`${apiBaseUrl}/auth/jwt/logout`, { method: 'POST' }).catch(() => {});
+            await fetch(`${apiBaseUrl}/auth/jwt/logout`, {
+              method: 'POST',
+              credentials: 'include'
+            }).catch(() => {});
           }
         } else {
           setIsAuthenticated(false);
@@ -161,6 +167,12 @@ const App: React.FC = () => {
                     }
                   />
                   <Route
+                    path="/auth-debug"
+                    element={
+                      <AuthDebug />
+                    }
+                  />
+                  <Route
                     path="/*"
                     element={
                       <ProtectedRoute>
@@ -227,6 +239,7 @@ const MainAppContent: React.FC = () => {
 
       const response = await fetch(`${apiBaseUrl}/analyze-cv-weaknesses`, {
         method: 'POST',
+        credentials: 'include', // Important for authentication
         body: formData,
       });
 

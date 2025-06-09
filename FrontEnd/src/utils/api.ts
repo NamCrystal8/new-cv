@@ -55,9 +55,10 @@ export const apiCall = async (endpoint: string, options?: RequestInit): Promise<
 export const apiCallFormData = async (endpoint: string, formData: FormData): Promise<Response> => {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-  
+
   return fetch(url, {
     method: 'POST',
+    credentials: 'include', // Important for authentication
     body: formData,
   });
 };
