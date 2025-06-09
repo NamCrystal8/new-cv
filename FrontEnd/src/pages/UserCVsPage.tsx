@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { getApiBaseUrl } from '@/utils/api';
 
 // Define the interface for CV item from backend
 interface CVItem {
@@ -20,11 +21,14 @@ const UserCVsPage: React.FC = () => {
     const fetchUserCVs = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/user-cvs');
+        const apiBaseUrl = getApiBaseUrl();
+        const response = await fetch(`${apiBaseUrl}/user-cvs`, {
+          credentials: 'include', // Important for authentication
+        });
         if (!response.ok) {
           throw new Error(`Server responded with status ${response.status}`);
         }
-        
+
         const data = await response.json();
         setCvs(data.cvs || []);
       } catch (err: any) {

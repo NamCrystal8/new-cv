@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { SubscriptionStatus, UsageStats, UserSubscription } from '../types/subscription';
+import { getApiBaseUrl } from '@/utils/api';
 
 interface SubscriptionContextType {
   status: SubscriptionStatus | null;
@@ -29,9 +30,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       setError(null);
 
       // Fetch subscription data in parallel
+      const apiBaseUrl = getApiBaseUrl();
       const [statusRes, subscriptionRes] = await Promise.all([
-        fetch('/api/subscription/status', { credentials: 'include' }),
-        fetch('/api/subscription/current', { credentials: 'include' })
+        fetch(`${apiBaseUrl}/subscription/status`, { credentials: 'include' }),
+        fetch(`${apiBaseUrl}/subscription/current`, { credentials: 'include' })
       ]);
 
       // Handle status (includes usage stats in correct format)

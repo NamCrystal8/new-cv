@@ -3,6 +3,7 @@ import { Eye, Trash2, Download, User } from 'lucide-react';
 import { DataTable, Column } from './DataTable';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { getApiBaseUrl } from '@/utils/api';
 
 // CV data interface
 interface AdminCV {
@@ -56,7 +57,10 @@ export const CVManagementTable: React.FC<CVManagementTableProps> = () => {
         params.append('search', search.trim());
       }
 
-      const response = await fetch(`/api/admin/cvs?${params}`);
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/cvs?${params}`, {
+        credentials: 'include', // Important for authentication
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch CVs');
       }
@@ -99,8 +103,10 @@ export const CVManagementTable: React.FC<CVManagementTableProps> = () => {
     }
 
     try {
-      const response = await fetch(`/api/admin/cvs/${cvId}`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/cvs/${cvId}`, {
         method: 'DELETE',
+        credentials: 'include', // Important for authentication
       });
 
       if (!response.ok) {

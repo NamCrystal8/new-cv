@@ -24,6 +24,7 @@ import {
   EditableSection
 } from '../types';
 import { DEFAULT_PROFICIENCY } from '../constants/languageProficiency';
+import { getApiBaseUrl } from '@/utils/api';
 
 const EditCVPage: React.FC = () => {
   const { cvId } = useParams<{ cvId: string }>();
@@ -42,8 +43,11 @@ const EditCVPage: React.FC = () => {
       setIsLoading(true);
       
       try {
-        const response = await fetch(`/api/cv/${cvId}`);
-        
+        const apiBaseUrl = getApiBaseUrl();
+        const response = await fetch(`${apiBaseUrl}/cv/${cvId}`, {
+          credentials: 'include', // Important for authentication
+        });
+
         if (!response.ok) {
           throw new Error(`Error fetching CV data: ${response.status}`);
         }
@@ -302,8 +306,10 @@ const EditCVPage: React.FC = () => {
         console.log('🔍 DEBUG: Experience JSON string:', formattedData.experience);
       }
       
-      const response = await fetch(`/api/cv/${cvId}/update`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/cv/${cvId}/update`, {
         method: 'POST',
+        credentials: 'include', // Important for authentication
         headers: {
           'Content-Type': 'application/json',
         },

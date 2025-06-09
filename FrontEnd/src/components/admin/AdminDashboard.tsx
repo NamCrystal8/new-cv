@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  FileText, 
-  Crown, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Users,
+  FileText,
+  Crown,
+  DollarSign,
+  TrendingUp,
   Activity,
   UserPlus,
   Upload
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getApiBaseUrl } from '@/utils/api';
 
 interface DashboardMetrics {
   total_users: number;
@@ -103,12 +104,15 @@ export const AdminDashboard: React.FC = () => {
   const fetchDashboardMetrics = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/dashboard');
-      
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/dashboard`, {
+        credentials: 'include', // Important for authentication
+      });
+
       if (!response.ok) {
         throw new Error('Failed to fetch dashboard metrics');
       }
-      
+
       const data = await response.json();
       setMetrics(data);
     } catch (err) {

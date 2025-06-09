@@ -6,6 +6,7 @@ import { UserManagementTable } from '@/components/admin/UserManagementTable';
 import { CVManagementTable } from '@/components/admin/CVManagementTable';
 import { SubscriptionManagementTable } from '@/components/admin/SubscriptionManagementTable';
 import { PlanManagementTable } from '@/components/admin/PlanManagementTable';
+import { getApiBaseUrl } from '@/utils/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/App';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +29,10 @@ const AdminPage: React.FC = () => {
 
     try {
       // Check if user has admin access by trying to access admin endpoint
-      const response = await fetch('/api/admin/health');
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/health`, {
+        credentials: 'include', // Important for authentication
+      });
 
       if (response.ok) {
         setIsAdmin(true);

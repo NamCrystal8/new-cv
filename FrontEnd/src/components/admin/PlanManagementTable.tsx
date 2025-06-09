@@ -4,6 +4,7 @@ import { DataTable, Column } from './DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { getApiBaseUrl } from '@/utils/api';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,7 +76,10 @@ export const PlanManagementTable: React.FC = () => {
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/plans');
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/plans`, {
+        credentials: 'include', // Important for authentication
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch plans');
       }
@@ -98,8 +102,10 @@ export const PlanManagementTable: React.FC = () => {
   const handleCreatePlan = async () => {
     setSubmitting(true);
     try {
-      const response = await fetch('/api/admin/plans', {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/plans`, {
         method: 'POST',
+        credentials: 'include', // Important for authentication
         headers: {
           'Content-Type': 'application/json',
         },
@@ -137,8 +143,10 @@ export const PlanManagementTable: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/admin/plans/${editingPlan.id}`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/plans/${editingPlan.id}`, {
         method: 'PATCH',
+        credentials: 'include', // Important for authentication
         headers: {
           'Content-Type': 'application/json',
         },
@@ -178,8 +186,10 @@ export const PlanManagementTable: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/admin/plans/${planId}`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/plans/${planId}`, {
         method: 'DELETE',
+        credentials: 'include', // Important for authentication
       });
 
       if (!response.ok) {

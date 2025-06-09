@@ -3,6 +3,7 @@ import { Eye, Ban, Edit, User, Calendar, DollarSign } from 'lucide-react';
 import { DataTable, Column } from './DataTable';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { getApiBaseUrl } from '@/utils/api';
 
 // Subscription data interface
 interface AdminSubscription {
@@ -69,7 +70,10 @@ export const SubscriptionManagementTable: React.FC<SubscriptionManagementTablePr
         params.append('search', search.trim());
       }
 
-      const response = await fetch(`/api/admin/subscriptions?${params}`);
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/subscriptions?${params}`, {
+        credentials: 'include', // Important for authentication
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch subscriptions');
       }

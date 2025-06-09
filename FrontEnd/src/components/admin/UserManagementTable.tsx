@@ -3,6 +3,7 @@ import { Trash2, Eye } from 'lucide-react';
 import { DataTable, Column } from './DataTable';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { getApiBaseUrl } from '@/utils/api';
 
 // Toggle Switch Component
 interface ToggleSwitchProps {
@@ -112,8 +113,11 @@ export const UserManagementTable: React.FC = () => {
         }
       });
 
-      const response = await fetch(`/api/admin/users?${params}`);
-      
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/users?${params}`, {
+        credentials: 'include', // Important for authentication
+      });
+
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
