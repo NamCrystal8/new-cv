@@ -16,7 +16,7 @@ npm run build
 if [ -d "dist" ]; then
     echo "✅ Build completed successfully!"
     echo "📁 Build output directory: dist"
-    ls -la dist/
+    ls -la dist/ || echo "Directory listing not available"
 else
     echo "❌ Build failed - dist directory not found"
     exit 1

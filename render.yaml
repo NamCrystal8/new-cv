@@ -33,8 +33,9 @@ services:
   - type: web
     name: new-cv-frontend
     env: node
-    buildCommand: cd FrontEnd && chmod +x ./build.sh && ./build.sh
-    startCommand: cd FrontEnd && chmod +x ./start.sh && ./start.sh
+    rootDir: FrontEnd
+    buildCommand: npm ci && npm run build
+    startCommand: npx serve -s dist -l $PORT
     plan: free
     autoDeploy: true
     envVars:
