@@ -122,6 +122,17 @@ async def migrate_user_roles(db, user_columns):
         else:
             print("✅ Roles table already exists")
 
+            # Ensure default roles exist even if table exists
+            print("Ensuring default roles exist...")
+            ensure_roles = """
+                INSERT INTO roles (id, role_name) VALUES
+                (1, 'Admin'),
+                (2, 'User')
+                ON CONFLICT (id) DO NOTHING;
+            """
+            await db.execute(text(ensure_roles))
+            print("✅ Default roles ensured")
+
         # Handle role column migration
         if 'role' in user_columns and 'role_id' not in user_columns:
             print("Found string 'role' column, migrating to role_id...")
@@ -235,8 +246,8 @@ async def create_admin_user(db):
     admin_email = "admin@cvbuilder.com"
 
     # Check if admin exists
-    check_admin = 'SELECT email FROM "user" WHERE email = $1'
-    existing = await db.execute(text(check_admin), (admin_email,))
+    check_admin = 'SELECT email FROM "user" WHERE email = :email'
+    existing = await db.execute(text(check_admin), {"email": admin_email})
 
     if existing.fetchone():
         print(f"ℹ️ Admin user {admin_email} already exists")
@@ -248,9 +259,17 @@ async def create_admin_user(db):
     # Always use role_id = 1 for Admin (after migration, this column should exist)
     insert_query = """
         INSERT INTO "user" (id, email, hashed_password, is_active, is_superuser, is_verified, role_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES (:id, :email, :password, :active, :superuser, :verified, :role_id)
     """
-    values = (admin_id, admin_email, hashed_password, True, True, True, 1)
+    values = {
+        "id": admin_id,
+        "email": admin_email,
+        "password": hashed_password,
+        "active": True,
+        "superuser": True,
+        "verified": True,
+        "role_id": 1
+    }
 
     await db.execute(text(insert_query), values)
     print(f"✅ Created admin user: {admin_email} with role_id=1 (Admin)")

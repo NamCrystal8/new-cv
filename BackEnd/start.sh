@@ -50,33 +50,31 @@ if [ -f "test_database.py" ]; then
   python test_database.py || echo "WARNING: Database connection test failed, but continuing startup..."
 fi
 
-# Run comprehensive database migration
-echo "====== Database Migration & Initialization ======"
-if [ -f "migrate_database.py" ]; then
-  echo "Running comprehensive database migration..."
+# Initialize fresh database
+echo "====== Fresh Database Initialization ======"
+if [ -f "init_fresh_database.py" ]; then
+  echo "Initializing fresh database with clean schema and default data..."
   echo "This will:"
-  echo "  • Update database schema to match current models"
-  echo "  • Create missing tables and relationships"
-  echo "  • Migrate role system (role → role_id)"
-  echo "  • Create admin user (admin@cvbuilder.com)"
-  echo "  • Initialize subscription plans"
+  echo "  • Create database schema from current models"
+  echo "  • Create roles: Admin (1), User (2)"
+  echo "  • Create admin user: admin@cvbuilder.com / admin123"
+  echo "  • Create subscription plans: Free, Premium, Pro"
+  echo "  • Establish all foreign key relationships"
   echo ""
 
-  python migrate_database.py
+  python init_fresh_database.py
 
   if [ $? -eq 0 ]; then
-    echo "✅ Database migration completed successfully!"
+    echo "✅ Fresh database initialization completed successfully!"
   else
-    echo "❌ Database migration failed!"
-    echo "⚠️  Continuing startup, but some features may not work correctly."
+    echo "❌ Fresh database initialization failed!"
+    echo "⚠️  Application may not work correctly."
+    exit 1
   fi
 else
-  echo "WARNING: migrate_database.py not found, skipping migration"
+  echo "WARNING: init_fresh_database.py not found"
   echo "⚠️  Database may not be properly initialized."
 fi
-
-# Note: Subscription plans are now handled by migrate_database.py
-# No need for separate init_subscription_plans.py
 
 # Wait a moment for database to be fully available
 echo "====== Starting Application ======"

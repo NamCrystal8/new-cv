@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
     """User model with role and subscription relationships"""
-    # Role relationship - RESTORED
+    # Role relationship - REQUIRED (fresh database setup)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), default=2)  # Default to USER role (id=2)
     role: Mapped["Role"] = relationship("Role")
 
