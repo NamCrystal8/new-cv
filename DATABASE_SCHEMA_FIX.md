@@ -65,8 +65,27 @@ After deploying:
 
 ## 🔧 Manual Admin Creation (if needed)
 If the automatic admin creation doesn't work, you can run:
+
+**Option 1: Robust method (recommended)**
+```bash
+python create_admin_robust.py
+```
+
+**Option 2: Simple method**
 ```bash
 python create_admin_simple.py
 ```
+
+**Option 3: Inspect database first**
+```bash
+python inspect_database.py
+```
+
+## 🔍 Database Schema Issue
+Your database has a `role` column that's NOT NULL, but our code was trying to insert without providing a value. The updated scripts now handle this properly by:
+
+1. **Inspecting the database schema** to see what columns exist
+2. **Providing appropriate values** for role/role_id columns
+3. **Using raw SQL** to bypass ORM issues
 
 The role management features can be added back later once the database schema is properly migrated.

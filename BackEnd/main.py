@@ -22,7 +22,7 @@ async def on_startup():
 async def create_default_admin():
     """Create default admin user on startup"""
     try:
-        from sqlalchemy import select
+        from sqlalchemy import select, text
         from models.user import User
         from passlib.context import CryptContext
 
@@ -37,19 +37,34 @@ async def create_default_admin():
                 )
 
                 if not existing_admin.scalar_one_or_none():
-                    # Create admin user
-                    admin_user = User(
-                        id=uuid.uuid4(),
-                        email=admin_email,
-                        hashed_password=pwd_context.hash("admin123"),
-                        is_active=True,
-                        is_verified=True,
-                        is_superuser=True
-                    )
+                    # Create admin user using raw SQL to handle role column
+                    admin_id = str(uuid.uuid4())
+                    hashed_password = pwd_context.hash("admin123")
 
-                    db.add(admin_user)
+                    # Try to insert with role column first
+                    try:
+                        insert_query = """
+                            INSERT INTO "user" (id, email, hashed_password, is_active, is_superuser, is_verified, role)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7)
+                        """
+                        await db.execute(text(insert_query), (
+                            admin_id, admin_email, hashed_password, True, True, True, "Admin"
+                        ))
+                        print(f"✅ Created admin user with role: {admin_email}")
+                    except Exception:
+                        # Fallback: try without role column
+                        admin_user = User(
+                            id=uuid.UUID(admin_id),
+                            email=admin_email,
+                            hashed_password=hashed_password,
+                            is_active=True,
+                            is_verified=True,
+                            is_superuser=True
+                        )
+                        db.add(admin_user)
+                        print(f"✅ Created admin user without role: {admin_email}")
+
                     await db.commit()
-                    print(f"✅ Created admin user: {admin_email}")
                 else:
                     print(f"ℹ️ Admin user already exists: {admin_email}")
 
