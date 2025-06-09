@@ -76,6 +76,15 @@ else
   echo "⚠️  Database may not be properly initialized."
 fi
 
+# Force create subscription plans (backup)
+echo "====== Force Create Subscription Plans ======"
+if [ -f "force_create_plans.py" ]; then
+  echo "Force creating subscription plans as backup..."
+  python force_create_plans.py || echo "⚠️ Force creation failed, but continuing..."
+else
+  echo "WARNING: force_create_plans.py not found"
+fi
+
 # Wait a moment for database to be fully available
 echo "====== Starting Application ======"
 echo "Waiting for database connection..."

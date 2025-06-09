@@ -12,10 +12,11 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
-            "http://localhost:3000", 
+            "http://localhost:3000",
             "http://localhost:5173",
-            # Add your production frontend URL
-            os.getenv("FRONTEND_URL", "https://your-frontend-domain.onrender.com")
+            # Production frontend URLs
+            "https://new-cv-fe.onrender.com",
+            os.getenv("FRONTEND_URL", "https://new-cv-fe.onrender.com")
         ],
         allow_credentials=True,
         allow_methods=["*"],

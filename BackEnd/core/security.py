@@ -13,7 +13,13 @@ dotenv.load_dotenv()
 
 SECRET = os.getenv("JWT_SECRET", "DEFAULT_SECRET_KEY_CHANGE_ME")
 
-cookie_transport = CookieTransport(cookie_name="cvapp", cookie_max_age=3600)
+cookie_transport = CookieTransport(
+    cookie_name="cvapp",
+    cookie_max_age=3600,
+    cookie_secure=True,  # HTTPS only in production
+    cookie_httponly=True,  # Prevent XSS
+    cookie_samesite="none"  # Allow cross-origin cookies
+)
 
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
