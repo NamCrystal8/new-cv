@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { getApiBaseUrl } from '@/utils/api';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, LogIn, Sparkles } from 'lucide-react';
 import { useAuth } from '@/App';
@@ -28,7 +29,8 @@ const ModernLoginForm: React.FC = () => {
     formData.append('password', password);
 
     try {
-      const response = await fetch('/api/auth/jwt/login', {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/auth/jwt/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

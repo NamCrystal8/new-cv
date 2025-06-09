@@ -3,22 +3,32 @@
 /**
  * Get the base URL for API calls
  * In development: uses Vite proxy (/api)
- * In production: uses environment variable or falls back to relative path
+ * In production: uses hardcoded backend URL
  */
 export const getApiBaseUrl = (): string => {
+  // Check if we're in development mode
+  const isDevelopment = window.location.hostname === 'localhost' ||
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.port === '5173';
+
+  // Debug logging
+  console.log('API Configuration:', {
+    isDevelopment,
+    hostname: window.location.hostname,
+    port: window.location.port,
+    origin: window.location.origin
+  });
+
   // In development, use the proxy
-  if (import.meta.env.DEV) {
+  if (isDevelopment) {
+    console.log('Using development proxy: /api');
     return '/api';
   }
-  
-  // In production, use environment variable or construct from current origin
-  const envApiUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envApiUrl) {
-    return envApiUrl;
-  }
-  
-  // Fallback: assume API is on same domain (for cases where frontend and backend are on same service)
-  return '/api';
+
+  // In production, use your backend URL
+  const productionApiUrl = 'https://new-cv-7jve.onrender.com';
+  console.log('Using production API URL:', productionApiUrl);
+  return productionApiUrl;
 };
 
 /**

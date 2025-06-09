@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { getApiBaseUrl } from './utils/api';
 import './App.css';
 import StepIndicator from './components/ui/StepIndicator';
 import ErrorMessage from './components/ui/ErrorMessage';
@@ -39,7 +40,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/users/me');
+        const apiBaseUrl = getApiBaseUrl();
+        const response = await fetch(`${apiBaseUrl}/users/me`);
         if (response.ok) {
           const userData = await response.json();
           // Check if user is active
@@ -49,7 +51,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
             // User exists but is deactivated
             setIsAuthenticated(false);
             // Clear any existing session
-            await fetch('/api/auth/jwt/logout', { method: 'POST' }).catch(() => {});
+            await fetch(`${apiBaseUrl}/auth/jwt/logout`, { method: 'POST' }).catch(() => {});
           }
         } else {
           setIsAuthenticated(false);
@@ -195,6 +197,9 @@ const MainAppContent: React.FC = () => {
   const [flowId, setFlowId] = useState<string | null>(null);
   const navigate = useNavigate(); // For handling unauthorized errors
 
+  // Get API base URL
+  const apiBaseUrl = getApiBaseUrl();
+
   // Function to handle API errors, especially 401 Unauthorized
   const handleApiError = (error: any, defaultMessage: string) => {
     console.error('API Error:', error);
@@ -220,7 +225,7 @@ const MainAppContent: React.FC = () => {
       const formData = new FormData();
       formData.append('file', pdfFile);
 
-      const response = await fetch('/api/analyze-cv-weaknesses', {
+      const response = await fetch(`${apiBaseUrl}/analyze-cv-weaknesses`, {
         method: 'POST',
         body: formData,
       });
@@ -372,7 +377,7 @@ const MainAppContent: React.FC = () => {
         );
       }
 
-      const response = await fetch('/api/complete-cv-flow', {
+      const response = await fetch(`${apiBaseUrl}/complete-cv-flow`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -412,7 +417,7 @@ const MainAppContent: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const response = await fetch('/api/analyze-stored-cv-with-job-description', {
+      const response = await fetch(`${apiBaseUrl}/analyze-stored-cv-with-job-description`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

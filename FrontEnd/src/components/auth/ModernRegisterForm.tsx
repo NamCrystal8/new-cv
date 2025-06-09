@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { getApiBaseUrl } from '@/utils/api';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, UserPlus, Sparkles, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -53,7 +54,8 @@ const ModernRegisterForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
