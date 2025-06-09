@@ -37,9 +37,11 @@ export const getApiBaseUrl = (): string => {
 export const apiCall = async (endpoint: string, options?: RequestInit): Promise<Response> => {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-  
+
   return fetch(url, {
     ...options,
+    mode: 'cors',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options?.headers,
