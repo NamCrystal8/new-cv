@@ -66,7 +66,7 @@ const UploadPage: React.FC<UploadPageProps> = ({
   };
 
   // Get file size constraints
-  const { maxSizeMB, maxSizeFormatted } = getFileSizeConstraints();
+  const { maxSizeFormatted } = getFileSizeConstraints();
 
   // File dropzone configuration using react-dropzone
   const onDrop = useCallback((acceptedFiles: File[]) => {

@@ -27,16 +27,16 @@ export function formatFileSize(bytes: number): string {
  */
 export function validateFile(file: File): { isValid: boolean; error?: string } {
   // Check file type
-  if (!FILE_CONSTRAINTS.ALLOWED_TYPES.includes(file.type)) {
+  if (!FILE_CONSTRAINTS.ALLOWED_TYPES.includes(file.type as any)) {
     return {
       isValid: false,
       error: 'Please upload a PDF file only.'
     };
   }
-  
+
   // Check file extension
   const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-  if (!FILE_CONSTRAINTS.ALLOWED_EXTENSIONS.includes(extension)) {
+  if (!FILE_CONSTRAINTS.ALLOWED_EXTENSIONS.includes(extension as any)) {
     return {
       isValid: false,
       error: 'Please upload a file with .pdf extension.'
