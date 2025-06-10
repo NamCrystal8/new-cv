@@ -123,7 +123,7 @@ async def hotfix_migration():
                         {
                             'id': 1,
                             'name': 'Free',
-                            'tier': 'free',
+                            'tier': 'FREE',
                             'price_monthly': 0.0,
                             'price_yearly': 0.0,
                             'cv_analyses_per_month': 3,
@@ -137,7 +137,7 @@ async def hotfix_migration():
                         {
                             'id': 2,
                             'name': 'Premium',
-                            'tier': 'premium',
+                            'tier': 'PREMIUM',
                             'price_monthly': 9.99,
                             'price_yearly': 99.99,
                             'cv_analyses_per_month': 50,
@@ -151,7 +151,7 @@ async def hotfix_migration():
                         {
                             'id': 3,
                             'name': 'Pro',
-                            'tier': 'pro',
+                            'tier': 'PRO',
                             'price_monthly': 19.99,
                             'price_yearly': 199.99,
                             'cv_analyses_per_month': None,

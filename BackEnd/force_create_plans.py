@@ -44,9 +44,9 @@ async def force_create_subscription_plans():
                     advanced_analytics, priority_support, custom_templates, api_access,
                     is_active, created_at
                 ) VALUES 
-                (1, 'Free', 'free', 0.0, 0.0, 3, 1, 2, false, false, false, false, true, NOW()),
-                (2, 'Premium', 'premium', 9.99, 99.99, 50, 20, 10, true, false, true, false, true, NOW()),
-                (3, 'Pro', 'pro', 19.99, 199.99, NULL, NULL, NULL, true, true, true, true, true, NOW())
+                (1, 'Free', 'FREE', 0.0, 0.0, 3, 1, 2, false, false, false, false, true, NOW()),
+                (2, 'Premium', 'PREMIUM', 9.99, 99.99, 50, 20, 10, true, false, true, false, true, NOW()),
+                (3, 'Pro', 'PRO', 19.99, 199.99, NULL, NULL, NULL, true, true, true, true, true, NOW())
                 ON CONFLICT (id) DO UPDATE SET
                     name = EXCLUDED.name,
                     tier = EXCLUDED.tier,
