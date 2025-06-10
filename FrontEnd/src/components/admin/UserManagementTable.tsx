@@ -151,11 +151,13 @@ export const UserManagementTable: React.FC = () => {
 
   const handleUpdateUser = async (userId: string, updates: Partial<AdminUser>) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/users/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(updates),
       });
 
@@ -185,8 +187,10 @@ export const UserManagementTable: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/users/${userId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -211,13 +215,15 @@ export const UserManagementTable: React.FC = () => {
 
   const handleBulkAction = async (selectedUsers: AdminUser[], action: string) => {
     const userIds = selectedUsers.map(user => user.id);
-    
+
     try {
-      const response = await fetch('/api/admin/users/bulk-action', {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/users/bulk-action`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           user_ids: userIds,
           action: action,

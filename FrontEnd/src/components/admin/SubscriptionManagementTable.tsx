@@ -116,8 +116,10 @@ export const SubscriptionManagementTable: React.FC<SubscriptionManagementTablePr
     }
 
     try {
-      const response = await fetch(`/api/admin/subscriptions/${subscriptionId}/cancel`, {
+      const apiBaseUrl = getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/subscriptions/${subscriptionId}/cancel`, {
         method: 'POST',
+        credentials: 'include',
       });
 
       if (!response.ok) {
