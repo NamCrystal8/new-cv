@@ -3,6 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { validateFile, formatFileSize, getFileSizeConstraints, FILE_CONSTRAINTS } from '@/utils/fileUtils';
 
 interface UploadPageProps {
   isLoading: boolean;
@@ -64,14 +65,21 @@ const UploadPage: React.FC<UploadPageProps> = ({
     // If only errorMessage is provided (no setter), we can't set it locally
   };
 
+  // Get file size constraints
+  const { maxSizeMB, maxSizeFormatted } = getFileSizeConstraints();
+
   // File dropzone configuration using react-dropzone
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      if (file.type !== 'application/pdf') {
-        handleSetError('Please upload a PDF file');
+
+      // Validate file using utility function
+      const validation = validateFile(file);
+      if (!validation.isValid) {
+        handleSetError(validation.error || 'Invalid file');
         return;
       }
+
       setPdfFile(file);
       handleSetError(null);
     }
@@ -83,7 +91,9 @@ const UploadPage: React.FC<UploadPageProps> = ({
       'application/pdf': ['.pdf']
     },
     maxFiles: 1,
-    multiple: false
+    multiple: false,
+    maxSize: FILE_CONSTRAINTS.MAX_SIZE,
+    minSize: FILE_CONSTRAINTS.MIN_SIZE
   });
 
   return (
@@ -132,7 +142,7 @@ const UploadPage: React.FC<UploadPageProps> = ({
         </h3>
         
         <p className="text-muted-foreground text-sm">
-          Supports PDF files only
+          Supports PDF files only • Maximum size: {maxSizeFormatted}
         </p>
       </div>
       
@@ -154,7 +164,7 @@ const UploadPage: React.FC<UploadPageProps> = ({
             <span className="flex-1 truncate">
               <strong className="font-medium">{pdfFile.name}</strong>
               <span className="text-muted-foreground ml-1">
-                ({Math.round(pdfFile.size / 1024)} KB)
+                ({formatFileSize(pdfFile.size)})
               </span>
             </span>
             <Button

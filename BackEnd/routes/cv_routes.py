@@ -13,6 +13,8 @@ from core.database import get_async_db  # Import async session dependency
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.subscription_service import SubscriptionService, get_subscription_service
 from models.subscription import AnalysisType
+from utils.file_validator import FileValidator
+from utils.error_handler import handle_file_upload_error, FileUploadError
 import hashlib
 
 router = APIRouter()
@@ -36,9 +38,27 @@ async def analyze_cv_weaknesses(
 ):
     """
     Analyze a CV for weaknesses and suggest improvements.
+    Enhanced with comprehensive file validation.
     """
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    try:
+        # Comprehensive file validation
+        validation_result = await FileValidator.validate_cv_file(file)
+
+        print(f"[FILE_VALIDATION] File validated: {file.filename}")
+        print(f"[FILE_VALIDATION] Size: {FileValidator.format_file_size(validation_result['file_size'])}")
+        print(f"[FILE_VALIDATION] Pages: {validation_result['page_count']}")
+        print(f"[FILE_VALIDATION] Has text: {validation_result['has_text']}")
+
+        # Log any warnings (non-fatal issues)
+        if validation_result.get('errors'):
+            for error in validation_result['errors']:
+                if "too many pages" in error.lower():
+                    print(f"[FILE_VALIDATION] Warning: {error}")
+                else:
+                    print(f"[FILE_VALIDATION] Error: {error}")
+
+    except FileUploadError as e:
+        raise handle_file_upload_error(e)
     
     # Check usage limits
     can_proceed = await subscription_service.check_usage_limits(user.id, "cv_analysis")
@@ -1168,9 +1188,15 @@ async def analyze_cv_with_job_description(
 ):
     """
     Analyze a CV for weaknesses and compare it to a job description if provided.
+    Enhanced with comprehensive file validation.
     """
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    # Comprehensive file validation
+    validation_result = await FileValidator.validate_cv_file(file)
+
+    print(f"[FILE_VALIDATION] File validated: {file.filename}")
+    print(f"[FILE_VALIDATION] Size: {FileValidator.format_file_size(validation_result['file_size'])}")
+    print(f"[FILE_VALIDATION] Pages: {validation_result['page_count']}")
+    print(f"[FILE_VALIDATION] Has text: {validation_result['has_text']}")
     
     # Check usage limits based on analysis type
     analysis_type = "job_description_analysis" if job_description else "cv_analysis"

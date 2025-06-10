@@ -13,6 +13,7 @@ python-dotenv
 asyncmy
 PyPDF2
 google-genai
+python-magic
 # PostgreSQL support in Render
 psycopg2-binary
 asyncpg>=0.27.0

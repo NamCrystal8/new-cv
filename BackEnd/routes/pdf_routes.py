@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from schemas.common import CVInput
 from services.latex_service import convert_to_latex_service
 from core.app import gemini_service
+from utils.file_validator import FileValidator
 
 router = APIRouter()
 
@@ -13,8 +14,12 @@ LATEX_OUTPUT_DIR = "output_tex_files"
 
 @router.post("/extract-pdf")
 async def extract_pdf(file: UploadFile = File(...)) -> dict:
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    # Comprehensive file validation
+    validation_result = await FileValidator.validate_cv_file(file)
+
+    print(f"[FILE_VALIDATION] File validated: {file.filename}")
+    print(f"[FILE_VALIDATION] Size: {FileValidator.format_file_size(validation_result['file_size'])}")
+    print(f"[FILE_VALIDATION] Pages: {validation_result['page_count']}")
 
     try:
         pdf_content = await file.read()

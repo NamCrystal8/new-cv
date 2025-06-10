@@ -267,9 +267,6 @@ class GeminiService:
             
             DO NOT target fields like urls, thesis, or other metadata that don't appear in the PDF.
             
-            Generate AT LEAST 3-5 recommendations per major section (Header, Experience, Education, etc.)
-            if that section exists. Do not just say "looks good" - always find ways to improve.
-            
             IMPORTANT: Order the recommendations array by priority - Header items first, then Experience, then Education, etc.
             Ensure each recommendation can be directly applied to the CV.
             """
