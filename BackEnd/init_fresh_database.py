@@ -57,7 +57,7 @@ async def init_fresh_database():
                 
                 # Check if admin exists
                 admin_check = await db.execute(
-                    text("SELECT COUNT(*) FROM \"user\" WHERE email = :email"),
+                    text("SELECT COUNT(*) FROM user WHERE email = :email"),
                     {"email": admin_email}
                 )
                 
@@ -215,7 +215,7 @@ async def verify_database():
             admin_result = await db.execute(
                 text("""
                     SELECT u.email, u.is_superuser, u.is_active, u.role_id, r.role_name
-                    FROM "user" u
+                    FROM user u
                     LEFT JOIN roles r ON u.role_id = r.id
                     WHERE u.email = 'admin@cvbuilder.com'
                 """)
@@ -248,7 +248,7 @@ async def verify_database():
             # Check foreign key relationships
             fk_check = await db.execute(
                 text("""
-                    SELECT COUNT(*) FROM "user" u
+                    SELECT COUNT(*) FROM user u
                     JOIN roles r ON u.role_id = r.id
                     WHERE u.email = 'admin@cvbuilder.com'
                 """)

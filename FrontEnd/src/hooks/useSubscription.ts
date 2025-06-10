@@ -18,7 +18,9 @@ export const useSubscriptionPlans = () => {
     const fetchPlans = async () => {
       try {
         const apiBaseUrl = getApiBaseUrl();
-        const response = await fetch(`${apiBaseUrl}/subscription/plans`);
+        const response = await fetch(`${apiBaseUrl}/subscription/plans`, {
+          credentials: 'include'
+        });
         if (!response.ok) throw new Error('Failed to fetch plans');
         const data = await response.json();
         setPlans(data);
@@ -44,7 +46,9 @@ export const useUserSubscription = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/subscription/current`);
+      const response = await fetch(`${apiBaseUrl}/subscription/current`, {
+        credentials: 'include'
+      });
       if (!response.ok) {
         if (response.status === 401) {
           setSubscription(null);
@@ -77,7 +81,9 @@ export const useUsageStats = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/subscription/usage`);
+      const response = await fetch(`${apiBaseUrl}/subscription/usage`, {
+        credentials: 'include'
+      });
       if (!response.ok) {
         if (response.status === 401) {
           setUsage(null);
@@ -110,7 +116,9 @@ export const useSubscriptionStatus = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/subscription/status`);
+      const response = await fetch(`${apiBaseUrl}/subscription/status`, {
+        credentials: 'include'
+      });
       if (!response.ok) {
         if (response.status === 401) {
           setStatus(null);
@@ -143,7 +151,9 @@ export const useAnalytics = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/subscription/analytics`);
+      const response = await fetch(`${apiBaseUrl}/subscription/analytics`, {
+        credentials: 'include'
+      });
       if (!response.ok) {
         if (response.status === 403) {
           setError('Premium subscription required for analytics');
@@ -179,6 +189,7 @@ export const upgradeSubscription = async (request: UpgradeRequest) => {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
     body: JSON.stringify(request),
   });
 
@@ -193,6 +204,7 @@ export const checkUsageLimits = async (analysisType: string) => {
   const apiBaseUrl = getApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/subscription/check-limits/${analysisType}`, {
     method: 'POST',
+    credentials: 'include',
   });
 
   if (!response.ok) {

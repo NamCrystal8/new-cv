@@ -159,7 +159,7 @@ CV_STRUCTURE = '''{
                     "date": "2023-01-01"
                   }
                 ]
-              },
+              }
             },
             "rendering_rules": {
               "date_format": "MMM YYYY",

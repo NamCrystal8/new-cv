@@ -125,7 +125,7 @@ async def check_database_status():
             
             # Check admin user
             try:
-                admin_query = 'SELECT email, is_superuser FROM "user" WHERE email = \'admin@cvbuilder.com\''
+                admin_query = 'SELECT email, is_superuser FROM user WHERE email = \'admin@cvbuilder.com\''
                 admin_result = await db.execute(text(admin_query))
                 admin = admin_result.fetchone()
                 if admin:

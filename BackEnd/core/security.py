@@ -13,12 +13,18 @@ dotenv.load_dotenv()
 
 SECRET = os.getenv("JWT_SECRET", "DEFAULT_SECRET_KEY_CHANGE_ME")
 
+import os
+
+# Determine if we're in production based on environment
+is_production = os.getenv("ENVIRONMENT", "development") == "production" or "render.com" in os.getenv("DATABASE_URL", "")
+
 cookie_transport = CookieTransport(
     cookie_name="cvapp",
     cookie_max_age=3600,
-    cookie_secure=True,  # HTTPS only in production
+    cookie_secure=is_production,  # HTTPS only in production
     cookie_httponly=True,  # Prevent XSS
-    cookie_samesite="none"  # Allow cross-origin cookies
+    cookie_samesite="none" if is_production else "lax",  # Allow cross-origin in production
+    cookie_domain=None  # Let browser handle domain
 )
 
 def get_jwt_strategy() -> JWTStrategy:
