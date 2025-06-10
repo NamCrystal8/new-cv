@@ -2,7 +2,7 @@ import os
 import uuid
 from fastapi import Depends, Request, HTTPException, status
 from fastapi_users import FastAPIUsers, BaseUserManager, UUIDIDMixin
-from fastapi_users.authentication import CookieTransport, AuthenticationBackend, JWTStrategy
+from fastapi_users.authentication import CookieTransport, BearerTransport, AuthenticationBackend, JWTStrategy
 # Update the import path for SQLAlchemyUserDatabase
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from models.user import User
@@ -18,6 +18,7 @@ import os
 # Determine if we're in production based on environment
 is_production = os.getenv("ENVIRONMENT", "development") == "production" or "render.com" in os.getenv("DATABASE_URL", "")
 
+# Cookie transport for development/same-domain usage
 cookie_transport = CookieTransport(
     cookie_name="cvapp",
     cookie_max_age=3600,
@@ -27,12 +28,23 @@ cookie_transport = CookieTransport(
     cookie_domain=None  # Let browser handle domain
 )
 
+# Bearer transport for cross-domain production usage
+bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
+
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
 
-auth_backend = AuthenticationBackend(
-    name="jwt",
+# Cookie-based authentication backend (for development)
+cookie_auth_backend = AuthenticationBackend(
+    name="jwt-cookie",
     transport=cookie_transport,
+    get_strategy=get_jwt_strategy,
+)
+
+# Bearer token authentication backend (for production cross-domain)
+bearer_auth_backend = AuthenticationBackend(
+    name="jwt-bearer",
+    transport=bearer_transport,
     get_strategy=get_jwt_strategy,
 )
 
@@ -95,7 +107,7 @@ async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db
 # Define fastapi_users instance here, passing the get_user_manager dependency
 fastapi_users = FastAPIUsers[User, uuid.UUID](
     get_user_manager, # Use the UserManager dependency
-    [auth_backend],
+    [cookie_auth_backend, bearer_auth_backend],  # Support both cookie and bearer authentication
 )
 
 # Define the dependency for getting the current active user here

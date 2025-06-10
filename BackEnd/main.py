@@ -3,7 +3,7 @@ from core.app import app
 from schemas.user import UserRead, UserCreate, UserUpdate
 from core.database import Base, engine
 from routes import base_routes, pdf_routes, cv_routes, health_routes, subscription_routes, admin_routes
-from core.security import auth_backend, fastapi_users
+from core.security import cookie_auth_backend, bearer_auth_backend, fastapi_users
 
 # --- Database Initialization --- START ---
 @app.on_event("startup")
@@ -29,9 +29,17 @@ app.include_router(subscription_routes.router)
 app.include_router(admin_routes.router)
 
 # Include FastAPI-Users routers with correct schemas
+# Cookie-based authentication (for development and same-domain)
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend),
+    fastapi_users.get_auth_router(cookie_auth_backend),
     prefix="/auth/jwt",
+    tags=["auth"],
+)
+
+# Bearer token authentication (for production cross-domain)
+app.include_router(
+    fastapi_users.get_auth_router(bearer_auth_backend),
+    prefix="/auth/bearer",
     tags=["auth"],
 )
 app.include_router(

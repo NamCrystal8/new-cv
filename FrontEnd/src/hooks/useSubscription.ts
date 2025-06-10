@@ -8,6 +8,19 @@ import {
   UpgradeRequest
 } from '../types/subscription';
 import { getApiBaseUrl } from '../utils/api';
+import { shouldUseTokenAuth, fetchWithAuth } from '../utils/tokenAuth';
+
+// Helper function to make authenticated requests
+const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  if (shouldUseTokenAuth()) {
+    return fetchWithAuth(url, options);
+  } else {
+    return fetch(url, {
+      ...options,
+      credentials: 'include',
+    });
+  }
+};
 
 export const useSubscriptionPlans = () => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -18,9 +31,7 @@ export const useSubscriptionPlans = () => {
     const fetchPlans = async () => {
       try {
         const apiBaseUrl = getApiBaseUrl();
-        const response = await fetch(`${apiBaseUrl}/subscription/plans`, {
-          credentials: 'include'
-        });
+        const response = await makeAuthenticatedRequest(`${apiBaseUrl}/subscription/plans`);
         if (!response.ok) throw new Error('Failed to fetch plans');
         const data = await response.json();
         setPlans(data);
@@ -46,9 +57,7 @@ export const useUserSubscription = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/subscription/current`, {
-        credentials: 'include'
-      });
+      const response = await makeAuthenticatedRequest(`${apiBaseUrl}/subscription/current`);
       if (!response.ok) {
         if (response.status === 401) {
           setSubscription(null);
@@ -81,9 +90,7 @@ export const useUsageStats = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/subscription/usage`, {
-        credentials: 'include'
-      });
+      const response = await makeAuthenticatedRequest(`${apiBaseUrl}/subscription/usage`);
       if (!response.ok) {
         if (response.status === 401) {
           setUsage(null);
@@ -116,9 +123,7 @@ export const useSubscriptionStatus = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/subscription/status`, {
-        credentials: 'include'
-      });
+      const response = await makeAuthenticatedRequest(`${apiBaseUrl}/subscription/status`);
       if (!response.ok) {
         if (response.status === 401) {
           setStatus(null);
@@ -151,9 +156,7 @@ export const useAnalytics = () => {
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/subscription/analytics`, {
-        credentials: 'include'
-      });
+      const response = await makeAuthenticatedRequest(`${apiBaseUrl}/subscription/analytics`);
       if (!response.ok) {
         if (response.status === 403) {
           setError('Premium subscription required for analytics');
@@ -184,12 +187,11 @@ export const useAnalytics = () => {
 // Subscription actions
 export const upgradeSubscription = async (request: UpgradeRequest) => {
   const apiBaseUrl = getApiBaseUrl();
-  const response = await fetch(`${apiBaseUrl}/subscription/upgrade`, {
+  const response = await makeAuthenticatedRequest(`${apiBaseUrl}/subscription/upgrade`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify(request),
   });
 
@@ -202,9 +204,8 @@ export const upgradeSubscription = async (request: UpgradeRequest) => {
 
 export const checkUsageLimits = async (analysisType: string) => {
   const apiBaseUrl = getApiBaseUrl();
-  const response = await fetch(`${apiBaseUrl}/subscription/check-limits/${analysisType}`, {
+  const response = await makeAuthenticatedRequest(`${apiBaseUrl}/subscription/check-limits/${analysisType}`, {
     method: 'POST',
-    credentials: 'include',
   });
 
   if (!response.ok) {

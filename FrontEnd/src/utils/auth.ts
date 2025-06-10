@@ -2,6 +2,14 @@
  * Authentication utilities for handling login, logout, and auth state
  */
 import { getApiBaseUrl } from './api';
+import {
+  shouldUseTokenAuth,
+  loginWithToken,
+  logoutWithToken,
+  getCurrentUserWithToken,
+  hasAuthToken,
+  fetchWithAuth
+} from './tokenAuth';
 
 export interface LoginCredentials {
   email: string;
@@ -21,57 +29,76 @@ export interface AuthUser {
  * Login user with email and password
  */
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthUser> => {
-  const apiBaseUrl = getApiBaseUrl();
-  
-  const formData = new URLSearchParams();
-  formData.append('username', credentials.email);
-  formData.append('password', credentials.password);
+  // Use token-based auth in production, cookie-based in development
+  if (shouldUseTokenAuth()) {
+    await loginWithToken(credentials.email, credentials.password);
+    return await getCurrentUser();
+  } else {
+    // Cookie-based authentication for development
+    const apiBaseUrl = getApiBaseUrl();
 
-  const response = await fetch(`${apiBaseUrl}/auth/jwt/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    credentials: 'include', // Essential for cookie-based auth
-    body: formData.toString(),
-  });
+    const formData = new URLSearchParams();
+    formData.append('username', credentials.email);
+    formData.append('password', credentials.password);
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(getLoginErrorMessage(errorData));
+    const response = await fetch(`${apiBaseUrl}/auth/jwt/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      credentials: 'include', // Essential for cookie-based auth
+      body: formData.toString(),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(getLoginErrorMessage(errorData));
+    }
+
+    // After successful login, get user data
+    return await getCurrentUser();
   }
-
-  // After successful login, get user data
-  return await getCurrentUser();
 };
 
 /**
  * Get current authenticated user
  */
 export const getCurrentUser = async (): Promise<AuthUser> => {
-  const apiBaseUrl = getApiBaseUrl();
-  
-  const response = await fetch(`${apiBaseUrl}/users/me`, {
-    credentials: 'include', // Essential for cookie-based auth
-  });
+  // Use token-based auth in production, cookie-based in development
+  if (shouldUseTokenAuth()) {
+    return await getCurrentUserWithToken();
+  } else {
+    // Cookie-based authentication for development
+    const apiBaseUrl = getApiBaseUrl();
 
-  if (!response.ok) {
-    throw new Error('Not authenticated');
+    const response = await fetch(`${apiBaseUrl}/users/me`, {
+      credentials: 'include', // Essential for cookie-based auth
+    });
+
+    if (!response.ok) {
+      throw new Error('Not authenticated');
+    }
+
+    return await response.json();
   }
-
-  return await response.json();
 };
 
 /**
  * Logout current user
  */
 export const logoutUser = async (): Promise<void> => {
-  const apiBaseUrl = getApiBaseUrl();
-  
-  await fetch(`${apiBaseUrl}/auth/jwt/logout`, {
-    method: 'POST',
-    credentials: 'include', // Essential for cookie-based auth
-  });
+  // Use token-based auth in production, cookie-based in development
+  if (shouldUseTokenAuth()) {
+    await logoutWithToken();
+  } else {
+    // Cookie-based authentication for development
+    const apiBaseUrl = getApiBaseUrl();
+
+    await fetch(`${apiBaseUrl}/auth/jwt/logout`, {
+      method: 'POST',
+      credentials: 'include', // Essential for cookie-based auth
+    });
+  }
 };
 
 /**
@@ -79,6 +106,11 @@ export const logoutUser = async (): Promise<void> => {
  */
 export const checkAuthStatus = async (): Promise<boolean> => {
   try {
+    // In token-based auth, check if token exists first for performance
+    if (shouldUseTokenAuth() && !hasAuthToken()) {
+      return false;
+    }
+
     await getCurrentUser();
     return true;
   } catch {
@@ -90,20 +122,31 @@ export const checkAuthStatus = async (): Promise<boolean> => {
  * Make authenticated API call
  */
 export const authenticatedFetch = async (
-  endpoint: string, 
+  endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> => {
   const apiBaseUrl = getApiBaseUrl();
   const url = `${apiBaseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
-  return fetch(url, {
-    ...options,
-    credentials: 'include', // Essential for cookie-based auth
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  // Use token-based auth in production, cookie-based in development
+  if (shouldUseTokenAuth()) {
+    return fetchWithAuth(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+  } else {
+    return fetch(url, {
+      ...options,
+      credentials: 'include', // Essential for cookie-based auth
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+  }
 };
 
 /**

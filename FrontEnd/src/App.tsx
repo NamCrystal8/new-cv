@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { getApiBaseUrl } from './utils/api';
+import { shouldUseTokenAuth, getCurrentUserWithToken, hasAuthToken } from './utils/tokenAuth';
 import './App.css';
 import StepIndicator from './components/ui/StepIndicator';
 import ErrorMessage from './components/ui/ErrorMessage';
@@ -41,26 +42,48 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const apiBaseUrl = getApiBaseUrl();
-        const response = await fetch(`${apiBaseUrl}/users/me`, {
-          credentials: 'include', // Important for cookie-based auth
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          // Check if user is active
-          if (userData.is_active) {
-            setIsAuthenticated(true);
-          } else {
-            // User exists but is deactivated
+        // Use token-based auth in production, cookie-based in development
+        if (shouldUseTokenAuth()) {
+          // Check if token exists first
+          if (!hasAuthToken()) {
             setIsAuthenticated(false);
-            // Clear any existing session
-            await fetch(`${apiBaseUrl}/auth/jwt/logout`, {
-              method: 'POST',
-              credentials: 'include'
-            }).catch(() => {});
+            return;
+          }
+
+          try {
+            const userData = await getCurrentUserWithToken();
+            // Check if user is active
+            if (userData.is_active) {
+              setIsAuthenticated(true);
+            } else {
+              setIsAuthenticated(false);
+            }
+          } catch {
+            setIsAuthenticated(false);
           }
         } else {
-          setIsAuthenticated(false);
+          // Cookie-based authentication for development
+          const apiBaseUrl = getApiBaseUrl();
+          const response = await fetch(`${apiBaseUrl}/users/me`, {
+            credentials: 'include', // Important for cookie-based auth
+          });
+          if (response.ok) {
+            const userData = await response.json();
+            // Check if user is active
+            if (userData.is_active) {
+              setIsAuthenticated(true);
+            } else {
+              // User exists but is deactivated
+              setIsAuthenticated(false);
+              // Clear any existing session
+              await fetch(`${apiBaseUrl}/auth/jwt/logout`, {
+                method: 'POST',
+                credentials: 'include'
+              }).catch(() => {});
+            }
+          } else {
+            setIsAuthenticated(false);
+          }
         }
       } catch {
         setIsAuthenticated(false);
