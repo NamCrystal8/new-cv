@@ -1,2 +1,5 @@
 BackEnd/cv.tex
 BackEnd/cv.tex
+.env.test.local
+.gitignore
+.env.test

@@ -1,14 +1,13 @@
 #!/bin/bash
-# This script runs during the build phase on Render.com
-# PostgreSQL Optimized Build Script
+# Fresh PostgreSQL Deployment Build Script for Render.com
 
-# Exit on error
 set -e
 
-echo "====== PostgreSQL-Optimized Build Script ======"
+echo "🚀 Fresh PostgreSQL Deployment Build"
+echo "===================================="
 
-# Install system dependencies including necessary LaTeX packages
-echo "Installing system dependencies..."
+# Install system dependencies
+echo "📦 Installing system dependencies..."
 apt-get update
 apt-get install -y --no-install-recommends \
     build-essential \
@@ -16,38 +15,30 @@ apt-get install -y --no-install-recommends \
     postgresql-client \
     netcat-openbsd \
     curl \
-    git \
     texlive-latex-base \
     texlive-fonts-recommended \
     texlive-latex-extra \
     texlive-fonts-extra \
     latexmk
 
-# Clean up to reduce image size
+# Clean up
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-echo "Installing Python dependencies..."
+echo "🐍 Installing Python dependencies..."
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install --no-cache-dir -r requirements.txt
 
-# Ensure PostgreSQL drivers are installed
-echo "Ensuring PostgreSQL drivers are installed..."
+# Verify PostgreSQL drivers
+echo "🗄️ Verifying PostgreSQL drivers..."
+pip list | grep -E 'psycopg2|asyncpg' || echo "Installing PostgreSQL drivers..."
 pip install --no-cache-dir psycopg2-binary>=2.9.0 asyncpg>=0.27.0
 
-# Print diagnostic information
-echo "====== Build Diagnostics ======"
-echo "Python version: $(python --version)"
-echo "Pip version: $(pip --version)"
+# Build verification
+echo "✅ Build Verification:"
+echo "   Python: $(python --version)"
+echo "   PostgreSQL client: $(psql --version | head -n1)"
+echo "   LaTeX: $(tex --version | head -n1)"
 
-echo "Checking installed database drivers:"
-pip list | grep -E 'sqlalchemy|psycopg2|asyncpg|greenlet'
-
-echo "Installed TeX Live version:"
-tex --version || echo "TeX Live not available"
-
-echo "PostgreSQL client version:"
-psql --version || echo "PostgreSQL client not available"
-
-echo "====== Build completed successfully ======"
+echo "🎉 Build completed successfully!"

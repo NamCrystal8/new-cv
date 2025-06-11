@@ -3,8 +3,8 @@
 
 set -e
 
-echo "🚀 PostgreSQL Render Deployment Helper"
-echo "======================================"
+echo "🚀 Fresh PostgreSQL Render Deployment Helper"
+echo "============================================="
 
 # Colors for output
 RED='\033[0;31m'
@@ -45,9 +45,8 @@ required_files=(
     "BackEnd/build.sh"
     "BackEnd/start.sh"
     "BackEnd/requirements.txt"
-    "BackEnd/init_fresh_database.py"
-    "BackEnd/create_admin_with_fastapi_users.py"
-    "BackEnd/test_postgres_connection.py"
+    "BackEnd/fresh_deploy_init.py"
+    "BackEnd/verify_fresh_deployment.py"
 )
 
 for file in "${required_files[@]}"; do

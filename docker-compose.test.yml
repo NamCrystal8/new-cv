@@ -1,0 +1,76 @@
+# Docker Compose for Local Testing
+# This simulates the Render production environment locally
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database (simulates Render PostgreSQL)
+  postgres:
+    image: postgres:15
+    container_name: cv-postgres-test
+    environment:
+      POSTGRES_DB: new_cv
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpassword123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"  # Use different port to avoid conflicts
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d new_cv"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Service (simulates Render backend)
+  backend:
+    build:
+      context: ./BackEnd
+      dockerfile: Dockerfile
+    container_name: cv-backend-test
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:testpassword123@postgres:5432/new_cv
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-test_cloud}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-test_key}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-test_secret}
+      - GOOGLE_GEMINI_API_KEY=${GOOGLE_GEMINI_API_KEY:-test_gemini_key}
+      - JWT_SECRET=${JWT_SECRET:-test_jwt_secret_key_for_local_testing_only_32_chars}
+      - FRONTEND_URL=http://localhost:3000
+      - ENVIRONMENT=production
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./BackEnd/output_tex_files:/app/output_tex_files
+
+  # Frontend Service (simulates Render frontend)
+  frontend:
+    build:
+      context: ./FrontEnd
+      dockerfile: Dockerfile
+    container_name: cv-frontend-test
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: cv-test-network

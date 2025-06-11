@@ -1,4 +1,4 @@
-# render.yaml - PostgreSQL Optimized Configuration
+# Fresh PostgreSQL Deployment Configuration for Render
 services:
   - type: web
     name: new-cv-backend
@@ -7,9 +7,9 @@ services:
     dockerContext: ./BackEnd
     plan: free
     buildCommand: chmod +x ./build.sh && ./build.sh
-    startCommand: chmod +x ./start.sh && bash ./start.sh
+    startCommand: chmod +x ./start.sh && ./start.sh
     healthCheckPath: /health
-    autoDeploy: true  # Enable automatic deployments
+    autoDeploy: true
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -29,14 +29,8 @@ services:
         sync: false
       - key: ENVIRONMENT
         value: "production"
-      - key: SQLALCHEMY_WARN_20
-        value: "1"
       - key: PYTHONUNBUFFERED
         value: "1"
-      - key: DATABASE_POOL_SIZE
-        value: "5"
-      - key: DATABASE_MAX_OVERFLOW
-        value: "10"
 
   - type: web
     name: new-cv-frontend
@@ -48,7 +42,7 @@ services:
     autoDeploy: true
     envVars:
       - key: VITE_API_BASE_URL
-        sync: false  # You'll set this to your backend URL
+        sync: false
 
 databases:
   - name: new-cv-db

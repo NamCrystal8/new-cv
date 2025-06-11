@@ -1,0 +1,104 @@
+# Fresh PostgreSQL Deployment - Docker Ignore File
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Development files
+dev-requirements.txt
+test_*.py
+*_test.py
+tests/
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Output files (will be created in container)
+output_tex_files/*.tex
+output_tex_files/*.pdf
+output_tex_files/*.aux
+output_tex_files/*.log
+output_tex_files/*.out
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Git
+.git/
+.gitignore
+
+# Render specific
+render.yaml
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
