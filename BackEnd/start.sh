@@ -28,17 +28,26 @@ if [[ "$DATABASE_URL" == postgres* ]]; then
     echo "✅ PostgreSQL database configured"
 
     # Extract host and port for connection test
-    DB_HOST=$(echo $DATABASE_URL | sed -E 's/.*@([^:\/]+).*/\1/g')
-    DB_PORT=$(echo $DATABASE_URL | sed -E 's/.*:([0-9]+)\/.*/\1/g')
+    DB_HOST=$(echo $DATABASE_URL | sed -E 's/.*@([^\/]+)\/.*/\1/g' | cut -d':' -f1)
+    DB_PORT=$(echo $DATABASE_URL | sed -E 's/.*@[^:]+:([0-9]+)\/.*/\1/g')
+
+    # Default port if extraction fails
+    if [ -z "$DB_PORT" ] || [ "$DB_PORT" = "$DATABASE_URL" ]; then
+        DB_PORT="5432"
+    fi
 
     echo "   Host: $DB_HOST"
     echo "   Port: $DB_PORT"
 
-    # Test connection
-    echo "   Testing connection..."
-    timeout 15 nc -z $DB_HOST $DB_PORT && echo "   ✅ Connection successful" || {
-        echo "   ⚠️ Connection test failed, but continuing..."
-    }
+    # Test connection (skip if host extraction failed)
+    if [ "$DB_HOST" != "$DATABASE_URL" ] && [ -n "$DB_HOST" ]; then
+        echo "   Testing connection..."
+        timeout 15 nc -z $DB_HOST $DB_PORT && echo "   ✅ Connection successful" || {
+            echo "   ⚠️ Connection test failed, but continuing..."
+        }
+    else
+        echo "   ⚠️ Skipping connection test (using Render internal URL)"
+    fi
 else
     echo "❌ ERROR: Not a PostgreSQL database URL!"
     exit 1
@@ -60,8 +69,13 @@ python fresh_deploy_init.py
 if [ $? -eq 0 ]; then
     echo "   ✅ Fresh deployment initialization successful!"
 else
-    echo "   ❌ Fresh deployment initialization failed!"
-    exit 1
+    echo "   ⚠️ Fresh deployment initialization had issues, trying simple admin creation..."
+    python create_admin_simple.py
+    if [ $? -eq 0 ]; then
+        echo "   ✅ Simple admin creation successful!"
+    else
+        echo "   ❌ Admin creation failed, but continuing deployment..."
+    fi
 fi
 
 # Final startup

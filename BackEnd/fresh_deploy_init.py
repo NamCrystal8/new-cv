@@ -111,31 +111,36 @@ async def fresh_deploy_initialization():
                 
                 # Create admin user using FastAPI Users
                 print("4️⃣ Creating admin user...")
-                
-                async for user_db in get_user_db(db):
-                    async for user_manager in get_user_manager(user_db):
-                        admin_email = "admin@cvbuilder.com"
-                        existing_admin = await user_manager.get_by_email(admin_email)
-                        
-                        if not existing_admin:
-                            user_create = UserCreate(
-                                email=admin_email,
-                                password="admin123",
-                                is_superuser=True,
-                                is_verified=True
-                            )
-                            
-                            admin_user = await user_manager.create(user_create)
-                            await user_manager.user_db.update(admin_user, {"role_id": 1})
-                            
-                            print("   ✅ Created admin user:")
-                            print("      Email: admin@cvbuilder.com")
-                            print("      Password: admin123")
-                            print("      Role: Admin")
-                        else:
-                            print("   ✅ Admin user already exists")
+
+                try:
+                    async for user_db in get_user_db(db):
+                        async for user_manager in get_user_manager(user_db):
+                            admin_email = "admin@cvbuilder.com"
+                            existing_admin = await user_manager.get_by_email(admin_email)
+
+                            if not existing_admin:
+                                user_create = UserCreate(
+                                    email=admin_email,
+                                    password="admin123",
+                                    is_superuser=True,
+                                    is_verified=True
+                                )
+
+                                admin_user = await user_manager.create(user_create)
+                                await user_manager.user_db.update(admin_user, {"role_id": 1})
+
+                                print("   ✅ Created admin user:")
+                                print("      Email: admin@cvbuilder.com")
+                                print("      Password: admin123")
+                                print("      Role: Admin")
+                            else:
+                                print("   ✅ Admin user already exists")
+                            break
                         break
-                    break
+                except Exception as admin_error:
+                    print(f"   ⚠️ Admin user creation failed: {admin_error}")
+                    print("   ℹ️ You can create admin user manually later")
+                    # Continue without failing the entire deployment
                 
                 # Verification
                 print("5️⃣ Verifying deployment...")
