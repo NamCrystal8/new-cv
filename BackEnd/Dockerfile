@@ -44,5 +44,11 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Start the application
-CMD ["./start.sh"]
+# Create output directory
+RUN mkdir -p output_tex_files && chmod 755 output_tex_files
+
+# Expose port
+EXPOSE 8000
+
+# Start the application directly with environment port
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
