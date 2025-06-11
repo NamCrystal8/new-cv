@@ -88,32 +88,26 @@ def json_to_latex(json_data):
 % Harvard Style CV Template
 % Document formatting
 \usepackage[top=0.75in, bottom=0.75in, left=0.75in, right=0.75in]{geometry}
-\usepackage{graphicx}
 \usepackage{enumitem}
 \usepackage{hyperref}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern} % Load a font with all the characters
-\usepackage{titlesec}
-\usepackage{xcolor}
 
-% Set font to Palatino, which is elegant and readable
-\usepackage{palatino}
+% Use basic packages that are guaranteed to be available
+\usepackage{times} % Times font, widely available
 
-% Define Harvard colors
-\definecolor{harvardcrimson}{RGB}{165,28,48}
-
-% Customize section formatting
-\titleformat{\section}
-  {\normalfont\Large\bfseries}
-  {}
-  {0em}
-  {\centering}[\titlerule]
-
-\titlespacing*{\section}
-  {0pt}
-  {16pt}  % Space before section
-  {10pt}  % Space after section
+% Basic section formatting without titlesec
+\makeatletter
+\renewcommand{\section}[1]{%
+  \vspace{16pt}%
+  \begin{center}%
+    {\Large\bfseries #1}%
+    \vspace{2pt}%
+    \hrule%
+  \end{center}%
+  \vspace{10pt}%
+}
+\makeatother
 
 % Remove paragraph indentation
 \setlength{\parindent}{0pt}
@@ -121,14 +115,13 @@ def json_to_latex(json_data):
 % Add paragraph spacing
 \setlength{\parskip}{6pt}
 
-% Customize hyperref settings
+% Customize hyperref settings (basic configuration)
 \hypersetup{
     colorlinks=true,
-    linkcolor=harvardcrimson,
-    filecolor=harvardcrimson,
-    urlcolor=harvardcrimson,
+    linkcolor=blue,
+    filecolor=blue,
+    urlcolor=blue,
     pdftitle={Harvard Style CV},
-    pdfpagemode=FullScreen,
 }
 
 \begin{document}

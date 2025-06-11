@@ -14,39 +14,33 @@ def get_latex_template() -> str:
 \usepackage{hyperref}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{lmodern} % Load a font with all the characters
-\usepackage{titlesec}
-\usepackage{xcolor}
 
-% Set font to Palatino, which is elegant and readable
-\usepackage{palatino}
+% Use basic packages that are guaranteed to be available
+\usepackage{times} % Times font, widely available
 
-% Define Harvard colors
-\definecolor{harvardcrimson}{RGB}{165,28,48}
-
-% Customize section formatting
-\titleformat{\section}
-  {\normalfont\Large\bfseries}
-  {}
-  {0em}
-  {\centering}[\titlerule]
-
-\titlespacing*{\section}
-  {0pt}
-  {12pt}
-  {8pt}
+% Basic section formatting without titlesec
+\makeatletter
+\renewcommand{\section}[1]{%
+  \vspace{12pt}%
+  \begin{center}%
+    {\Large\bfseries #1}%
+    \vspace{2pt}%
+    \hrule%
+  \end{center}%
+  \vspace{8pt}%
+}
+\makeatother
 
 % Remove paragraph indentation
 \setlength{\parindent}{0pt}
 
-% Customize hyperref settings
+% Customize hyperref settings (basic configuration)
 \hypersetup{
     colorlinks=true,
-    linkcolor=harvardcrimson,
-    filecolor=harvardcrimson,
-    urlcolor=harvardcrimson,
+    linkcolor=blue,
+    filecolor=blue,
+    urlcolor=blue,
     pdftitle={Harvard Style CV},
-    pdfpagemode=FullScreen,
 }
 
 \begin{document}
