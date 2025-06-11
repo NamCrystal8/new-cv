@@ -2,6 +2,7 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { getApiBaseUrl } from './utils/api';
 import { shouldUseTokenAuth, getCurrentUserWithToken, hasAuthToken } from './utils/tokenAuth';
+import { authenticatedFetch, authenticatedFormDataFetch } from './utils/auth';
 import './App.css';
 import StepIndicator from './components/ui/StepIndicator';
 import ErrorMessage from './components/ui/ErrorMessage';
@@ -239,9 +240,6 @@ const MainAppContent: React.FC = () => {
   const [flowId, setFlowId] = useState<string | null>(null);
   const navigate = useNavigate(); // For handling unauthorized errors
 
-  // Get API base URL
-  const apiBaseUrl = getApiBaseUrl();
-
   // Function to handle API errors, especially 401 Unauthorized
   const handleApiError = (error: any, defaultMessage: string) => {
     console.error('API Error:', error);
@@ -267,11 +265,7 @@ const MainAppContent: React.FC = () => {
       const formData = new FormData();
       formData.append('file', pdfFile);
 
-      const response = await fetch(`${apiBaseUrl}/analyze-cv-weaknesses`, {
-        method: 'POST',
-        credentials: 'include', // Important for authentication
-        body: formData,
-      });
+      const response = await authenticatedFormDataFetch('/analyze-cv-weaknesses', formData);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: `Server responded with status ${response.status}` }));
@@ -420,11 +414,8 @@ const MainAppContent: React.FC = () => {
         );
       }
 
-      const response = await fetch(`${apiBaseUrl}/complete-cv-flow`, {
+      const response = await authenticatedFetch('/complete-cv-flow', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           flow_id: flowResponse.flow_id,
           additional_inputs: formattedSections
@@ -460,11 +451,8 @@ const MainAppContent: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/analyze-stored-cv-with-job-description`, {
+      const response = await authenticatedFetch('/analyze-stored-cv-with-job-description', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           flow_id: flowId,
           job_description: jobDescription
