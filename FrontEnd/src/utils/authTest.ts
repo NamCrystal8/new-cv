@@ -3,7 +3,7 @@
  */
 
 import { getApiBaseUrl } from './api';
-import { shouldUseTokenAuth, loginWithToken, fetchWithAuth, getAuthToken } from './tokenAuth';
+import { shouldUseTokenAuth, getAuthToken } from './tokenAuth';
 import { loginUser, getCurrentUser, authenticatedFetch } from './auth';
 
 export interface AuthTestResult {
