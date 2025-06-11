@@ -66,16 +66,14 @@ echo "   • Setting up roles and plans"
 echo "   • Creating admin user"
 
 python fresh_deploy_init.py
+
+# Always try to create admin user with simple method as backup
+echo "🔧 Ensuring admin user exists..."
+python create_admin_simple.py
 if [ $? -eq 0 ]; then
-    echo "   ✅ Fresh deployment initialization successful!"
+    echo "   ✅ Admin user verified/created successfully!"
 else
-    echo "   ⚠️ Fresh deployment initialization had issues, trying simple admin creation..."
-    python create_admin_simple.py
-    if [ $? -eq 0 ]; then
-        echo "   ✅ Simple admin creation successful!"
-    else
-        echo "   ❌ Admin creation failed, but continuing deployment..."
-    fi
+    echo "   ⚠️ Admin creation failed, but continuing deployment..."
 fi
 
 # Final startup

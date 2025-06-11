@@ -7,11 +7,37 @@ import os
 router = APIRouter()
 
 @router.get("/health")
-async def health_check():
+async def health_check(db: AsyncSession = Depends(get_async_db)):
     """
     Health check endpoint for Render to monitor the application.
     """
-    return {"status": "ok", "message": "CV Generator API is running"}
+    try:
+        # Test database connection
+        result = await db.execute(select(1))
+        db_connected = result.scalar() == 1
+
+        # Check if admin user exists
+        from sqlalchemy import text
+        admin_result = await db.execute(
+            text('SELECT COUNT(*) FROM "user" WHERE email = :email'),
+            {'email': 'admin@cvbuilder.com'}
+        )
+        admin_exists = admin_result.scalar() > 0
+
+        return {
+            "status": "healthy",
+            "database": "connected" if db_connected else "disconnected",
+            "admin_user": "exists" if admin_exists else "missing",
+            "message": "CV Generator API is running"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "database": "error",
+            "admin_user": "unknown",
+            "error": str(e),
+            "message": "CV Generator API has issues"
+        }
 
 @router.get("/debug/database")
 async def debug_database(db: AsyncSession = Depends(get_async_db)):
