@@ -17,6 +17,7 @@ import AdminPage from './pages/AdminPage';
 import CVPreviewTestPage from './pages/CVPreviewTestPage';
 import CVPreviewDebugPage from './pages/CVPreviewDebugPage';
 import AuthDebug from './components/debug/AuthDebug';
+import ApiUrlDebug from './components/debug/ApiUrlDebug';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
@@ -193,6 +194,12 @@ const App: React.FC = () => {
                     path="/auth-debug"
                     element={
                       <AuthDebug />
+                    }
+                  />
+                  <Route
+                    path="/api-debug"
+                    element={
+                      <ApiUrlDebug />
                     }
                   />
                   <Route

@@ -27,7 +27,7 @@ export const getApiBaseUrl = (): string => {
   }
 
   // In production, use environment variable or fallback
-  const productionApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://new-cv-7jve.onrender.com';
+  const productionApiUrl = import.meta.env.VITE_API_BASE_URL || 'https://new-cv-9zoc.onrender.com';
   console.log('Using production API URL:', productionApiUrl);
   return productionApiUrl;
 };
