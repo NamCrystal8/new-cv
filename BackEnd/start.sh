@@ -69,12 +69,8 @@ python fresh_deploy_init.py
 
 # Always try to create admin user with simple method as backup
 echo "🔧 Ensuring admin user exists..."
-python create_admin_simple.py
-if [ $? -eq 0 ]; then
-    echo "   ✅ Admin user verified/created successfully!"
-else
-    echo "   ⚠️ Admin creation failed, but continuing deployment..."
-fi
+python create_admin_simple.py || echo "   ⚠️ Admin creation failed, use /setup/create-admin endpoint later"
+echo "   ℹ️ Admin can be created via API endpoint if needed"
 
 # Final startup
 echo "🚀 Starting Application:"

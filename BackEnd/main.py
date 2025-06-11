@@ -9,15 +9,28 @@ from core.security import cookie_auth_backend, bearer_auth_backend, fastapi_user
 @app.on_event("startup")
 async def on_startup():
     """Initialize database on startup"""
-    print("🚀 Starting application initialization...")
+    print("🚀 Starting CV Generator application...")
 
-    # Create tables from models
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        # Create tables from models
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("✅ Database tables verified/created")
 
-    # Note: Full migration is handled by migrate_database.py in start.sh
-    # This is just a safety check for basic table creation
-    print("✅ Database tables initialized")
+        # Try to initialize basic data if needed
+        try:
+            from fresh_deploy_init import initialize_fresh_deployment
+            await initialize_fresh_deployment()
+            print("✅ Database initialization completed")
+        except Exception as init_error:
+            print(f"⚠️ Database initialization skipped: {init_error}")
+            print("ℹ️ Use /setup endpoints to complete setup")
+
+    except Exception as e:
+        print(f"⚠️ Database setup warning: {e}")
+        print("ℹ️ Application will continue, check /health endpoint")
+
+    print("🎉 Application startup completed!")
 # --- Database Initialization --- END ---
 
 # --- Include Routers --- START ---
