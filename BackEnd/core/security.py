@@ -16,7 +16,17 @@ SECRET = os.getenv("JWT_SECRET", "DEFAULT_SECRET_KEY_CHANGE_ME")
 import os
 
 # Determine if we're in production based on environment
-is_production = os.getenv("ENVIRONMENT", "development") == "production" or "render.com" in os.getenv("DATABASE_URL", "")
+is_production = (
+    os.getenv("ENVIRONMENT", "development") == "production" or
+    "render.com" in os.getenv("DATABASE_URL", "") or
+    os.getenv("RENDER") is not None  # Render sets this environment variable
+)
+
+print(f"🔧 Authentication Configuration:")
+print(f"   - Production mode: {is_production}")
+print(f"   - DATABASE_URL contains render.com: {'render.com' in os.getenv('DATABASE_URL', '')}")
+print(f"   - RENDER env var: {os.getenv('RENDER', 'Not set')}")
+print(f"   - ENVIRONMENT: {os.getenv('ENVIRONMENT', 'development')}")
 
 # Cookie transport for development/same-domain usage
 cookie_transport = CookieTransport(
@@ -29,7 +39,7 @@ cookie_transport = CookieTransport(
 )
 
 # Bearer transport for cross-domain production usage
-bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
+bearer_transport = BearerTransport(tokenUrl="auth/bearer/login")
 
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
@@ -104,10 +114,17 @@ async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db
 # --- User Manager Setup --- END ---
 
 
+# Define authentication backends in order of preference
+# In production, prioritize bearer token authentication
+# In development, prioritize cookie authentication
+auth_backends = [bearer_auth_backend, cookie_auth_backend] if is_production else [cookie_auth_backend, bearer_auth_backend]
+
+print(f"🔧 Authentication backends order: {[backend.name for backend in auth_backends]}")
+
 # Define fastapi_users instance here, passing the get_user_manager dependency
 fastapi_users = FastAPIUsers[User, uuid.UUID](
     get_user_manager, # Use the UserManager dependency
-    [cookie_auth_backend, bearer_auth_backend],  # Support both cookie and bearer authentication
+    auth_backends,  # Support both cookie and bearer authentication with proper ordering
 )
 
 # Define the dependency for getting the current active user here

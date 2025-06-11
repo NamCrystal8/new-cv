@@ -160,13 +160,23 @@ export const authenticatedFormDataFetch = async (
   const apiBaseUrl = getApiBaseUrl();
   const url = `${apiBaseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
-  return fetch(url, {
-    method: 'POST',
-    ...options,
-    credentials: 'include', // Essential for cookie-based auth
-    body: formData,
-    // Don't set Content-Type for FormData - browser will set it with boundary
-  });
+  // Use token-based auth in production, cookie-based in development
+  if (shouldUseTokenAuth()) {
+    return fetchWithAuth(url, {
+      method: 'POST',
+      ...options,
+      body: formData,
+      // Don't set Content-Type for FormData - browser will set it with boundary
+    });
+  } else {
+    return fetch(url, {
+      method: 'POST',
+      ...options,
+      credentials: 'include', // Essential for cookie-based auth
+      body: formData,
+      // Don't set Content-Type for FormData - browser will set it with boundary
+    });
+  }
 };
 
 /**

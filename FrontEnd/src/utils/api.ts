@@ -52,6 +52,7 @@ export const apiCall = async (endpoint: string, options?: RequestInit): Promise<
 
 /**
  * Helper for form data API calls
+ * @deprecated Use authenticatedFormDataFetch from utils/auth.ts instead for authenticated requests
  */
 export const apiCallFormData = async (endpoint: string, formData: FormData): Promise<Response> => {
   const baseUrl = getApiBaseUrl();

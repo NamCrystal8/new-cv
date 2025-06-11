@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getApiBaseUrl } from '@/utils/api';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, LogIn, Sparkles } from 'lucide-react';
 import { useAuth } from '@/App';
 import { useToast } from '@/hooks/use-toast';
-import { getLoginErrorMessage } from '@/utils/errorMessages';
+import { loginUser } from '@/utils/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,26 +22,9 @@ const ModernLoginForm: React.FC = () => {
     event.preventDefault();
     setIsLoading(true);
 
-    // Clear any existing toasts
-    const formData = new URLSearchParams();
-    formData.append('username', email);
-    formData.append('password', password);
-
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/auth/jwt/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        credentials: 'include', // Important for cookie-based auth
-        body: formData.toString(),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(getLoginErrorMessage(errorData));
-      }
+      // Use the environment-aware login function
+      await loginUser({ email, password });
 
       setIsAuthenticated(true);
 

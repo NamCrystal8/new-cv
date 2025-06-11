@@ -4,7 +4,7 @@ import { LogIn, LogOut, UserPlus, BadgeCheck, FileText, Home, Crown, Shield, Che
 import { useAuth } from "@/App";
 import { SubscriptionStatus } from "./SubscriptionStatus";
 import { useState, useEffect } from "react";
-import { getApiBaseUrl } from "@/utils/api";
+import { logoutUser, authenticatedFetch } from "@/utils/auth";
 
 export function AppSidebar() {
   const { isAuthenticated, setIsAuthenticated } = useAuth();
@@ -28,10 +28,7 @@ export function AppSidebar() {
 
   const checkAdminAccess = async () => {
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/health`, {
-        credentials: 'include', // Important for authentication
-      });
+      const response = await authenticatedFetch('/admin/health');
       setIsAdmin(response.ok);
     } catch {
       setIsAdmin(false);
@@ -40,16 +37,15 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      await fetch(`${apiBaseUrl}/auth/jwt/logout`, {
-        method: "POST",
-        credentials: 'include' // Important for cookie-based auth
-      });
+      await logoutUser();
       setIsAuthenticated(false);
       navigate("/login");
     } catch (error) {
       // Optionally show error
       console.error('Logout error:', error);
+      // Still set authenticated to false even if logout request fails
+      setIsAuthenticated(false);
+      navigate("/login");
     }
   };
 

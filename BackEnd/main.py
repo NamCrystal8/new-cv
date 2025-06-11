@@ -2,7 +2,7 @@ import os
 from core.app import app
 from schemas.user import UserRead, UserCreate, UserUpdate
 from core.database import Base, engine
-from routes import base_routes, pdf_routes, cv_routes, health_routes, subscription_routes, admin_routes, setup_routes
+from routes import base_routes, pdf_routes, cv_routes, health_routes, subscription_routes, admin_routes, setup_routes, auth_debug_routes
 from core.security import cookie_auth_backend, bearer_auth_backend, fastapi_users
 
 # --- Database Initialization --- START ---
@@ -41,6 +41,7 @@ app.include_router(health_routes.router)
 app.include_router(subscription_routes.router)
 app.include_router(admin_routes.router)
 app.include_router(setup_routes.router)
+app.include_router(auth_debug_routes.router)
 
 # Include FastAPI-Users routers with correct schemas
 # Cookie-based authentication (for development and same-domain)
