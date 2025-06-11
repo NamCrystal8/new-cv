@@ -2,6 +2,10 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 import re
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Get database URL from environment variable or use default
 DATABASE_URL = os.getenv("DATABASE_URL", "mysql+asyncmy://root@localhost:3306/new_cv")
@@ -28,7 +32,19 @@ elif DATABASE_URL.startswith("postgresql:") and "asyncpg" not in DATABASE_URL:
     # Handle postgresql:// URL without asyncpg
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
     print(f"Converted PostgreSQL URL to use asyncpg: {DATABASE_URL}")
-    engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+
+    # PostgreSQL-specific configuration
+    pool_size = int(os.getenv("DATABASE_POOL_SIZE", "5"))
+    max_overflow = int(os.getenv("DATABASE_MAX_OVERFLOW", "10"))
+
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=True,
+        pool_pre_ping=True,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_recycle=3600  # Recycle connections every hour
+    )
 else:
     # MySQL or other database
     print(f"Using database with URL: {DATABASE_URL}")

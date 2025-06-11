@@ -3,21 +3,20 @@ uvicorn
 httpx
 cloudinary
 sqlalchemy>=2.0.0
-pymysql
 fastapi-users[sqlalchemy]>=10.0.0
-passlib[bcrypt]
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
 python-jose[cryptography]
 python-multipart
 email-validator
 python-dotenv
-asyncmy
 PyPDF2
 google-genai
 python-magic
-# PostgreSQL support in Render
+# PostgreSQL support
 psycopg2-binary
 asyncpg>=0.27.0
-# SQLite async support
+# SQLite async support (for testing)
 aiosqlite
 # Added for SQLAlchemy async support
 greenlet>=2.0.0

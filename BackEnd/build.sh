@@ -1,20 +1,27 @@
 #!/bin/bash
 # This script runs during the build phase on Render.com
+# PostgreSQL Optimized Build Script
 
 # Exit on error
 set -e
+
+echo "====== PostgreSQL-Optimized Build Script ======"
 
 # Install system dependencies including necessary LaTeX packages
 echo "Installing system dependencies..."
 apt-get update
 apt-get install -y --no-install-recommends \
+    build-essential \
     libpq-dev \
+    postgresql-client \
+    netcat-openbsd \
+    curl \
+    git \
     texlive-latex-base \
     texlive-fonts-recommended \
     texlive-latex-extra \
     texlive-fonts-extra \
-    latexmk \
-    postgresql-client
+    latexmk
 
 # Clean up to reduce image size
 apt-get clean
@@ -25,18 +32,22 @@ echo "Installing Python dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
+# Ensure PostgreSQL drivers are installed
+echo "Ensuring PostgreSQL drivers are installed..."
+pip install --no-cache-dir psycopg2-binary>=2.9.0 asyncpg>=0.27.0
+
 # Print diagnostic information
-echo "Checking installed database drivers:"
-pip list | grep -E 'sqlalchemy|psycopg2|asyncpg|aiosqlite'
+echo "====== Build Diagnostics ======"
 echo "Python version: $(python --version)"
-echo "Build complete."
+echo "Pip version: $(pip --version)"
 
-# Install PostgreSQL support
-echo "Installing Python database drivers..."
-pip install --no-cache-dir psycopg2-binary asyncpg
+echo "Checking installed database drivers:"
+pip list | grep -E 'sqlalchemy|psycopg2|asyncpg|greenlet'
 
-# Print TeX Live version for verification
 echo "Installed TeX Live version:"
-tex --version
+tex --version || echo "TeX Live not available"
 
-echo "Build script completed successfully"
+echo "PostgreSQL client version:"
+psql --version || echo "PostgreSQL client not available"
+
+echo "====== Build completed successfully ======"

@@ -1,4 +1,4 @@
-# render.yaml
+# render.yaml - PostgreSQL Optimized Configuration
 services:
   - type: web
     name: new-cv-backend
@@ -21,14 +21,22 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      - key: GOOGLE_GEMINI_API_KEY
+        sync: false
       - key: JWT_SECRET
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: ENVIRONMENT
+        value: "production"
       - key: SQLALCHEMY_WARN_20
         value: "1"
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: DATABASE_POOL_SIZE
+        value: "5"
+      - key: DATABASE_MAX_OVERFLOW
+        value: "10"
 
   - type: web
     name: new-cv-frontend

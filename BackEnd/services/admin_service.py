@@ -21,7 +21,7 @@ class AdminService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    def get_subscription_plan_name(self, user) -> str:
+    async def get_subscription_plan_name(self, user) -> str:
         """Get the subscription plan name for a user"""
         # Check if user has any active subscriptions
         if hasattr(user, 'subscriptions') and user.subscriptions:
@@ -120,11 +120,11 @@ class AdminService:
         self, filters: UserSearchFilter
     ) -> PaginatedUsersResponse:
         """Get paginated list of users with filters"""
-        # Build query with subscription data
+        # Build query with subscription data and eager load plan relationships
         query = select(User).options(
             selectinload(User.role),
             selectinload(User.cvs),
-            selectinload(User.subscriptions)
+            selectinload(User.subscriptions).selectinload(UserSubscription.plan)
         )
         
         # Apply filters
@@ -178,6 +178,7 @@ class AdminService:
         # Convert to admin user read format
         admin_users = []
         for user in users:
+            subscription_status = await self.get_subscription_plan_name(user)
             admin_user = AdminUserRead(
                 id=user.id,
                 email=user.email,
@@ -187,7 +188,7 @@ class AdminService:
                 role_id=user.role_id,
                 created_at=None,  # User model doesn't have created_at field
                 cv_count=len(user.cvs) if user.cvs else 0,
-                subscription_status=self.get_subscription_plan_name(user),
+                subscription_status=subscription_status,
                 # TODO: Add last_login
             )
             admin_users.append(admin_user)
@@ -207,15 +208,16 @@ class AdminService:
         query = select(User).options(
             selectinload(User.role),
             selectinload(User.cvs),
-            selectinload(User.subscriptions)
+            selectinload(User.subscriptions).selectinload(UserSubscription.plan)
         ).where(User.id == user_id)
-        
+
         result = await self.db.execute(query)
         user = result.scalar_one_or_none()
-        
+
         if not user:
             return None
-        
+
+        subscription_status = await self.get_subscription_plan_name(user)
         return AdminUserRead(
             id=user.id,
             email=user.email,
@@ -225,7 +227,7 @@ class AdminService:
             role_id=user.role_id,
             created_at=None,  # User model doesn't have created_at field
             cv_count=len(user.cvs) if user.cvs else 0,
-            subscription_status=self.get_subscription_plan_name(user),
+            subscription_status=subscription_status,
         )
 
     async def update_user(
