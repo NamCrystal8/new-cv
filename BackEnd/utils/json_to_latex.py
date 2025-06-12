@@ -47,8 +47,8 @@ def generate_latex_list(items):
     if not items:
         return ""
         
-    # Use more space after items and between items for better readability
-    latex = "\\begin{itemize}[leftmargin=*,itemsep=2pt,parsep=2pt,topsep=4pt]\n"
+    # Harvard-style compact formatting
+    latex = "\\begin{itemize}[noitemsep, topsep=0pt, partopsep=0pt, parsep=0pt]\n"
     for item in items:
         latex += f"    \\item {escape_latex(item)}\n"
     latex += "\\end{itemize}\n"
@@ -83,39 +83,17 @@ def json_to_latex(json_data):
 
     # --- LaTeX Preamble for Harvard Style CV ---
     latex_string = r"""
-\documentclass[letterpaper,11pt]{article}
+\documentclass[11pt]{article}
 
-% Harvard Style CV Template
-% Document formatting
-\usepackage[top=0.75in, bottom=0.75in, left=0.75in, right=0.75in]{geometry}
-\usepackage{enumitem}
+% Harvard Style CV Template - Compatible with basic LaTeX installations
+\setlength{\parindent}{0pt}
 \usepackage{hyperref}
+\usepackage{enumitem}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage[left=1.06cm,top=1.7cm,right=1.06cm,bottom=0.49cm]{geometry}
 
-% Use basic packages that are guaranteed to be available
-\usepackage{times} % Times font, widely available
-
-% Basic section formatting without titlesec
-\makeatletter
-\renewcommand{\section}[1]{%
-  \vspace{16pt}%
-  \begin{center}%
-    {\Large\bfseries #1}%
-    \vspace{2pt}%
-    \hrule%
-  \end{center}%
-  \vspace{10pt}%
-}
-\makeatother
-
-% Remove paragraph indentation
-\setlength{\parindent}{0pt}
-
-% Add paragraph spacing
-\setlength{\parskip}{6pt}
-
-% Customize hyperref settings (basic configuration)
+% Basic hyperref settings
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
@@ -123,6 +101,17 @@ def json_to_latex(json_data):
     urlcolor=blue,
     pdftitle={Harvard Style CV},
 }
+
+% Custom section formatting to match Harvard style
+\makeatletter
+\renewcommand{\section}[1]{%
+  \vspace{12pt}%
+  \begin{center}%
+    \textbf{#1}%
+  \end{center}%
+  \vspace{0.5pt}%
+}
+\makeatother
 
 \begin{document}
 """
@@ -168,16 +157,15 @@ def json_to_latex(json_data):
             if phone_val and phone_link:
                  contact_parts.append(f"\\href{{{phone_link}}}{{{phone_val}}}")
 
-            # Harvard-style header with centered name and contact info
+            # Harvard-style header with centered name and horizontal rule
             section_latex += "\\begin{center}\n"
-            section_latex += f"    {{\\Large\\textbf{{{name}}}}}\\\\[6pt]\n"
-            if title:
-                 section_latex += f"    {{\\normalsize\\textit{{{title}}}}}\\\\[6pt]\n"
+            section_latex += f"    \\textbf{{{name}}}\\\\ \n"
             section_latex += "    \\hrulefill\n"
-            section_latex += "\\end{center}\n"
-            section_latex += "\\begin{center}\n"
-            section_latex += "    " + " {\\large\\textbullet} ".join(contact_parts) + "\n"
             section_latex += "\\end{center}\n\n"
+            section_latex += "\\begin{center}\n"
+            section_latex += "    " + " \\textbullet\\ ".join(contact_parts) + "\n"
+            section_latex += "\\end{center}\n\n"
+            section_latex += "\\vspace{0.5pt}\n\n"
             processed_sections.append(section_latex)
             continue
 
@@ -209,22 +197,28 @@ def json_to_latex(json_data):
                  honors = item.get("honors", [])
 
                  section_latex += f"\\textbf{{{institution}}} \\hfill {location}\n\n"
-                 section_latex += f"{degree} \\hfill {dates_str}\n"
-                 
+
+                 # Format degree line with GPA if available
+                 degree_line = degree
                  if gpa:
-                     section_latex += f"GPA: {gpa}\n"
-                 
+                     degree_line += f". GPA {gpa}"
+                 section_latex += f"{degree_line} \\hfill {dates_str}\n\n"
+
+                 # Add coursework if available
                  if coursework and isinstance(coursework, list) and len(coursework) > 0:
                      coursework_str = ", ".join([escape_latex(course) for course in coursework if course])
                      if coursework_str:
-                         section_latex += f"\\textit{{Relevant Coursework:}} {coursework_str}\n"
-                 
+                         section_latex += f"Relevant Coursework: {coursework_str}\n\n"
+
+                 # Add honors if available
                  if honors and isinstance(honors, list) and len(honors) > 0:
-                     section_latex += generate_latex_list(honors)
-                     
+                     honors_str = ", ".join([escape_latex(honor) for honor in honors if honor])
+                     if honors_str:
+                         section_latex += f"Honors: {honors_str}\n\n"
+
                  # Add proper spacing between education entries
                  if i < len(items) - 1:
-                     section_latex += "\\vspace{14pt}\n"        # --- Experience Section with Enhanced Formatting ---
+                     section_latex += "\\vspace{12pt}\n"        # --- Experience Section with Enhanced Formatting ---
         elif section_key == "experience":
             print(f"🔍 LATEX DEBUG: Processing experience section")
             items = section_content.get("items", [])
@@ -244,7 +238,7 @@ def json_to_latex(json_data):
 
                  # Harvard-style job entry
                  section_latex += f"\\textbf{{{company}}} \\hfill {location}\n\n"
-                 section_latex += f"\\textit{{{title}}} \\hfill {dates_str}\n\n"  # Add extra newline for spacing
+                 section_latex += f"\\textbf{{{title}}} \\hfill {dates_str}\n"
                    # Properly formatted achievements list
                  if achievements:
                      print(f"🔍 LATEX DEBUG: Raw achievements type: {type(achievements)}")
@@ -277,7 +271,7 @@ def json_to_latex(json_data):
                  
                  # Add clear spacing between job entries
                  if i < len(items) - 1:
-                     section_latex += "\\vspace{10pt}\n"  # Extra space between experience items
+                     section_latex += "\\vspace{12pt}\n"  # Harvard-style spacing between experience items
 
         # --- Projects Section with Enhanced Formatting ---
         elif section_key == "projects":
@@ -329,13 +323,13 @@ def json_to_latex(json_data):
                  
                  # Add clear spacing between project entries
                  if i < len(items) - 1:
-                     section_latex += "\\vspace{10pt}\n"  # Extra space between project items
+                     section_latex += "\\vspace{12pt}\n"  # Harvard-style spacing between project items
 
-        # --- Skills Section with Better Formatting ---
+        # --- Skills Section with Harvard Formatting ---
         elif section_key == "skills":
             categories = section_content.get("categories", [])
             if not isinstance(categories, list): categories = []
-            
+
             for i, category in enumerate(categories):
                 if not isinstance(category, dict): continue
                 cat_name = escape_latex(category.get("name", "Skills"))
@@ -344,26 +338,20 @@ def json_to_latex(json_data):
                 if items:
                     escaped_items = [escape_latex(skill) for skill in items if isinstance(skill, str)]
                     if escaped_items:
-                        section_latex += f"\\textbf{{{cat_name}:}} {', '.join(escaped_items)}"
-                        
-                        # Add newline after each category except the last one
-                        if i < len(categories) - 1:
-                            section_latex += "\n\n"  # Double newline for clearer category separation
-                        else:
-                            section_latex += "\n"
-                        
+                        section_latex += f"\\textbf{{{cat_name}:}} {', '.join(escaped_items)}\n\n"
+
             # Handle interests if they exist
             interests = section_content.get("interests", [])
             if interests and isinstance(interests, list) and len(interests) > 0:
                 interests_str = ", ".join([escape_latex(interest) for interest in interests if interest])
                 if interests_str:
-                    section_latex += f"\\textbf{{Interests:}} {interests_str}\n"
+                    section_latex += f"\\textbf{{Interests:}} {interests_str}\n\n"
 
         # --- Leadership & Activities Section ---
         elif section_key == "leadership":
             items = section_content.get("items", [])
             if not isinstance(items, list): items = []
-            for item in items:
+            for i, item in enumerate(items):
                 if not isinstance(item, dict): continue
                 organization = escape_latex(item.get("organization", ""))
                 location = escape_latex(item.get("location", ""))
@@ -372,9 +360,13 @@ def json_to_latex(json_data):
                 descriptions = item.get("descriptions", [])
 
                 section_latex += f"\\textbf{{{organization}}} \\hfill {location}\n\n"
-                section_latex += f"\\textit{{{role}}} \\hfill {dates_str}\n"
-                section_latex += generate_latex_list(descriptions)
-                section_latex += "\\vspace{8pt}\n"
+                section_latex += f"\\textbf{{{role}}} \\hfill {dates_str}\n"
+                if descriptions:
+                    section_latex += generate_latex_list(descriptions)
+
+                # Add spacing between leadership entries
+                if i < len(items) - 1:
+                    section_latex += "\\vspace{12pt}\n"
 
         # --- Languages Section ---
         elif section_key == "languages":
@@ -466,7 +458,7 @@ def json_to_latex(json_data):
                 
                 # Add proper spacing between achievement entries
                 if i < len(items) - 1:
-                    section_latex += "\\vspace{10pt}\n"
+                    section_latex += "\\vspace{12pt}\n"
 
         if section_latex and section_key != "header":
              processed_sections.append(section_latex)
