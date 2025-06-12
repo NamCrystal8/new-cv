@@ -1,32 +1,84 @@
-from fastapi import FastAPI
-from models import MsgPayload
+import os
+from core.app import app
+from schemas.user import UserRead, UserCreate, UserUpdate
+from core.database import Base, engine
+from routes import base_routes, pdf_routes, cv_routes, health_routes, subscription_routes, admin_routes, setup_routes, auth_debug_routes
+from core.security import cookie_auth_backend, bearer_auth_backend, fastapi_users
 
-app = FastAPI()
-messages_list: dict[int, MsgPayload] = {}
+# --- Database Initialization --- START ---
+@app.on_event("startup")
+async def on_startup():
+    """Initialize database on startup"""
+    print("🚀 Starting CV Generator application...")
 
+    try:
+        # Create tables from models
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("✅ Database tables verified/created")
 
-@app.get("/")
-def root() -> dict[str, str]:
-    return {"message": "Hello"}
+        # Try to initialize basic data if needed
+        try:
+            from fresh_deploy_init import initialize_fresh_deployment
+            await initialize_fresh_deployment()
+            print("✅ Database initialization completed")
+        except Exception as init_error:
+            print(f"⚠️ Database initialization skipped: {init_error}")
+            print("ℹ️ Use /setup endpoints to complete setup")
 
+    except Exception as e:
+        print(f"⚠️ Database setup warning: {e}")
+        print("ℹ️ Application will continue, check /health endpoint")
 
-# About page route
-@app.get("/about")
-def about() -> dict[str, str]:
-    return {"message": "This is the about page."}
+    print("🎉 Application startup completed!")
+# --- Database Initialization --- END ---
 
+# --- Include Routers --- START ---
+app.include_router(base_routes.router)
+app.include_router(pdf_routes.router)
+app.include_router(cv_routes.router)
+app.include_router(health_routes.router)
+app.include_router(subscription_routes.router)
+app.include_router(admin_routes.router)
+app.include_router(setup_routes.router)
+app.include_router(auth_debug_routes.router)
 
-# Route to add a message
-@app.post("/messages/{msg_name}/")
-def add_msg(msg_name: str) -> dict[str, MsgPayload]:
-    # Generate an ID for the item based on the highest ID in the messages_list
-    msg_id = max(messages_list.keys()) + 1 if messages_list else 0
-    messages_list[msg_id] = MsgPayload(msg_id=msg_id, msg_name=msg_name)
+# Include FastAPI-Users routers with correct schemas
+# Cookie-based authentication (for development and same-domain)
+app.include_router(
+    fastapi_users.get_auth_router(cookie_auth_backend),
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
 
-    return {"message": messages_list[msg_id]}
-
-
-# Route to list all messages
-@app.get("/messages")
-def message_items() -> dict[str, dict[int, MsgPayload]]:
-    return {"messages:": messages_list}
+# Bearer token authentication (for production cross-domain)
+app.include_router(
+    fastapi_users.get_auth_router(bearer_auth_backend),
+    prefix="/auth/bearer",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_reset_password_router(),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_verify_router(UserRead),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix="/users",
+    tags=["users"],
+)
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    print(f"🚀 Starting server on port {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)

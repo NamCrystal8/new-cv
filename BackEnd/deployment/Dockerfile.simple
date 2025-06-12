@@ -1,0 +1,28 @@
+# Simplified Dockerfile for local testing
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install only LaTeX and essential packages
+RUN apt-get update && apt-get install -y \
+    texlive-latex-base \
+    texlive-fonts-recommended \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a test LaTeX file
+COPY <<-EOF /app/test.tex
+\\documentclass{article}
+\\begin{document}
+Hello from Docker! This is a test document to verify LaTeX is working correctly.
+\\end{document}
+EOF
+
+# Test LaTeX compilation
+RUN pdflatex test.tex && echo "LaTeX compilation successful!" || echo "LaTeX compilation failed"
+
+# Expose the port
+EXPOSE 8001
+
+# Default command just keeps the container running
+CMD ["tail", "-f", "/dev/null"]

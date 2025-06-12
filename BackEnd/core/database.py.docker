@@ -1,0 +1,53 @@
+# This is a modified database.py file optimized for Docker testing
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, declarative_base
+import os
+import re
+
+# Get database URL from environment variable or use default
+DATABASE_URL = os.getenv("DATABASE_URL", "mysql+asyncmy://root@localhost:3306/new_cv")
+
+# Create base declarative class
+Base = declarative_base()
+
+# Handle different database URL formats
+if DATABASE_URL.startswith("sqlite:"):
+    # For SQLite testing in Docker, we need aiosqlite
+    if not "aiosqlite" in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace("sqlite:", "sqlite+aiosqlite:", 1)
+    print(f"Using SQLite database: {DATABASE_URL}")
+    engine = create_async_engine(
+        DATABASE_URL, 
+        echo=True,
+        # These settings help with SQLite in Docker
+        connect_args={"check_same_thread": False},
+        pool_pre_ping=True,
+        pool_recycle=300
+    )
+elif DATABASE_URL.startswith("postgres"):
+    # Handle Render's PostgreSQL URL format
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+    print(f"Using PostgreSQL database")
+    engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+else:
+    # MySQL or other database
+    print(f"Using MySQL or other database")
+    engine = create_async_engine(DATABASE_URL, echo=True, pool_pre_ping=True)
+
+# Create async session factory
+AsyncSessionLocal = sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
+
+# Define async dependency for getting session
+async def get_async_db() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        yield session
+
+# For backwards compatibility (if needed)
+get_db = get_async_db

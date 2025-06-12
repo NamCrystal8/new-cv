@@ -14,3 +14,8 @@ __pycache__/
 
 .vscode/*
 .devcontainer/*
+
+# CV specific files
+output_tex_files/
+my_cv.tex
+cv.tex
