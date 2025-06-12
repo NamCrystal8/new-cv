@@ -27,7 +27,7 @@ services:
   backend:
     build:
       context: ./BackEnd
-      dockerfile: Dockerfile
+      dockerfile: deployment/Dockerfile
     container_name: cv-backend-test
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:testpassword123@postgres:5432/new_cv

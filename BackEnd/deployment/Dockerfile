@@ -23,8 +23,8 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy essential scripts for fresh deployment
-COPY build.sh start.sh ./
-RUN chmod +x build.sh start.sh
+COPY deployment/build.sh deployment/start.sh deployment/start_simple.sh ./
+RUN chmod +x build.sh start.sh start_simple.sh
 
 # Copy application code
 COPY . .

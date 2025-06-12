@@ -2,8 +2,9 @@ version: '3'
 
 services:
   backend:
-    build: 
+    build:
       context: ./BackEnd
+      dockerfile: deployment/Dockerfile
     ports:
       - "8000:8000"
     environment:

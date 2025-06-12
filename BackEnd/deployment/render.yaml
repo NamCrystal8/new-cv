@@ -3,11 +3,11 @@ services:
   - type: web
     name: new-cv-backend
     env: docker
-    dockerfilePath: ./BackEnd/Dockerfile
+    dockerfilePath: ./BackEnd/deployment/Dockerfile
     dockerContext: ./BackEnd
     plan: free
-    buildCommand: chmod +x ./build.sh && ./build.sh
-    startCommand: chmod +x ./start_simple.sh && ./start_simple.sh
+    buildCommand: chmod +x ./deployment/build.sh && ./deployment/build.sh
+    startCommand: chmod +x ./deployment/start_simple.sh && ./deployment/start_simple.sh
     healthCheckPath: /health
     autoDeploy: true
     envVars:

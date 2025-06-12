@@ -167,7 +167,7 @@ if [ "$TEST" = true ]; then
     
     # Test database connection
     print_status "Testing database connection..."
-    if docker-compose -f docker-compose.test.yml exec backend python verify_fresh_deployment.py; then
+    if docker-compose -f docker-compose.test.yml exec backend python deployment/verify_fresh_deployment.py; then
         print_success "Database tests passed!"
     else
         print_error "Database tests failed!"
