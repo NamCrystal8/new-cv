@@ -9,12 +9,14 @@ import {
   ExperienceEditorNew,
   SkillsEditorNew,
   ProjectsEditorNew,
-  LanguagesEditorNew,
+  InterestsEditorNew,
+  CertificationsEditorNew,
   EducationSection,
   ExperienceSection,
   SkillsSection,
   ProjectsSection,
-  LanguagesSection
+  InterestsSection,
+  CertificationsSection
 } from '../components/cv-editors/new-editors';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -23,8 +25,8 @@ import {
   RawInputSection,
   EditableSection
 } from '../types';
-import { DEFAULT_PROFICIENCY } from '../constants/languageProficiency';
-import { getApiBaseUrl } from '@/utils/api';
+
+import { authenticatedFetch } from '@/utils/auth';
 
 const EditCVPage: React.FC = () => {
   const { cvId } = useParams<{ cvId: string }>();
@@ -43,10 +45,7 @@ const EditCVPage: React.FC = () => {
       setIsLoading(true);
       
       try {
-        const apiBaseUrl = getApiBaseUrl();
-        const response = await fetch(`${apiBaseUrl}/cv/${cvId}`, {
-          credentials: 'include', // Important for authentication
-        });
+        const response = await authenticatedFetch(`/cv/${cvId}`);
 
         if (!response.ok) {
           throw new Error(`Error fetching CV data: ${response.status}`);
@@ -110,7 +109,7 @@ const EditCVPage: React.FC = () => {
     
     if (cvData.education) {
       const educationItems = cvData.education.items || [];
-      
+
       sections.push({
         id: 'education',
         name: 'Education',
@@ -119,20 +118,16 @@ const EditCVPage: React.FC = () => {
           id: `education_${index}`,
           institution: item.institution || '',
           degree: item.degree || '',
-          location: item.location || '',
+          start_date: item.start_date || '',
           graduation_date: item.graduation_date || '',
-          gpa: item.gpa || '',
-          relevant_coursework: item.relevant_coursework || '',
-          academic_achievements: item.academic_achievements || []
+          gpa: item.gpa || ''
         })),
         template: {
           institution: '',
           degree: '',
-          location: '',
+          start_date: '',
           graduation_date: '',
-          gpa: '',
-          relevant_coursework: '',
-          academic_achievements: []
+          gpa: ''
         }
       });
     }
@@ -166,15 +161,43 @@ const EditCVPage: React.FC = () => {
       });
     }
     
-    // Add skills section
+    // Add skills section (including migration of standalone languages)
     if (cvData.skills) {
       const skillCategories = cvData.skills.categories || [];
-      
+
+      // Check if we need to migrate standalone languages to skills
+      let migratedCategories = [...skillCategories];
+
+      // If there's a standalone languages section, migrate it to skills
+      if (cvData.languages && cvData.languages.items && cvData.languages.items.length > 0) {
+        const languageItems = cvData.languages.items.map((item: any) => {
+          const name = item.name || item.language || '';
+          const level = item.proficiency || item.level || 'Intermediate';
+          return `${name} (${level})`;
+        });
+
+        // Check if Languages category already exists
+        const existingLanguageCategory = migratedCategories.find(cat =>
+          cat.name && cat.name.toLowerCase() === 'languages'
+        );
+
+        if (existingLanguageCategory) {
+          // Merge with existing languages category
+          existingLanguageCategory.items = [...(existingLanguageCategory.items || []), ...languageItems];
+        } else {
+          // Add new languages category
+          migratedCategories.push({
+            name: 'Languages',
+            items: languageItems
+          });
+        }
+      }
+
       sections.push({
         id: 'skills',
         name: 'Skills',
         type: 'nested_list',
-        categories: skillCategories.map((category: any, index: number) => ({
+        categories: migratedCategories.map((category: any, index: number) => ({
           id: `skill_category_${index}`,
           name: category.name || '',
           items: category.items || []
@@ -184,32 +207,36 @@ const EditCVPage: React.FC = () => {
           items: []
         }
       });
-    }
-    
-    // Add languages section
-    if (cvData.languages) {
-      const languageItems = cvData.languages.items || [];
-      
+    } else if (cvData.languages && cvData.languages.items && cvData.languages.items.length > 0) {
+      // If there's no skills section but there are languages, create a skills section with languages
+      const languageItems = cvData.languages.items.map((item: any) => {
+        const name = item.name || item.language || '';
+        const level = item.proficiency || item.level || 'Intermediate';
+        return `${name} (${level})`;
+      });
+
       sections.push({
-        id: 'languages',
-        name: 'Languages',
-        type: 'languages',
-        items: languageItems.map((item: any, index: number) => ({
-          id: `language_${index}`,
-          name: item.name || item.language || '',
-          level: item.proficiency || item.level || DEFAULT_PROFICIENCY
-        })),
+        id: 'skills',
+        name: 'Skills',
+        type: 'nested_list',
+        categories: [{
+          id: 'skill_category_0',
+          name: 'Languages',
+          items: languageItems
+        }],
         template: {
           name: '',
-          level: DEFAULT_PROFICIENCY
+          items: []
         }
-      } as any);
+      });
     }
+    
+
     
     // Add projects section
     if (cvData.projects) {
       const projectItems = cvData.projects.items || [];
-      
+
       sections.push({
         id: 'projects',
         name: 'Projects',
@@ -233,7 +260,42 @@ const EditCVPage: React.FC = () => {
         }
       });
     }
-    
+
+    // Add interests section
+    if (cvData.interests) {
+      const interestItems = cvData.interests.items || [];
+
+      sections.push({
+        id: 'interests',
+        name: 'Interests',
+        type: 'interests',
+        items: interestItems,
+        template: ''
+      } as any);
+    }
+
+    // Add certifications section
+    if (cvData.certifications) {
+      const certificationItems = cvData.certifications.items || [];
+
+      sections.push({
+        id: 'certifications',
+        name: 'Certifications',
+        type: 'list',
+        items: certificationItems.map((item: any, index: number) => ({
+          id: `certification_${index}`,
+          title: item.title || '',
+          institution: item.institution || '',
+          date: item.date || ''
+        })),
+        template: {
+          title: '',
+          institution: '',
+          date: ''
+        }
+      });
+    }
+
     return sections;
   };
 
@@ -257,11 +319,11 @@ const EditCVPage: React.FC = () => {
           }
           break;
         case 'list':
-          if (['education', 'experience', 'projects'].includes(section.id)) {
+          if (['education', 'experience', 'projects', 'certifications'].includes(section.id)) {
             formattedData[section.id] = JSON.stringify(section.items);
           }
           break;
-        case 'languages':
+        case 'interests':
           formattedData[section.id] = JSON.stringify(section.items);
           break;
         case 'nested_list':
@@ -306,13 +368,8 @@ const EditCVPage: React.FC = () => {
         console.log('🔍 DEBUG: Experience JSON string:', formattedData.experience);
       }
       
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/cv/${cvId}/update`, {
+      const response = await authenticatedFetch(`/cv/${cvId}/update`, {
         method: 'POST',
-        credentials: 'include', // Important for authentication
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           flow_id: flowId,
           additional_inputs: formattedData
@@ -483,36 +540,44 @@ const EditCVPage: React.FC = () => {
                         );
                       } else if (section.id === 'projects') {
                         return (
-                          <ProjectsEditorNew 
-                            key={section.id} 
+                          <ProjectsEditorNew
+                            key={section.id}
                             section={section as ProjectsSection}
-                            onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                            onChange={(updatedSection) => updateSection(index, updatedSection)}
+                          />
+                        );
+                      } else if (section.id === 'certifications') {
+                        return (
+                          <CertificationsEditorNew
+                            key={section.id}
+                            section={section as CertificationsSection}
+                            onChange={(updatedSection) => updateSection(index, updatedSection)}
                           />
                         );
                       }
                       return null;
-                    case 'languages':
+                    case 'interests':
                       return (
-                        <LanguagesEditorNew 
-                          key={section.id} 
-                          section={section as LanguagesSection}
-                          onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                        <InterestsEditorNew
+                          key={section.id}
+                          section={section as InterestsSection}
+                          onChange={(updatedSection) => updateSection(index, updatedSection)}
                         />
                       );
                     case 'nested_list':
                       return (
-                        <SkillsEditorNew 
-                          key={section.id} 
+                        <SkillsEditorNew
+                          key={section.id}
                           section={section as SkillsSection}
-                          onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                          onChange={(updatedSection) => updateSection(index, updatedSection)}
                         />
                       );
                     case 'textarea':
                       return (
-                        <RawInputEditor 
-                          key={section.id} 
+                        <RawInputEditor
+                          key={section.id}
                           section={section as RawInputSection}
-                          onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                          onChange={(updatedSection) => updateSection(index, updatedSection)}
                         />
                       );
                     default:

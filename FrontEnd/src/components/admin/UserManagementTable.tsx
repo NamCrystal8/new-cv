@@ -3,7 +3,7 @@ import { Trash2, Eye } from 'lucide-react';
 import { DataTable, Column } from './DataTable';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { getApiBaseUrl } from '@/utils/api';
+import { authenticatedFetch } from '@/utils/auth';
 
 // Toggle Switch Component
 interface ToggleSwitchProps {
@@ -113,10 +113,7 @@ export const UserManagementTable: React.FC = () => {
         }
       });
 
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/users?${params}`, {
-        credentials: 'include', // Important for authentication
-      });
+      const response = await authenticatedFetch(`/admin/users?${params}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch users');
@@ -151,13 +148,8 @@ export const UserManagementTable: React.FC = () => {
 
   const handleUpdateUser = async (userId: string, updates: Partial<AdminUser>) => {
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/users/${userId}`, {
+      const response = await authenticatedFetch(`/admin/users/${userId}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify(updates),
       });
 
@@ -187,10 +179,8 @@ export const UserManagementTable: React.FC = () => {
     }
 
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/users/${userId}`, {
+      const response = await authenticatedFetch(`/admin/users/${userId}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -217,13 +207,8 @@ export const UserManagementTable: React.FC = () => {
     const userIds = selectedUsers.map(user => user.id);
 
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/users/bulk-action`, {
+      const response = await authenticatedFetch(`/admin/users/bulk-action`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
         body: JSON.stringify({
           user_ids: userIds,
           action: action,

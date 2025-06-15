@@ -1,7 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
-import { getApiBaseUrl } from './utils/api';
-import { shouldUseTokenAuth, getCurrentUserWithToken, hasAuthToken } from './utils/tokenAuth';
+import { getCurrentUserWithToken, hasAuthToken } from './utils/tokenAuth';
 import { authenticatedFetch, authenticatedFormDataFetch } from './utils/auth';
 import './App.css';
 import StepIndicator from './components/ui/StepIndicator';
@@ -17,10 +16,11 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import AdminPage from './pages/AdminPage';
 import CVPreviewTestPage from './pages/CVPreviewTestPage';
 import CVPreviewDebugPage from './pages/CVPreviewDebugPage';
+import APITestingPage from './pages/APITestingPage';
 import AuthDebug from './components/debug/AuthDebug';
 import ApiUrlDebug from './components/debug/ApiUrlDebug';
 import { AppSidebar } from '@/components/app-sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { Toaster } from '@/components/ui/toaster';
 import { FlowResponse, EditableSection, RecommendationItem, JobDescriptionFlowResponse, JobDescriptionAnalysis } from './types';
@@ -44,48 +44,23 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Use token-based auth in production, cookie-based in development
-        if (shouldUseTokenAuth()) {
-          // Check if token exists first
-          if (!hasAuthToken()) {
-            setIsAuthenticated(false);
-            return;
-          }
+        // Always use token-based authentication with localStorage
+        // Check if token exists first
+        if (!hasAuthToken()) {
+          setIsAuthenticated(false);
+          return;
+        }
 
-          try {
-            const userData = await getCurrentUserWithToken();
-            // Check if user is active
-            if (userData.is_active) {
-              setIsAuthenticated(true);
-            } else {
-              setIsAuthenticated(false);
-            }
-          } catch {
-            setIsAuthenticated(false);
-          }
-        } else {
-          // Cookie-based authentication for development
-          const apiBaseUrl = getApiBaseUrl();
-          const response = await fetch(`${apiBaseUrl}/users/me`, {
-            credentials: 'include', // Important for cookie-based auth
-          });
-          if (response.ok) {
-            const userData = await response.json();
-            // Check if user is active
-            if (userData.is_active) {
-              setIsAuthenticated(true);
-            } else {
-              // User exists but is deactivated
-              setIsAuthenticated(false);
-              // Clear any existing session
-              await fetch(`${apiBaseUrl}/auth/jwt/logout`, {
-                method: 'POST',
-                credentials: 'include'
-              }).catch(() => {});
-            }
+        try {
+          const userData = await getCurrentUserWithToken();
+          // Check if user is active
+          if (userData.is_active) {
+            setIsAuthenticated(true);
           } else {
             setIsAuthenticated(false);
           }
+        } catch {
+          setIsAuthenticated(false);
         }
       } catch {
         setIsAuthenticated(false);
@@ -122,23 +97,30 @@ const App: React.FC = () => {
     <>
       {/* Modern background gradient */}
       <div className="relative min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-blue-100 text-foreground overflow-x-hidden">
-        {/* Decorative blurred background shapes */}
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-200 rounded-full opacity-30 blur-3xl -z-10" style={{ filter: 'blur(100px)' }} />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-200 rounded-full opacity-20 blur-3xl -z-10" style={{ filter: 'blur(120px)' }} />
+        {/* Decorative blurred background shapes - responsive sizing */}
+        <div className="absolute top-0 left-0 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-blue-200 rounded-full opacity-30 blur-3xl -z-10" style={{ filter: 'blur(100px)' }} />
+        <div className="absolute bottom-0 right-0 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-purple-200 rounded-full opacity-20 blur-3xl -z-10" style={{ filter: 'blur(120px)' }} />
+
+        {/* Sidebar and main content with proper responsive layout */}
         <AppSidebar />
-        <main className="flex-1 min-h-screen flex flex-col items-center justify-start px-2 sm:px-0">
-          {/* Hero section */}
-          <section className="w-full max-w-3xl mx-auto text-center pt-12 pb-4">
-            <h1 className="text-4xl sm:text-5xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent mb-4 drop-shadow-lg">
+        <SidebarInset className="flex-1 min-h-screen flex flex-col items-center justify-start px-2 sm:px-4 lg:px-0">
+          {/* Mobile sidebar trigger - visible only on mobile */}
+          <div className="md:hidden fixed top-4 left-4 z-50 fade-in">
+            <SidebarTrigger className="bg-white/90 backdrop-blur-sm shadow-lg border border-gray-200 hover:bg-white hover:shadow-xl transition-all duration-300 ease-out" />
+          </div>
+
+          {/* Hero section - responsive text and spacing */}
+          <section className="w-full max-w-3xl mx-auto text-center pt-6 sm:pt-8 lg:pt-12 pb-2 sm:pb-3 lg:pb-4 px-4 fade-in">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent mb-2 sm:mb-3 lg:mb-4 drop-shadow-lg animate-pulse">
               Smart CV Builder
             </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-6">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto mb-4 sm:mb-5 lg:mb-6 leading-relaxed slide-in-left">
               Instantly enhance your CV with AI-powered suggestions and beautiful formatting. Upload, review, and download your improved CV in minutes.
             </p>
           </section>
-          {/* Main card with step indicator and content */}
-          <div className="w-full max-w-7xl mx-auto flex flex-col items-center px-4 sm:px-6 lg:px-8">
-            <div className="w-full bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 sm:p-12 mb-10 border border-blue-100 min-h-[calc(100vh-16rem)]">
+          {/* Main card with step indicator and content - responsive padding and sizing */}
+          <div className="w-full max-w-7xl mx-auto flex flex-col items-center px-2 sm:px-4 md:px-6 lg:px-8 fade-in">
+            <div className="w-full bg-white/80 backdrop-blur-lg rounded-lg sm:rounded-xl lg:rounded-2xl shadow-lg sm:shadow-xl lg:shadow-2xl p-4 sm:p-6 md:p-8 lg:p-12 mb-6 sm:mb-8 lg:mb-10 border border-blue-100 min-h-[calc(100vh-12rem)] sm:min-h-[calc(100vh-14rem)] lg:min-h-[calc(100vh-16rem)] hover:shadow-3xl transition-all duration-500 ease-out">
               <div className="flex-grow">
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />
@@ -192,6 +174,14 @@ const App: React.FC = () => {
                     }
                   />
                   <Route
+                    path="/testing-apis"
+                    element={
+                      <ProtectedRoute>
+                        <APITestingPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/auth-debug"
                     element={
                       <AuthDebug />
@@ -215,13 +205,14 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
-          <footer className="mt-auto pt-8 pb-4 text-center text-sm text-muted-foreground w-full">
-            <p className="flex items-center justify-center gap-1">
-              © {new Date().getFullYear()} Smart CV Builder
-              <span className="inline-block mx-2">•</span>
-              AI-powered CV enhancement tool
-            </p>          </footer>
-        </main>
+          <footer className="mt-auto pt-4 sm:pt-6 lg:pt-8 pb-2 sm:pb-3 lg:pb-4 text-center text-xs sm:text-sm text-muted-foreground w-full px-4 fade-in">
+            <p className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 hover:text-gray-600 transition-colors duration-300">
+              <span>© {new Date().getFullYear()} Smart CV Builder</span>
+              <span className="hidden sm:inline-block mx-2">•</span>
+              <span>AI-powered CV enhancement tool</span>
+            </p>
+          </footer>
+        </SidebarInset>
       </div>
     </>
   );
@@ -495,9 +486,12 @@ const MainAppContent: React.FC = () => {
           }
           break;
         case 'list':
-          if (['education', 'experience', 'projects', 'languages'].includes(section.id)) {
+          if (['education', 'experience', 'projects', 'certifications'].includes(section.id)) {
             formattedData[section.id] = JSON.stringify(section.items);
           }
+          break;
+        case 'interests':
+          formattedData[section.id] = JSON.stringify(section.items);
           break;
         case 'nested_list':
           if (section.id === 'skills') {

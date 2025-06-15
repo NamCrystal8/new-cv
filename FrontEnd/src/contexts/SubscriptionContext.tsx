@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { SubscriptionStatus, UsageStats, UserSubscription } from '../types/subscription';
-import { getApiBaseUrl } from '@/utils/api';
+import { authenticatedFetch } from '../utils/auth';
+import { useAuth } from '../App';
 
 interface SubscriptionContextType {
   status: SubscriptionStatus | null;
@@ -24,16 +25,26 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const fetchSubscriptionData = async () => {
+  const { isAuthenticated } = useAuth();
+  const fetchSubscriptionData = useCallback(async () => {
+    // Only fetch if user is authenticated
+    if (!isAuthenticated) {
+      setStatus(null);
+      setUsage(null);
+      setSubscription(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
       // Fetch subscription data in parallel
-      const apiBaseUrl = getApiBaseUrl();
       const [statusRes, subscriptionRes] = await Promise.all([
-        fetch(`${apiBaseUrl}/subscription/status`, { credentials: 'include' }),
-        fetch(`${apiBaseUrl}/subscription/current`, { credentials: 'include' })
+        authenticatedFetch('/subscription/status'),
+        authenticatedFetch('/subscription/current')
       ]);
 
       // Handle status (includes usage stats in correct format)
@@ -57,13 +68,13 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
-  const refreshSubscription = async () => {
+  const refreshSubscription = useCallback(async () => {
     await fetchSubscriptionData();
-  };
+  }, [fetchSubscriptionData]);
 
-  const checkUsageLimit = (analysisType: string): boolean => {
+  const checkUsageLimit = useCallback((analysisType: string): boolean => {
     if (!usage) return true; // Allow if no usage data available
 
     switch (analysisType) {
@@ -76,11 +87,12 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       default:
         return true;
     }
-  };
+  }, [usage]);
 
+  // Fetch subscription data when authentication state changes
   useEffect(() => {
     fetchSubscriptionData();
-  }, []);
+  }, [fetchSubscriptionData]);
 
   const value: SubscriptionContextType = {
     status,

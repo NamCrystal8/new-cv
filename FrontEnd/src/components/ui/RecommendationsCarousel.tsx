@@ -502,7 +502,7 @@ const CVSectionPreview: React.FC<CVSectionPreviewProps> = ({ section, changes })
                           {item.start_date || 'Start'} - {item.is_current ? 'Present' : (item.end_date || 'End')}
                         </div>
                       </div>
-                      {item.achievements && item.achievements.length > 0 && (
+                      {item.achievements && Array.isArray(item.achievements) && item.achievements.length > 0 && (
                         <ul className="list-disc list-inside text-sm mt-2 space-y-1">
                           {item.achievements.map((achievement: string, achIndex: number) => (
                             <li key={achIndex} className="text-gray-700">{achievement}</li>
@@ -523,14 +523,14 @@ const CVSectionPreview: React.FC<CVSectionPreviewProps> = ({ section, changes })
                       {item.description && (
                         <div className="text-sm text-gray-700 mt-1">{item.description}</div>
                       )}
-                      {item.contributions && item.contributions.length > 0 && (
+                      {item.contributions && Array.isArray(item.contributions) && item.contributions.length > 0 && (
                         <ul className="list-disc list-inside text-sm mt-2 space-y-1">
                           {item.contributions.map((contribution: string, contIndex: number) => (
                             <li key={contIndex} className="text-gray-700">{contribution}</li>
                           ))}
                         </ul>
                       )}
-                      {item.technologies && item.technologies.length > 0 && (
+                      {item.technologies && Array.isArray(item.technologies) && item.technologies.length > 0 && (
                         <div className="text-sm text-gray-600 mt-2">
                           <span className="italic">Technologies: </span>
                           {item.technologies.join(', ')}
@@ -539,10 +539,13 @@ const CVSectionPreview: React.FC<CVSectionPreviewProps> = ({ section, changes })
                     </div>
                   )}
 
-                  {section.id === 'languages' && (
-                    <div className="flex justify-between">
-                      <span className="font-medium">{item.language || item.name || 'Language'}</span>
-                      <span className="text-gray-600">({item.proficiency || 'Proficiency'})</span>
+                  {section.id === 'certifications' && (
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <div className="font-bold">{item.title || 'Certification Title'}</div>
+                        <div className="text-sm text-gray-600">{item.date || 'Date'}</div>
+                      </div>
+                      <div className="text-sm text-gray-700">{item.institution || 'Issuing Institution'}</div>
                     </div>
                   )}
                 </div>
@@ -563,7 +566,7 @@ const CVSectionPreview: React.FC<CVSectionPreviewProps> = ({ section, changes })
                   <div key={category.id || index}>
                     <span className="font-bold">{category.name || 'Category'}:</span>{' '}
                     <span className="text-gray-700">
-                      {category.items?.join(', ') || 'Skills list'}
+                      {Array.isArray(category.items) ? category.items.join(', ') : 'Skills list'}
                     </span>
                   </div>
                 ))}
@@ -572,6 +575,28 @@ const CVSectionPreview: React.FC<CVSectionPreviewProps> = ({ section, changes })
           );
         }
         break;
+
+      case 'interests':
+        return (
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-center mb-4 border-b border-gray-300 pb-2">
+              {section.name}
+            </h2>
+            <div className="text-center">
+              {Array.isArray((section as any).items) && (section as any).items.length > 0 ? (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {(section as any).items.map((interest: string, index: number) => (
+                    <span key={index} className="bg-gray-100 px-3 py-1 rounded-full text-sm">
+                      {interest}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 italic">No interests listed</div>
+              )}
+            </div>
+          </div>
+        );
 
       default:
         return (
@@ -855,6 +880,13 @@ const applyRecommendationToSection = (
         }
       }
       break;
+
+    case 'interests':
+      // Handle interests section (simple array of strings)
+      if (recommendation.field === 'new_item') {
+        (modifiedSection as any).items = [...((section as any).items || []), contentToApply];
+      }
+      break;
   }
 
   return modifiedSection;
@@ -914,9 +946,10 @@ const matchSection = (section: EditableSection, recommendationSection: string): 
     'header': ['header', 'contact', 'contact information', 'personal', 'personal information'],
     'experience': ['experience', 'work', 'work experience', 'employment', 'professional experience'],
     'education': ['education', 'academic', 'academic background', 'qualifications'],
-    'skills': ['skills', 'skill', 'technical skills', 'technical', 'competencies'],
+    'skills': ['skills', 'skill', 'technical skills', 'technical', 'competencies', 'languages', 'language', 'language skills'],
     'projects': ['projects', 'project', 'portfolio', 'work samples'],
-    'languages': ['languages', 'language', 'language skills']
+    'interests': ['interests', 'interest', 'hobbies', 'personal interests'],
+    'certifications': ['certifications', 'certification', 'certificates', 'credentials', 'qualifications']
   };
 
   // Check if the section matches any of the mapped variations
@@ -1035,12 +1068,9 @@ const createNewItemForSection = (sectionId: string, content: string): any => {
       return {
         id: baseId,
         institution: content,
-        degree: '',
-        location: '',
+        start_date: '',
         graduation_date: '',
-        gpa: '',
-        relevant_coursework: '',
-        academic_achievements: []
+        gpa: ''
       };
 
     case 'experience':
@@ -1066,6 +1096,14 @@ const createNewItemForSection = (sectionId: string, content: string): any => {
         contributions: []
       };
 
+    case 'certifications':
+      return {
+        id: baseId,
+        title: content,
+        institution: '',
+        date: ''
+      };
+
     default:
       return { id: baseId, name: content };
   }
@@ -1078,7 +1116,7 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
   onComplete
 }) => {
   // Define the specific order of sections
-  const sectionOrder = ['Header', 'Experience', 'Education', 'Projects', 'Skills', 'Languages'];
+  const sectionOrder = ['Header', 'Experience', 'Education', 'Projects', 'Skills', 'Interests', 'Certifications'];
 
   // State for ordered recommendations flow
   const [orderedRecommendations, setOrderedRecommendations] = useState<RecommendationItem[]>([]);
@@ -1141,7 +1179,8 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
       'Education': ['education', 'academic'],
       'Projects': ['projects', 'project'],
       'Skills': ['skills', 'skill', 'technical'],
-      'Languages': ['languages', 'language']
+      'Interests': ['interests', 'interest', 'hobbies'],
+      'Certifications': ['certifications', 'certification', 'certificates']
     };
     
     const searchTerms = sectionMap[sectionName] || [sectionName.toLowerCase()];
@@ -1246,6 +1285,14 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
             };
             console.log('📂 Adding new skill category:', newCategory);
             (modifiedSection as any).categories = [...(section as any).categories, newCategory];
+          }
+          break;
+
+        case 'interests':
+          console.log('🎯 Updating interests section');
+          if (recommendation.field === 'new_item') {
+            console.log('➕ Adding new interest:', contentToApply);
+            (modifiedSection as any).items = [...((section as any).items || []), contentToApply];
           }
           break;
       }
@@ -1401,15 +1448,25 @@ const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
           categories: []
         } as any;
 
-      case 'languages':
+      case 'interests':
         return {
-          id: 'languages',
-          name: 'Languages',
+          id: 'interests',
+          name: 'Interests',
+          type: 'interests',
+          items: [],
+          template: ''
+        } as any;
+
+      case 'certifications':
+        return {
+          id: 'certifications',
+          name: 'Certifications',
           type: 'list',
           items: [],
           template: {
-            language: '',
-            proficiency: 'Intermediate'
+            title: '',
+            institution: '',
+            date: ''
           }
         } as any;
 

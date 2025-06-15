@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/App';
 import { getApiBaseUrl } from '@/utils/api';
+import { fetchWithAuth } from '@/utils/tokenAuth';
 
 export const AuthDebug: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -18,12 +19,10 @@ export const AuthDebug: React.FC = () => {
   const testAuthStatus = async () => {
     setLoading(true);
     addTestResult('🔍 Testing authentication status...');
-    
+
     try {
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/users/me`, {
-        credentials: 'include',
-      });
+      const response = await fetchWithAuth(`${apiBaseUrl}/users/me`);
 
       if (response.ok) {
         const userData = await response.json();
@@ -45,12 +44,10 @@ export const AuthDebug: React.FC = () => {
   const testProtectedEndpoint = async () => {
     setLoading(true);
     addTestResult('🔍 Testing protected endpoint...');
-    
+
     try {
       const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/subscription/status`, {
-        credentials: 'include',
-      });
+      const response = await fetchWithAuth(`${apiBaseUrl}/subscription/status`);
 
       if (response.ok) {
         const data = await response.json();
@@ -163,11 +160,11 @@ export const AuthDebug: React.FC = () => {
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <h4 className="font-semibold text-blue-800 mb-2">🔍 Debugging Tips:</h4>
         <ul className="text-sm text-blue-700 space-y-1">
-          <li>• If auth status shows "Not Authenticated" but you're logged in, check cookie settings</li>
-          <li>• 401 errors usually mean the authentication cookie is missing or expired</li>
+          <li>• If auth status shows "Not Authenticated" but you're logged in, check localStorage for auth token</li>
+          <li>• 401 errors usually mean the authentication token is missing or expired</li>
           <li>• 403 errors mean you're authenticated but don't have permission</li>
-          <li>• Check browser dev tools → Application → Cookies for "cvapp" cookie</li>
-          <li>• Make sure all API calls include `credentials: 'include'`</li>
+          <li>• Check browser dev tools → Application → Local Storage for "cv_auth_token"</li>
+          <li>• All API calls now use Bearer token authentication via localStorage</li>
         </ul>
       </div>
     </div>

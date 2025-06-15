@@ -4,7 +4,7 @@ import { DataTable, Column } from './DataTable';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { getApiBaseUrl } from '@/utils/api';
+import { authenticatedFetch } from '@/utils/auth';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,10 +76,7 @@ export const PlanManagementTable: React.FC = () => {
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/plans`, {
-        credentials: 'include', // Important for authentication
-      });
+      const response = await authenticatedFetch('/admin/plans');
       if (!response.ok) {
         throw new Error('Failed to fetch plans');
       }
@@ -102,13 +99,8 @@ export const PlanManagementTable: React.FC = () => {
   const handleCreatePlan = async () => {
     setSubmitting(true);
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/plans`, {
+      const response = await authenticatedFetch('/admin/plans', {
         method: 'POST',
-        credentials: 'include', // Important for authentication
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(formData),
       });
 
@@ -143,13 +135,8 @@ export const PlanManagementTable: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/plans/${editingPlan.id}`, {
+      const response = await authenticatedFetch(`/admin/plans/${editingPlan.id}`, {
         method: 'PATCH',
-        credentials: 'include', // Important for authentication
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(formData),
       });
 
@@ -186,10 +173,8 @@ export const PlanManagementTable: React.FC = () => {
     }
 
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/plans/${planId}`, {
+      const response = await authenticatedFetch(`/admin/plans/${planId}`, {
         method: 'DELETE',
-        credentials: 'include', // Important for authentication
       });
 
       if (!response.ok) {

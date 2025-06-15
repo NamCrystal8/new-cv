@@ -1,0 +1,4 @@
+Model Name,Speed (seconds),Success,Response Quality,Notes
+gemini-2.5-flash-preview-05-20,30.112,Yes,Excellent,"Successfully extracted CV data with comprehensive sections including summary, education, experience, skills, projects, and languages. Included detailed URLs and structured data."
+gemini-2.5-pro-preview-06-05,0.965,No,N/A,"Failed due to quota limitations - requires paid tier. Error: 'Gemini 2.5 Pro Preview doesn't have a free quota tier.'"
+gemini-2.0-flash,11.161,Yes,Very Good,"Successfully extracted CV data with all major sections. Slightly less detailed than 2.5-flash-preview but still comprehensive. Faster response time."

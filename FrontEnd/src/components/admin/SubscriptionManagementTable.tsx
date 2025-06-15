@@ -3,7 +3,7 @@ import { Eye, Ban, Edit, User, Calendar, DollarSign } from 'lucide-react';
 import { DataTable, Column } from './DataTable';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { getApiBaseUrl } from '@/utils/api';
+import { authenticatedFetch } from '@/utils/auth';
 
 // Subscription data interface
 interface AdminSubscription {
@@ -70,10 +70,7 @@ export const SubscriptionManagementTable: React.FC<SubscriptionManagementTablePr
         params.append('search', search.trim());
       }
 
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/subscriptions?${params}`, {
-        credentials: 'include', // Important for authentication
-      });
+      const response = await authenticatedFetch(`/admin/subscriptions?${params}`);
       if (!response.ok) {
         throw new Error('Failed to fetch subscriptions');
       }
@@ -116,10 +113,8 @@ export const SubscriptionManagementTable: React.FC<SubscriptionManagementTablePr
     }
 
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/subscriptions/${subscriptionId}/cancel`, {
+      const response = await authenticatedFetch(`/admin/subscriptions/${subscriptionId}/cancel`, {
         method: 'POST',
-        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -374,11 +369,11 @@ export const SubscriptionManagementTable: React.FC<SubscriptionManagementTablePr
   }, [searchQuery]);
 
   return (
-    <div className="space-y-8 w-full">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Subscription Management</h2>
-          <p className="text-lg text-gray-600 mt-2">Manage user subscriptions and billing</p>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Subscription Management</h2>
+          <p className="text-sm sm:text-base lg:text-lg text-gray-600 mt-1 sm:mt-2">Manage user subscriptions and billing</p>
         </div>
       </div>
 

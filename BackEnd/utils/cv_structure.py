@@ -2,7 +2,7 @@ CV_STRUCTURE = '''{
         "cv_template": {
             "metadata": {
               "section_order": [
-                "header", "education", "experience", "leadership", "skills", "projects", "languages", "certifications", "courses", "publications", "research", "interests"
+                "header", "education", "experience", "projects", "skills", "interests", "certifications"
               ]
             },
             "sections": {
@@ -18,15 +18,10 @@ CV_STRUCTURE = '''{
                 "section_title": "Education",
                 "items": [
                   {
-                    "degree": "Degree, Concentration",
                     "institution": "Harvard University",
-                    "url": "Institution URL",
-                    "location": "Cambridge, MA",
+                    "start_date": "Start Date",
                     "graduation_date": "Graduation Date",
-                    "gpa": "GPA (Optional)",
-                    "thesis": "Thesis (Optional)",
-                    "coursework": ["Relevant Course 1", "Relevant Course 2", "Relevant Course 3"],
-                    "honors": ["Honor or Award (Optional)"]
+                    "gpa": "GPA (Optional)"
                   }
                 ]
               },
@@ -48,38 +43,18 @@ CV_STRUCTURE = '''{
                   }
                 ]
               },
-              "leadership": {
-                "section_title": "Leadership & Activities",
-                "items": [
-                  {
-                    "organization": "Organization",
-                    "location": "City, State",
-                    "role": "Role",
-                    "dates": {"start": "Month Year", "end": "Month Year"},
-                    "descriptions": [
-                      "Description of your role and impact",
-                      "Begin with action verbs and quantify results where possible"
-                    ]
-                  }
-                ]
-              },
               "skills": {
-                "section_title": "Skills & Interests",
+                "section_title": "Skills",
                 "categories": [
                   {
                     "name": "Technical",
                     "items": ["Software 1", "Software 2", "Programming Language 1", "Programming Language 2"]
                   },
                   {
-                    "name": "Language",
-                    "items": ["Language 1 (Proficiency)", "Language 2 (Proficiency)"]
-                  },
-                  {
-                    "name": "Laboratory",
-                    "items": ["Lab Technique 1", "Lab Technique 2"]
+                    "name": "Languages",
+                    "items": ["English (Fluent)", "Spanish (Intermediate)", "French (Basic)"]
                   }
-                ],
-                "interests": ["Interest 1", "Interest 2", "Interest 3"]
+                ]
               },
               "projects": {
                 "section_title": "Projects",
@@ -94,69 +69,17 @@ CV_STRUCTURE = '''{
                   }
                 ]
               },
+              "interests": {
+                "section_title": "Interests",
+                "items": ["Interest 1", "Interest 2", "Interest 3"]
+              },
               "certifications": {
                 "section_title": "Certifications",
                 "items": [
                   {
                     "title": "Certification Name",
                     "institution": "Issuing Institution",
-                    "url": "Certification URL",
-                    "date": {"start": "Start Date", "end": "End Date"}
-                  }
-                ]
-              },
-              "courses": {
-                "section_title": "Courses",
-                "items": [
-                  {
-                    "title": "Course Name",
-                    "institution": "Issuing Institution",
-                    "url": "Course URL",
-                    "date": {"start": "Start Date", "end": "End Date"}
-                  }
-                ]              },
-              "languages": {
-                "section_title": "Languages",
-                "items": [
-                  {"name": "Language", "proficiency": "Proficiency Level"}
-                ],
-                "available_proficiency_levels": ["Native/Bilingual", "Fluent", "Advanced", "Intermediate", "Basic/Elementary"]
-              },
-              "interests": {
-                "section_title": "Interests",
-                "items": ["Interest 1", "Interest 2"]
-              },
-              "references": {
-                "section_title": "References",
-                "items": [
-                  {
-                    "name": "Reference Name",
-                    "title": "Title",
-                    "company": "Company Name",
-                    "email": "Email",
-                    "phone": "Phone Number"
-                  }
-                ]
-              },
-              "patents": {
-                "section_title": "Patents",
-                "items": [
-                  {
-                    "title": "Patent Title",
-                    "number": "Patent Number",
-                    "url": "Patent URL",
-                    "date": "2023-01-01"
-                  }
-                ]
-              },
-              "research": {
-                "section_title": "Research",
-                "items": [
-                  {
-                    "title": "Research Title",
-                    "description": "Research Description",
-                    "url": "Research URL",
-                    "date": "2023-01-01"
+                    "date": "Issue Date"
                   }
                 ]
               }

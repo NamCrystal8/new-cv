@@ -262,17 +262,39 @@ async def analyze_cv_weaknesses(
             
             section_analysis["projects"] = projects_analysis
             
-            # Languages (list type)
-            languages = sections.get("languages", {})
-            language_items = languages.get("items", [])
+            # Languages are now integrated into Skills section, so we extract them from there
+            skills = sections.get("skills", {})
+            skill_categories = skills.get("categories", [])
             language_fields = []
-            for i, item in enumerate(language_items):
-                language_fields.append({
-                    "id": f"language_{i}",
-                    "language": item.get("language", "") or item.get("name", ""),
-                    "proficiency": item.get("proficiency", "Intermediate")
-                })
-            
+
+            # Look for Languages category in skills
+            for category in skill_categories:
+                if isinstance(category, dict) and category.get("name", "").lower() == "languages":
+                    language_items = category.get("items", [])
+                    for i, item in enumerate(language_items):
+                        if isinstance(item, str):
+                            # Handle string format like "English (Fluent)"
+                            if "(" in item and ")" in item:
+                                parts = item.split("(")
+                                language_name = parts[0].strip()
+                                proficiency = parts[1].replace(")", "").strip()
+                            else:
+                                language_name = item.strip()
+                                proficiency = "Intermediate"
+                        elif isinstance(item, dict):
+                            # Handle dict format
+                            language_name = item.get("language", "") or item.get("name", "")
+                            proficiency = item.get("proficiency", "Intermediate")
+                        else:
+                            continue
+
+                        language_fields.append({
+                            "id": f"language_{i}",
+                            "language": language_name,
+                            "proficiency": proficiency
+                        })
+                    break
+
             section_analysis["languages"] = {
                 "is_complete": bool(language_fields),
                 "item_count": len(language_fields)
@@ -280,7 +302,24 @@ async def analyze_cv_weaknesses(
             
             # Generate detailed analysis using Gemini
             detailed_analysis = await gemini_service.generate_detailed_analysis(extracted_cv_data)
-            
+
+            # Track usage for CV analysis
+            await subscription_service.increment_usage(user.id, "cv_analysis")
+
+            # Extract analysis data for saving
+            analysis_data = {}
+            if isinstance(detailed_analysis, dict):
+                analysis_data["weaknesses"] = detailed_analysis.get("weaknesses", [])
+                analysis_data["recommendations"] = detailed_analysis.get("recommendations", [])
+                analysis_data["section_completeness"] = section_analysis
+
+            await subscription_service.save_analysis_result(
+                user_id=user.id,
+                cv_id=None,  # No CV ID available in uploaded file analysis
+                analysis_type=AnalysisType.CV_ANALYSIS,
+                analysis_data=analysis_data
+            )
+
             # Create a list of editable sections based on the CV structure
             editable_sections = []
             
@@ -402,27 +441,46 @@ async def analyze_cv_weaknesses(
                 }
             })
             
-            # Languages (list type)
-            languages = sections.get("languages", {})
-            language_items = languages.get("items", [])
-            language_fields = []
-            for i, item in enumerate(language_items):
-                language_fields.append({
-                    "id": f"language_{i}",
-                    "language": item.get("language", "") or item.get("name", ""),
-                    "proficiency": item.get("proficiency", "Intermediate")
+            # Add interests section only if it has data
+            interests = sections.get("interests", {})
+            interest_items = interests.get("items", [])
+
+            # Only add interests section if it has items
+            if interest_items and len(interest_items) > 0:
+                editable_sections.append({
+                    "id": "interests",
+                    "name": "Interests",
+                    "type": "interests",
+                    "items": interest_items,
+                    "template": ""
                 })
-            
-            editable_sections.append({
-                "id": "languages",
-                "name": "Languages",
-                "type": "list",
-                "items": language_fields,
-                "template": {
-                    "language": "",
-                    "proficiency": "Intermediate"
-                }
-            })
+
+            # Add certifications section only if it has data
+            certifications = sections.get("certifications", {})
+            certification_items = certifications.get("items", [])
+            certification_fields = []
+            for i, item in enumerate(certification_items):
+                if isinstance(item, dict):
+                    certification_fields.append({
+                        "id": f"certification_{i}",
+                        "title": item.get("title", ""),
+                        "institution": item.get("institution", ""),
+                        "date": item.get("date", "")
+                    })
+
+            # Only add certifications section if it has items
+            if certification_fields and len(certification_fields) > 0:
+                editable_sections.append({
+                    "id": "certifications",
+                    "name": "Certifications",
+                    "type": "list",
+                    "items": certification_fields,
+                    "template": {
+                        "title": "",
+                        "institution": "",
+                        "date": ""
+                    }
+                })
             
         except Exception as analysis_error:
             print(f"Error analyzing CV structure: {str(analysis_error)}")
@@ -501,7 +559,8 @@ async def analyze_cv_weaknesses(
 async def complete_cv_flow(
     request: CompleteFlowRequest,
     user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db),
+    subscription_service: SubscriptionService = Depends(get_subscription_service)
 ):
     """
     Complete the CV flow with additional inputs and generate an enhanced CV.
@@ -607,15 +666,14 @@ async def complete_cv_flow(
                     for item in education_items:
                         formatted_item = {
                             "institution": item.get("institution", ""),
-                            "degree": item.get("degree", ""),
-                            "location": item.get("location", ""),
+                            "start_date": item.get("start_date", ""),
                             "graduation_date": item.get("graduation_date", "")
                         }
-                        
+
                         # Add optional GPA if provided
                         if "gpa" in item and item["gpa"]:
                             formatted_item["gpa"] = item["gpa"]
-                            
+
                         formatted_education_items.append(formatted_item)
                     
                     sections["education"]["items"] = formatted_education_items
@@ -695,26 +753,41 @@ async def complete_cv_flow(
                 except Exception as e:
                     print(f"[DEBUG] Error processing projects data: {str(e)}")
             
-            # Update languages section
-            if "languages" in additional_inputs:
+
+
+            # Update interests section
+            if "interests" in additional_inputs:
                 try:
-                    language_items = json.loads(additional_inputs["languages"])
-                    if "languages" not in sections:
-                        sections["languages"] = {"section_title": "Languages", "items": []}
-                    
-                    # Transform language items to match the expected format
-                    formatted_language_items = []
-                    for item in language_items:
-                        formatted_item = {
-                            "language": item.get("language", ""),
-                            "proficiency": item.get("proficiency", "Intermediate")
-                        }
-                        formatted_language_items.append(formatted_item)
-                    
-                    sections["languages"]["items"] = formatted_language_items
+                    interest_items = json.loads(additional_inputs["interests"])
+                    if "interests" not in sections:
+                        sections["interests"] = {"section_title": "Interests", "items": []}
+
+                    # Interests are just a simple array of strings
+                    sections["interests"]["items"] = interest_items
                 except Exception as e:
-                    print(f"[DEBUG] Error processing languages data: {str(e)}")
-            
+                    print(f"[DEBUG] Error processing interests data: {str(e)}")
+
+            # Update certifications section
+            if "certifications" in additional_inputs:
+                try:
+                    certification_items = json.loads(additional_inputs["certifications"])
+                    if "certifications" not in sections:
+                        sections["certifications"] = {"section_title": "Certifications", "items": []}
+
+                    # Transform certification items to match the expected format
+                    formatted_certification_items = []
+                    for item in certification_items:
+                        formatted_item = {
+                            "title": item.get("title", ""),
+                            "institution": item.get("institution", ""),
+                            "date": item.get("date", "")
+                        }
+                        formatted_certification_items.append(formatted_item)
+
+                    sections["certifications"]["items"] = formatted_certification_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing certifications data: {str(e)}")
+
             # Raw text fallback (if present)
             if "raw_text" in additional_inputs:
                 print("[DEBUG] Using raw text input as fallback")
@@ -824,14 +897,17 @@ async def complete_cv_flow(
         
         # Save CV record to database with the CV structure
         new_cv = CV(
-            file_url=cloudinary_result["url"], 
+            file_url=cloudinary_result["url"],
             user_id=user.id,
             cv_structure=extracted_text  # Save the CV structure as JSON
         )
         db.add(new_cv)
         await db.commit()
         await db.refresh(new_cv)
-        
+
+        # Track usage for CV storage/download
+        await subscription_service.increment_usage(user.id, "cv_download")
+
         # Update the flow status
         cv_flows[flow_id]["status"] = "completed"
         
@@ -927,7 +1003,8 @@ async def update_cv(
     cv_id: int,
     request: CompleteFlowRequest,
     user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db),
+    subscription_service: SubscriptionService = Depends(get_subscription_service)
 ):
     """
     Update a previously generated CV with new structure and regenerate the PDF
@@ -1008,15 +1085,14 @@ async def update_cv(
                     for item in education_items:
                         formatted_item = {
                             "institution": item.get("institution", ""),
-                            "degree": item.get("degree", ""),
-                            "location": item.get("location", ""),
+                            "start_date": item.get("start_date", ""),
                             "graduation_date": item.get("graduation_date", "")
                         }
-                        
+
                         # Add optional GPA if provided
                         if "gpa" in item and item["gpa"]:
                             formatted_item["gpa"] = item["gpa"]
-                            
+
                         formatted_education_items.append(formatted_item)
                     
                     sections["education"]["items"] = formatted_education_items
@@ -1096,26 +1172,41 @@ async def update_cv(
                 except Exception as e:
                     print(f"[DEBUG] Error processing projects data: {str(e)}")
             
-            # Update languages section
-            if "languages" in additional_inputs:
+
+
+            # Update interests section
+            if "interests" in additional_inputs:
                 try:
-                    language_items = json.loads(additional_inputs["languages"])
-                    if "languages" not in sections:
-                        sections["languages"] = {"section_title": "Languages", "items": []}
-                    
-                    # Transform language items to match the expected format
-                    formatted_language_items = []
-                    for item in language_items:
-                        formatted_item = {
-                            "language": item.get("language", ""),
-                            "proficiency": item.get("proficiency", "Intermediate")
-                        }
-                        formatted_language_items.append(formatted_item)
-                    
-                    sections["languages"]["items"] = formatted_language_items
+                    interest_items = json.loads(additional_inputs["interests"])
+                    if "interests" not in sections:
+                        sections["interests"] = {"section_title": "Interests", "items": []}
+
+                    # Interests are just a simple array of strings
+                    sections["interests"]["items"] = interest_items
                 except Exception as e:
-                    print(f"[DEBUG] Error processing languages data: {str(e)}")
-            
+                    print(f"[DEBUG] Error processing interests data: {str(e)}")
+
+            # Update certifications section
+            if "certifications" in additional_inputs:
+                try:
+                    certification_items = json.loads(additional_inputs["certifications"])
+                    if "certifications" not in sections:
+                        sections["certifications"] = {"section_title": "Certifications", "items": []}
+
+                    # Transform certification items to match the expected format
+                    formatted_certification_items = []
+                    for item in certification_items:
+                        formatted_item = {
+                            "title": item.get("title", ""),
+                            "institution": item.get("institution", ""),
+                            "date": item.get("date", "")
+                        }
+                        formatted_certification_items.append(formatted_item)
+
+                    sections["certifications"]["items"] = formatted_certification_items
+                except Exception as e:
+                    print(f"[DEBUG] Error processing certifications data: {str(e)}")
+
             # Raw text fallback (if present)
             if "raw_text" in additional_inputs:
                 print("[DEBUG] Using raw text input as fallback")
@@ -1166,7 +1257,10 @@ async def update_cv(
         cv.file_url = cloudinary_result["url"]
         cv.cv_structure = extracted_text  # Update with the new structure
         await db.commit()
-        
+
+        # Track usage for CV storage/download
+        await subscription_service.increment_usage(user.id, "cv_download")
+
         # Return full URL to PDF file
         return {
             "message": "CV updated successfully",
@@ -1199,7 +1293,7 @@ async def analyze_cv_with_job_description(
     print(f"[FILE_VALIDATION] Has text: {validation_result['has_text']}")
     
     # Check usage limits based on analysis type
-    analysis_type = "job_description_analysis" if job_description else "cv_analysis"
+    analysis_type = "job_analysis" if job_description else "cv_analysis"
     can_proceed = await subscription_service.check_usage_limits(user.id, analysis_type)
     if not can_proceed:
         usage_stats = await subscription_service.get_usage_stats(user.id)
@@ -1240,11 +1334,18 @@ async def analyze_cv_with_job_description(
             
             # Track usage for CV analysis
             await subscription_service.increment_usage(user.id, "cv_analysis")
+
+            # Extract analysis data for saving
+            analysis_data = {}
+            if isinstance(detailed_analysis, dict):
+                analysis_data["weaknesses"] = detailed_analysis.get("weaknesses", [])
+                analysis_data["recommendations"] = detailed_analysis.get("recommendations", [])
+
             await subscription_service.save_analysis_result(
                 user_id=user.id,
                 cv_id=None,  # No CV ID available in uploaded file analysis
                 analysis_type=AnalysisType.CV_ANALYSIS,
-                analysis_data={"result": detailed_analysis, "cv_data": extracted_cv_data}
+                analysis_data=analysis_data
             )
             
             return {
@@ -1270,7 +1371,7 @@ async def analyze_stored_cv_with_job_description(
     Analyze a previously stored CV against a job description using the flow_id.
     """
     # Check usage limits for job description analysis
-    can_proceed = await subscription_service.check_usage_limits(user.id, "job_description_analysis")
+    can_proceed = await subscription_service.check_usage_limits(user.id, "job_analysis")
     if not can_proceed:
         usage_stats = await subscription_service.get_usage_stats(user.id)
         raise HTTPException(

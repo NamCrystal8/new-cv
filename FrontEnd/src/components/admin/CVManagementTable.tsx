@@ -3,7 +3,7 @@ import { Eye, Trash2, Download, User } from 'lucide-react';
 import { DataTable, Column } from './DataTable';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { getApiBaseUrl } from '@/utils/api';
+import { authenticatedFetch } from '@/utils/auth';
 
 // CV data interface
 interface AdminCV {
@@ -57,10 +57,7 @@ export const CVManagementTable: React.FC<CVManagementTableProps> = () => {
         params.append('search', search.trim());
       }
 
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/cvs?${params}`, {
-        credentials: 'include', // Important for authentication
-      });
+      const response = await authenticatedFetch(`/admin/cvs?${params}`);
       if (!response.ok) {
         throw new Error('Failed to fetch CVs');
       }
@@ -103,10 +100,8 @@ export const CVManagementTable: React.FC<CVManagementTableProps> = () => {
     }
 
     try {
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/cvs/${cvId}`, {
+      const response = await authenticatedFetch(`/admin/cvs/${cvId}`, {
         method: 'DELETE',
-        credentials: 'include', // Important for authentication
       });
 
       if (!response.ok) {
@@ -287,11 +282,11 @@ export const CVManagementTable: React.FC<CVManagementTableProps> = () => {
   }, [searchQuery]);
 
   return (
-    <div className="space-y-8 w-full">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">CV Management</h2>
-          <p className="text-lg text-gray-600 mt-2">Manage user-uploaded CVs and documents</p>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">CV Management</h2>
+          <p className="text-sm sm:text-base lg:text-lg text-gray-600 mt-1 sm:mt-2">Manage user-uploaded CVs and documents</p>
         </div>
       </div>
 

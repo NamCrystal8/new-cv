@@ -146,30 +146,31 @@ export function DataTable<T>({
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          {title && <CardTitle className="text-xl font-bold">{title}</CardTitle>}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+    <Card className="w-full">
+      <CardHeader className="pb-4 sm:pb-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
+          {title && <CardTitle className="text-lg sm:text-xl font-bold">{title}</CardTitle>}
+          <div className="flex flex-col gap-3 sm:gap-4">
             {searchable && (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 <Input
                   placeholder={searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10 w-full sm:w-80 h-10"
+                  className="pl-9 sm:pl-10 w-full h-9 sm:h-10 text-sm sm:text-base"
                 />
               </div>
             )}
             {bulkActions.length > 0 && selectedItems.size > 0 && (
-              <div className="flex gap-3 flex-wrap">
+              <div className="flex gap-2 sm:gap-3 flex-wrap">
                 {bulkActions.map((action, index) => (
                   <Button
                     key={index}
                     variant={action.variant || 'outline'}
-                    size="default"
+                    size="sm"
                     onClick={() => action.onClick(getSelectedItems())}
+                    className="text-xs sm:text-sm"
                   >
                     {action.label} ({selectedItems.size})
                   </Button>
@@ -179,137 +180,148 @@ export function DataTable<T>({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
-            <thead>
-              <tr className="border-b">
-                {selectable && (
-                  <th className="text-left p-4 w-16">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.size === data.length && data.length > 0}
-                      onChange={handleSelectAll}
-                      className="rounded border-gray-300 h-4 w-4"
-                      aria-label="Select all items"
-                      title="Select all items"
-                    />
-                  </th>
-                )}
-                {columns.map((column, index) => (
-                  <th
-                    key={index}
-                    className={`text-left p-4 font-medium text-gray-700 ${
-                      column.sortable ? 'cursor-pointer hover:bg-gray-50' : ''
-                    } ${column.width ? `w-[${column.width}]` : ''}`}
-                    onClick={() => column.sortable && handleSort(String(column.key))}
-                  >
-                    <div className="flex items-center gap-2">
-                      {column.header}
-                      {column.sortable && sortConfig?.key === column.key && (
-                        <span className="text-xs">
-                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-                {(Array.isArray(actions) ? actions.length > 0 : !!actions) && (
-                  <th className="text-left p-4 w-48 font-medium text-gray-700">Actions</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {data.length === 0 ? (
+      <CardContent className="p-3 sm:p-4 lg:p-6">
+        <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6">
+          <div className="inline-block min-w-full align-middle">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td
-                    colSpan={columns.length + (selectable ? 1 : 0) + ((Array.isArray(actions) ? actions.length > 0 : !!actions) ? 1 : 0)}
-                    className="text-center p-8 text-gray-500"
-                  >
-                    {emptyMessage}
-                  </td>
+                  {selectable && (
+                    <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12 sm:w-16">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.size === data.length && data.length > 0}
+                        onChange={handleSelectAll}
+                        className="rounded border-gray-300 h-4 w-4 touch-manipulation"
+                        aria-label="Select all items"
+                        title="Select all items"
+                      />
+                    </th>
+                  )}
+                  {columns.map((column, index) => (
+                    <th
+                      key={index}
+                      className={`px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                        column.sortable ? 'cursor-pointer hover:bg-gray-100 touch-manipulation' : ''
+                      } ${column.width ? `w-[${column.width}]` : ''}`}
+                      onClick={() => column.sortable && handleSort(String(column.key))}
+                    >
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <span className="truncate">{column.header}</span>
+                        {column.sortable && sortConfig?.key === column.key && (
+                          <span className="text-xs flex-shrink-0">
+                            {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                  {(Array.isArray(actions) ? actions.length > 0 : !!actions) && (
+                    <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 sm:w-48">
+                      Actions
+                    </th>
+                  )}
                 </tr>
-              ) : (
-                data.map((item, index) => {
-                  const itemId = getItemId(item, index);
-                  return (
-                    <tr key={itemId} className="border-b hover:bg-gray-50">
-                      {selectable && (
-                        <td className="p-4">
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.has(itemId)}
-                            onChange={() => handleSelectItem(itemId)}
-                            className="rounded border-gray-300 h-4 w-4"
-                            aria-label={`Select item ${itemId}`}
-                            title={`Select item ${itemId}`}
-                          />
-                        </td>
-                      )}
-                      {columns.map((column, colIndex) => (
-                        <td key={colIndex} className="p-4">
-                          {renderCellContent(item, column)}
-                        </td>
-                      ))}
-                      {(Array.isArray(actions) ? actions.length > 0 : !!actions) && (
-                        <td className="p-4">
-                          <div className="flex gap-2">
-                            {(Array.isArray(actions) ? actions : actions(item)).map((action, actionIndex) => (
-                              <Button
-                                key={actionIndex}
-                                variant={action.variant || 'outline'}
-                                size="sm"
-                                onClick={() => {
-                                  if (Array.isArray(actions)) {
-                                    (action as any).onClick(item);
-                                  } else {
-                                    (action as any).onClick();
-                                  }
-                                }}
-                              >
-                                {action.icon}
-                                <span className="ml-1">{action.label}</span>
-                              </Button>
-                            ))}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {data.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={columns.length + (selectable ? 1 : 0) + ((Array.isArray(actions) ? actions.length > 0 : !!actions) ? 1 : 0)}
+                      className="px-3 sm:px-4 py-8 text-center text-sm text-gray-500"
+                    >
+                      {emptyMessage}
+                    </td>
+                  </tr>
+                ) : (
+                  data.map((item, index) => {
+                    const itemId = getItemId(item, index);
+                    return (
+                      <tr key={itemId} className="hover:bg-gray-50">
+                        {selectable && (
+                          <td className="px-3 sm:px-4 py-3 sm:py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedItems.has(itemId)}
+                              onChange={() => handleSelectItem(itemId)}
+                              className="rounded border-gray-300 h-4 w-4 touch-manipulation"
+                              aria-label={`Select item ${itemId}`}
+                              title={`Select item ${itemId}`}
+                            />
+                          </td>
+                        )}
+                        {columns.map((column, colIndex) => (
+                          <td key={colIndex} className="px-3 sm:px-4 py-3 sm:py-4 text-sm text-gray-900">
+                            <div className="truncate max-w-xs sm:max-w-sm lg:max-w-none">
+                              {renderCellContent(item, column)}
+                            </div>
+                          </td>
+                        ))}
+                        {(Array.isArray(actions) ? actions.length > 0 : !!actions) && (
+                          <td className="px-3 sm:px-4 py-3 sm:py-4">
+                            <div className="flex gap-1 sm:gap-2 flex-wrap">
+                              {(Array.isArray(actions) ? actions : actions(item)).map((action, actionIndex) => (
+                                <Button
+                                  key={actionIndex}
+                                  variant={action.variant || 'outline'}
+                                  size="sm"
+                                  onClick={() => {
+                                    if (Array.isArray(actions)) {
+                                      (action as any).onClick(item);
+                                    } else {
+                                      (action as any).onClick();
+                                    }
+                                  }}
+                                  className="text-xs sm:text-sm touch-manipulation"
+                                >
+                                  {action.icon}
+                                  <span className="ml-1 hidden sm:inline">{action.label}</span>
+                                  <span className="sm:hidden" title={action.label}>{action.icon}</span>
+                                </Button>
+                              ))}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {pagination && (
-          <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-6 border-t gap-6">
-            <div className="text-gray-600 order-2 sm:order-1">
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-4 sm:mt-6 pt-4 sm:pt-6 border-t gap-4 sm:gap-6">
+            <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1 text-center sm:text-left">
               Showing <span className="font-semibold">{((pagination.currentPage - 1) * pagination.pageSize) + 1}</span> to{' '}
               <span className="font-semibold">{Math.min(pagination.currentPage * pagination.pageSize, pagination.total)}</span> of{' '}
               <span className="font-semibold">{pagination.total}</span> results
             </div>
-            <div className="flex items-center gap-3 order-1 sm:order-2">
+            <div className="flex items-center gap-2 sm:gap-3 order-1 sm:order-2">
               <Button
                 variant="outline"
-                size="default"
+                size="sm"
                 onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
                 disabled={pagination.currentPage <= 1}
+                className="touch-manipulation"
               >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Previous
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Previous</span>
               </Button>
-              <span className="px-4 py-2 bg-gray-100 rounded-md font-medium">
-                Page {pagination.currentPage} of {pagination.totalPages}
+              <span className="px-2 sm:px-4 py-1 sm:py-2 bg-gray-100 rounded-md text-xs sm:text-sm font-medium">
+                <span className="sm:hidden">{pagination.currentPage}/{pagination.totalPages}</span>
+                <span className="hidden sm:inline">Page {pagination.currentPage} of {pagination.totalPages}</span>
               </span>
               <Button
                 variant="outline"
-                size="default"
+                size="sm"
                 onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
                 disabled={pagination.currentPage >= pagination.totalPages}
+                className="touch-manipulation"
               >
-                Next
-                <ChevronRight className="h-4 w-4 ml-2" />
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 sm:ml-2" />
               </Button>
             </div>
           </div>

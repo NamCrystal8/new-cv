@@ -34,6 +34,7 @@ export const getApiBaseUrl = (): string => {
 
 /**
  * Make an API call with the correct base URL
+ * @deprecated Use authenticatedFetch from utils/auth.ts for authenticated requests
  */
 export const apiCall = async (endpoint: string, options?: RequestInit): Promise<Response> => {
   const baseUrl = getApiBaseUrl();
@@ -42,7 +43,6 @@ export const apiCall = async (endpoint: string, options?: RequestInit): Promise<
   return fetch(url, {
     ...options,
     mode: 'cors',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options?.headers,
@@ -60,7 +60,6 @@ export const apiCallFormData = async (endpoint: string, formData: FormData): Pro
 
   return fetch(url, {
     method: 'POST',
-    credentials: 'include', // Important for authentication
     body: formData,
   });
 };

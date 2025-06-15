@@ -14,20 +14,34 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, variant, ...props }) {
+      {toasts.map(function ({ id, title, description, action, variant, ...props }, index) {
         return (
-          <Toast key={id} variant={variant} {...props}>
+          <Toast
+            key={id}
+            variant={variant}
+            className="fade-in hover:scale-[1.02] transition-all duration-300 ease-out"
+            style={{ animationDelay: `${index * 100}ms` }}
+            {...props}
+          >
             <div className="flex items-start gap-3">
-              <ToastIcon variant={variant} />
+              <div className="icon-hover-bounce">
+                <ToastIcon variant={variant} />
+              </div>
               <div className="grid gap-1 flex-1">
-                {title && <ToastTitle>{title}</ToastTitle>}
+                {title && (
+                  <ToastTitle className="font-semibold transition-all duration-300">
+                    {title}
+                  </ToastTitle>
+                )}
                 {description && (
-                  <ToastDescription>{description}</ToastDescription>
+                  <ToastDescription className="transition-all duration-300">
+                    {description}
+                  </ToastDescription>
                 )}
               </div>
             </div>
             {action}
-            <ToastClose />
+            <ToastClose className="hover:scale-110 transition-all duration-200 ease-out" />
           </Toast>
         )
       })}

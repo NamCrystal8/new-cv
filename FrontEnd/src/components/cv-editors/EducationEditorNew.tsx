@@ -6,11 +6,9 @@ export interface EducationItem {
   id: string;
   institution: string;
   degree: string;
-  location: string;
+  start_date: string;
   graduation_date: string;
   gpa: string;
-  relevant_coursework?: string;
-  academic_achievements?: string[];
 }
 
 export interface EducationSection {
@@ -27,44 +25,34 @@ const EducationEditorNew: React.FC<{
 }> = ({ section, onChange }) => {
   // Define field configuration for education items
   const fields: FieldConfig[] = [
-    { 
-      key: 'institution', 
+    {
+      key: 'institution',
       label: 'Institution',
       placeholder: 'Enter institution name',
       required: true
     },
-    { 
-      key: 'degree', 
+    {
+      key: 'degree',
       label: 'Degree',
-      placeholder: 'Enter degree or qualification',
+      placeholder: 'e.g., Bachelor of Computer Science',
       required: true
     },
-    { 
-      key: 'location', 
-      label: 'Location',
-      placeholder: 'City, Country'
+    {
+      key: 'start_date',
+      label: 'Start Date',
+      placeholder: 'e.g., Aug 2019',
+      type: 'date'
     },
-    { 
-      key: 'graduation_date', 
+    {
+      key: 'graduation_date',
       label: 'Graduation Date',
       placeholder: 'e.g., May 2023',
       type: 'date'
     },
-    { 
-      key: 'gpa', 
+    {
+      key: 'gpa',
       label: 'GPA (Optional)',
       placeholder: 'e.g., 3.8/4.0'
-    },
-    {
-      key: 'relevant_coursework',
-      label: 'Relevant Coursework',
-      placeholder: 'Enter relevant courses',
-      type: 'textarea'
-    },
-    {
-      key: 'academic_achievements',
-      label: 'Academic Achievements',
-      placeholder: 'Add achievement'
     }
   ];
 

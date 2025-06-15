@@ -220,9 +220,17 @@ async def get_subscription_status(
     # Calculate remaining counts
     cv_limit = limits.get("cv_analyses", 3)  # Default to free tier limit
     job_limit = limits.get("job_analyses", 1)  # Default to free tier limit
-    
-    cv_remaining = max(0, cv_limit - current_usage.cv_analyses_count) if cv_limit else float('inf')
-    job_remaining = max(0, job_limit - current_usage.job_analyses_count) if job_limit else float('inf')
+
+    # Handle None (unlimited) vs numeric limits
+    if cv_limit is None:
+        cv_remaining = 999999  # Unlimited
+    else:
+        cv_remaining = max(0, cv_limit - current_usage.cv_analyses_count)
+
+    if job_limit is None:
+        job_remaining = 999999  # Unlimited
+    else:
+        job_remaining = max(0, job_limit - current_usage.job_analyses_count)
     
     # Format dates
     from datetime import datetime, date
@@ -235,13 +243,21 @@ async def get_subscription_status(
     else:
         next_month = today.replace(month=today.month + 1, day=1)
     
+    # Calculate CV storage usage and remaining
+    cv_download_limit = limits.get("cv_downloads", 5)  # Default to free tier limit
+
+    if cv_download_limit is None:
+        cv_download_remaining = 999999  # Unlimited
+    else:
+        cv_download_remaining = max(0, cv_download_limit - current_usage.cv_downloads_count)
+
     usage_stats = {
         "cv_analyses_used": current_usage.cv_analyses_count,
         "job_analyses_used": current_usage.job_analyses_count,
-        "cvs_stored": 0,  # This would need to be calculated separately
-        "cv_analyses_remaining": cv_remaining if cv_remaining != float('inf') else 999999,
-        "job_analyses_remaining": job_remaining if job_remaining != float('inf') else 999999,
-        "cv_storage_remaining": 999999,  # Simplified for now
+        "cvs_stored": current_usage.cv_downloads_count,  # Use cv_downloads_count as cvs_stored
+        "cv_analyses_remaining": cv_remaining,
+        "job_analyses_remaining": job_remaining,
+        "cv_storage_remaining": cv_download_remaining,
         "billing_period_start": first_day.isoformat(),
         "billing_period_end": next_month.isoformat()
     }

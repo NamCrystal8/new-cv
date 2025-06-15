@@ -71,9 +71,8 @@ def json_to_latex(json_data):
     if not isinstance(sections, dict): sections = {}
 
     # Default section order if not specified
-    default_order = ["header", "summary", "experience", "education", 
-                     "skills", "projects", "leadership", "certifications", 
-                     "languages", "publications", "research", "achievements"]
+    default_order = ["header", "education", "experience", "projects",
+                     "skills", "interests", "certifications"]
                       
     section_order = metadata.get("section_order", default_order)
     
@@ -186,35 +185,27 @@ def json_to_latex(json_data):
             for i, item in enumerate(items):
                  if not isinstance(item, dict): continue
                  institution = escape_latex(item.get("institution", ""))
-                 location = escape_latex(item.get("location", ""))
-                 degree = escape_latex(item.get("degree", ""))
-                 grad_date = escape_latex(item.get("graduation_date", ""))
-                 dates_str = grad_date  # Use graduation date directly
-                 if not dates_str and "dates" in item:
-                     dates_str = format_dates(item.get("dates", {}))  # Fall back to dates object if needed
+                 start_date = escape_latex(item.get("start_date", ""))
+                 graduation_date = escape_latex(item.get("graduation_date", ""))
                  gpa = escape_latex(item.get("gpa", ""))
-                 coursework = item.get("coursework", [])
-                 honors = item.get("honors", [])
 
-                 section_latex += f"\\textbf{{{institution}}} \\hfill {location}\n\n"
+                 # Format date range
+                 dates_str = ""
+                 if start_date and graduation_date:
+                     dates_str = f"{start_date} -- {graduation_date}"
+                 elif graduation_date:
+                     dates_str = graduation_date
+                 elif start_date:
+                     dates_str = start_date
 
-                 # Format degree line with GPA if available
-                 degree_line = degree
+                 # Harvard-style education entry - simplified format
+                 section_latex += f"\\textbf{{{institution}}} \\hfill {dates_str}\n"
+
+                 # Add GPA if available
                  if gpa:
-                     degree_line += f". GPA {gpa}"
-                 section_latex += f"{degree_line} \\hfill {dates_str}\n\n"
+                     section_latex += f"GPA: {gpa}\n"
 
-                 # Add coursework if available
-                 if coursework and isinstance(coursework, list) and len(coursework) > 0:
-                     coursework_str = ", ".join([escape_latex(course) for course in coursework if course])
-                     if coursework_str:
-                         section_latex += f"Relevant Coursework: {coursework_str}\n\n"
-
-                 # Add honors if available
-                 if honors and isinstance(honors, list) and len(honors) > 0:
-                     honors_str = ", ".join([escape_latex(honor) for honor in honors if honor])
-                     if honors_str:
-                         section_latex += f"Honors: {honors_str}\n\n"
+                 section_latex += "\n"
 
                  # Add proper spacing between education entries
                  if i < len(items) - 1:
@@ -325,7 +316,7 @@ def json_to_latex(json_data):
                  if i < len(items) - 1:
                      section_latex += "\\vspace{12pt}\n"  # Harvard-style spacing between project items
 
-        # --- Skills Section with Harvard Formatting ---
+        # --- Skills Section with Harvard Formatting (includes languages) ---
         elif section_key == "skills":
             categories = section_content.get("categories", [])
             if not isinstance(categories, list): categories = []
@@ -340,47 +331,14 @@ def json_to_latex(json_data):
                     if escaped_items:
                         section_latex += f"\\textbf{{{cat_name}:}} {', '.join(escaped_items)}\n\n"
 
-            # Handle interests if they exist
-            interests = section_content.get("interests", [])
-            if interests and isinstance(interests, list) and len(interests) > 0:
-                interests_str = ", ".join([escape_latex(interest) for interest in interests if interest])
+        # --- Interests Section ---
+        elif section_key == "interests":
+            items = section_content.get("items", [])
+            if not isinstance(items, list): items = []
+            if items:
+                interests_str = ", ".join([escape_latex(interest) for interest in items if interest])
                 if interests_str:
-                    section_latex += f"\\textbf{{Interests:}} {interests_str}\n\n"
-
-        # --- Leadership & Activities Section ---
-        elif section_key == "leadership":
-            items = section_content.get("items", [])
-            if not isinstance(items, list): items = []
-            for i, item in enumerate(items):
-                if not isinstance(item, dict): continue
-                organization = escape_latex(item.get("organization", ""))
-                location = escape_latex(item.get("location", ""))
-                role = escape_latex(item.get("role", ""))
-                dates_str = format_dates(item.get("dates", {}))
-                descriptions = item.get("descriptions", [])
-
-                section_latex += f"\\textbf{{{organization}}} \\hfill {location}\n\n"
-                section_latex += f"\\textbf{{{role}}} \\hfill {dates_str}\n"
-                if descriptions:
-                    section_latex += generate_latex_list(descriptions)
-
-                # Add spacing between leadership entries
-                if i < len(items) - 1:
-                    section_latex += "\\vspace{12pt}\n"
-
-        # --- Languages Section ---
-        elif section_key == "languages":
-            items = section_content.get("items", [])
-            if not isinstance(items, list): items = []
-            lang_parts = []
-            for item in items:
-                if not isinstance(item, dict): continue
-                name = escape_latex(item.get("name", ""))
-                proficiency = escape_latex(item.get("proficiency", ""))
-                if name:
-                    lang_parts.append(f"{name} ({proficiency})" if proficiency else name)
-            if lang_parts:
-                section_latex += f"\\textbf{{Languages:}} {'; '.join(lang_parts)}\n\n"
+                    section_latex += f"{interests_str}\n\n"
 
         # --- Certifications Section ---
         elif section_key == "certifications":
@@ -390,78 +348,25 @@ def json_to_latex(json_data):
                 if not isinstance(item, dict): continue
                 title = escape_latex(item.get("title", ""))
                 institution = escape_latex(item.get("institution", ""))
-                date_str = ""
-                date = item.get("date", {})
-                if isinstance(date, dict):
-                    date_str = format_dates(date)
-                
+                date = escape_latex(item.get("date", ""))
+
                 if title:
                     cert_line = f"\\textbf{{{title}}}"
                     if institution:
                         cert_line += f", {institution}"
-                    if date_str:
-                        cert_line += f" \\hfill {date_str}"
+                    if date:
+                        cert_line += f" \\hfill {date}"
                     section_latex += cert_line + "\n\n"
 
-        # --- Publications Section ---
-        elif section_key == "publications":
-            items = section_content.get("items", [])
-            if not isinstance(items, list): items = []
-            for item in items:
-                if not isinstance(item, dict): continue
-                title = escape_latex(item.get("title", ""))
-                date = escape_latex(item.get("date", ""))
-                
-                if title:
-                    pub_line = f"\\textit{{{title}}}"
-                    if date:
-                        pub_line += f" \\hfill {date}"
-                    section_latex += pub_line + "\n\n"
 
-        # --- Research Section ---
-        elif section_key == "research":
-            items = section_content.get("items", [])
-            if not isinstance(items, list): items = []
-            for item in items:
-                if not isinstance(item, dict): continue
-                title = escape_latex(item.get("title", ""))
-                description = escape_latex(item.get("description", ""))
-                date = escape_latex(item.get("date", ""))
-                
-                if title:
-                    section_latex += f"\\textbf{{{title}}}"
-                    if date:
-                        section_latex += f" \\hfill {date}"
-                    section_latex += "\n\n"
-                    if description:
-                        section_latex += f"{description}\n\n"
 
-        # --- Achievements Section ---
-        elif section_key == "achievements":
-            items = section_content.get("items", [])
-            if not isinstance(items, list): items = []
-            for i, item in enumerate(items):
-                if not isinstance(item, dict): continue
-                organization = escape_latex(item.get("organization", ""))
-                description = escape_latex(item.get("description", ""))
-                date = escape_latex(item.get("date", ""))
-                
-                # Format achievement entry in Harvard style
-                if organization:
-                    section_latex += f"\\textbf{{{organization}}}"
-                    if date:
-                        section_latex += f" \\hfill {date}"
-                    section_latex += "\n\n"
-                
-                if description:
-                    section_latex += f"{description}\n\n"
-                
-                # Add proper spacing between achievement entries
-                if i < len(items) - 1:
-                    section_latex += "\\vspace{12pt}\n"
-
-        if section_latex and section_key != "header":
-             processed_sections.append(section_latex)
+        # Only add sections that have content (skip empty sections)
+        if section_latex.strip() and section_key != "header":
+            # Check if section has actual content beyond just the title
+            content_lines = [line.strip() for line in section_latex.split('\n') if line.strip()]
+            # If we have more than just the section title, add it
+            if len(content_lines) > 1 or (len(content_lines) == 1 and not content_lines[0].startswith('\\section{')):
+                processed_sections.append(section_latex)
 
     # --- Join processed sections ---
     latex_string += "\n".join(processed_sections)

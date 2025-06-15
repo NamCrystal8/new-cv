@@ -56,7 +56,7 @@ const CVPreviewTestPage: React.FC = () => {
           id: 'education_0',
           institution: 'University of Technology',
           degree: 'Bachelor of Computer Science',
-          location: 'Boston, MA',
+          start_date: 'Aug 2015',
           graduation_date: 'May 2019',
           gpa: '3.8'
         }
@@ -64,7 +64,7 @@ const CVPreviewTestPage: React.FC = () => {
       template: {
         institution: '',
         degree: '',
-        location: '',
+        start_date: '',
         graduation_date: '',
         gpa: ''
       }
