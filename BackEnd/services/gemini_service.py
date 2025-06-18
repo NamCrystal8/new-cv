@@ -478,7 +478,6 @@ class GeminiService:
             However, Swift and Kotlin are native programming languages that are different from Flutter and may still be needed.
             
             Focus ONLY on missing skills: {comparison_result.get('missing', [])}
-            And consider these skills not needed for this job: {comparison_result.get('not_needed', [])}
             
             CRITICAL: When listing missing_requirements, use EXACTLY the same short format as the missing skills above.
             For example: use "iOS", "Android", "Swift" - NOT "iOS development skills" or "Android development experience"
@@ -605,7 +604,6 @@ class GeminiService:
                   # Add comparison data from the full comparison
                 result["matches"] = comparison_result.get("matches", [])
                 result["missing"] = comparison_result.get("missing", [])
-                result["not_needed"] = comparison_result.get("not_needed", [])
                   # Post-processing: Remove iOS/Android platform courses if Flutter or React Native is present
                 # But keep Swift/Kotlin as they are different native languages
                 cv_skills_text = json.dumps(cv_data).lower()
@@ -636,8 +634,7 @@ class GeminiService:
                 result["overall_grade"] = self.calculate_cv_grade(
                     matches=result["matches"],
                     missing=result["missing"],
-                    missing_requirements=result["missing_requirements"],
-                    weaknesses=result["weaknesses"]
+                    missing_requirements=result["missing_requirements"]
                 )
                 
                 # Add experience analysis to the result
@@ -655,7 +652,6 @@ class GeminiService:
                     "recommended_courses": [],
                     "matches": comparison_result.get("matches", []),
                     "missing": comparison_result.get("missing", []),
-                    "not_needed": comparison_result.get("not_needed", []),
                     "experience_analysis": experience_analysis,
                     "overall_grade": {
                         "level": "NOT_RECOMMEND",
@@ -674,7 +670,6 @@ class GeminiService:
                 "recommended_courses": [],
                 "matches": [],
                 "missing": [],
-                "not_needed": [],
                 "overall_grade": {
                     "level": "NOT_RECOMMEND",
                     "score": 0,
@@ -682,51 +677,45 @@ class GeminiService:
                     "color": "#dc2626"                }
             }
 
-    def calculate_cv_grade(self, matches: list, missing: list, missing_requirements: list, weaknesses: list) -> dict:
+    def calculate_cv_grade(self, matches: list, missing: list, missing_requirements: list) -> dict:
         """
-        Calculate overall CV grade based on matches, missing items, and weaknesses.
-        Note: 'not_needed' skills are extra skills and should not negatively impact the grade.
-        """        # Base scoring
+        Calculate overall CV grade based on matches and missing items only.
+        Simplified scoring system focusing on skill matching without weakness penalties.
+        """
+        # Base scoring
         match_count = len(matches)
         missing_count = len(missing) + len(missing_requirements)
-        weakness_count = len(weaknesses)
-        
+
         # Calculate match rate for display (matches / (matches + missing))
         total_required_skills = match_count + missing_count
         if total_required_skills > 0:
             match_rate = (match_count / total_required_skills) * 100
         else:
             match_rate = 100  # If no skills are required, perfect match
-        
-        # Calculate overall score (0-100) - more fair scoring system
-        if total_required_skills == 0:
-            final_score = 100  # Perfect if no requirements
-        else:
-            # The score should primarily reflect the match rate
-            # Only apply minimal penalty for severe weaknesses
-            weakness_penalty = min(weakness_count * 2, 10)  # Max 10 points deducted for weaknesses
-            
-            # Final score should be very close to match rate
-            final_score = max(0, min(100, match_rate - weakness_penalty))
-          # Determine grade level and feedback based on match rate
+
+        # Simplified scoring: use match rate directly for consistency with frontend
+        final_score = round(match_rate)
+
+        # Determine grade level and feedback based on match rate
         if match_rate >= 80:
             level = "PASS"
             color = "#16a34a"  # Green
             feedback = f"Excellent match! {match_rate:.0f}% of required skills found in your CV."
         elif match_rate >= 60:
-            level = "NEGOTIABLE"  
+            level = "NEGOTIABLE"
             color = "#eab308"  # Yellow
-            feedback = f"Good potential ({match_rate:.0f}% match). Address missing requirements to strengthen your application."        
+            feedback = f"Good potential ({match_rate:.0f}% match). Address missing requirements to strengthen your application."
         else:
             level = "NOT_RECOMMEND"
             color = "#dc2626"  # Red
             feedback = f"Significant gaps found ({match_rate:.0f}% match). Consider developing missing skills before applying."
-            
+
         return {
             "level": level,
-            "score": int(final_score),            "feedback": feedback,
+            "score": final_score,  # Already rounded
+            "feedback": feedback,
             "color": color,
-            "match_rate": int(match_rate),  # Add match rate for frontend display
+            "match_rate": round(match_rate),  # Consistent rounding
             "total_required": total_required_skills,
             "matches_found": match_count,
             "missing_skills": missing_count
@@ -895,21 +884,22 @@ class GeminiService:
         
     async def compare_cv_to_jd_full(self, cv_data: dict, job_description: str) -> dict:
         """
-        Compare the CV to a job description and return matches, missing, not_needed, and recommended courses.
-        This is an alternative analysis method that provides a different perspective.
-        """        
+        Compare the CV to a job description and return matches and missing skills only.
+        This simplified analysis focuses on only two categories for better user experience.
+        """
         try:
             prompt = f"""
             You are a professional career advisor and CV reviewer with deep technical knowledge. Compare the following CV data to the provided job description. Identify:
             1. What the CV already has for the job description (matches) - return ONLY concise skill names
             2. What is missing (required by the job description, not in the CV) - return ONLY concise skill names
-            3. What is not needed (in the CV, but not required by the job description) - return ONLY concise skill names
 
             CV Data:
             {json.dumps(cv_data, indent=2)}
 
             Job Description:
-            {job_description}CRITICAL TECHNICAL KNOWLEDGE - Apply these rules when analyzing:
+            {job_description}
+
+            CRITICAL TECHNICAL KNOWLEDGE - Apply these rules when analyzing:
             1. Flutter/Dart - This is a cross-platform mobile framework that develops for BOTH iOS and Android PLATFORMS
                - If CV has Flutter, DO NOT mark "iOS" or "Android" as missing UNLESS job specifically requires native development
                - Flutter SATISFIES mobile platform requirements for both iOS and Android
@@ -932,8 +922,10 @@ class GeminiService:
             - If candidate has Flutter or React Native, they can develop for both iOS and Android
             - Prioritize cross-platform skills over platform-specific skills
             - Don't create artificial skill gaps when broader skills exist
+            - ONLY include skills that are EXPLICITLY required by the job description in the missing array
+            - Do NOT include skills that are nice-to-have or not mentioned in the job description
 
-            IMPORTANT: For matches, missing, and not_needed arrays, return ONLY short technical skill names like:
+            IMPORTANT: For matches and missing arrays, return ONLY short technical skill names like:
             - "Flutter", "iOS", "SwiftUI", "Swift", "React", "Python", "MySQL", "Firebase", "Git", "Docker", etc.
             - Do NOT include long descriptions or explanations
             - Do NOT include soft skills like "Agile", "Scrum", "Jira", "Confluence", "Communication"
@@ -947,9 +939,6 @@ class GeminiService:
               ],
               "missing": [
                 "Swift", "Kotlin"
-              ],
-              "not_needed": [
-                "Python", "TensorFlow", "MySQL", "React"
               ]
             }}
             """
@@ -964,29 +953,25 @@ class GeminiService:
             json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
             if json_match:
                 response_text = json_match.group(1)
-                
+
             try:
                 result = json.loads(response_text)
                 if "matches" not in result:
                     result["matches"] = []
                 if "missing" not in result:
                     result["missing"] = []
-                if "not_needed" not in result:
-                    result["not_needed"] = []
-                # Remove course recommendations from this method as they are handled by the main analysis
+                # Remove not_needed category - only return matches and missing
                 return result
             except json.JSONDecodeError:
                 return {
                     "matches": [],
-                    "missing": [],
-                    "not_needed": []
+                    "missing": []
                 }
         except Exception as e:
             return {
                 "error": f"Error comparing CV to JD: {str(e)}",
                 "matches": [],
-                "missing": [],
-                "not_needed": []
+                "missing": []
             }
 
 gemini_service = GeminiService()
