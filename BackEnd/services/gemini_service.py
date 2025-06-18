@@ -30,16 +30,13 @@ class GeminiService:
 
             if not extracted_text.strip():
                 return {"error": "No text could be extracted from the PDF."}
-            prompt = latex_prompt(extracted_text)
 
+            prompt = latex_prompt(extracted_text)
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=prompt,
             )
-
             latex_content = response_cleaner(response.text)
-
-            print("Cleaned response from Gemini API:", latex_content)
 
             try:
                 json_result = json.loads(latex_content)

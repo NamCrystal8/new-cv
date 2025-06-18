@@ -54,22 +54,18 @@ class FileValidator:
         }
         
         try:
-            # 1. Basic file checks
             if not file.filename:
                 raise HTTPException(status_code=400, detail="No filename provided")
-            
+
             if not file.filename.lower().endswith('.pdf'):
                 raise HTTPException(status_code=400, detail="Only PDF files are allowed")
-            
-            # 2. Read file content
+
             file_content = await file.read()
             file_size = len(file_content)
             validation_result['file_size'] = file_size
-            
-            # Reset file pointer for subsequent reads
+
             await file.seek(0)
-            
-            # 3. File size validation
+
             if file_size < cls.MIN_FILE_SIZE:
                 raise FileSizeError(
                     f"File too small. Minimum size is {cls.format_file_size(cls.MIN_FILE_SIZE)}",
@@ -83,8 +79,7 @@ class FileValidator:
                     status_code=413,
                     details={"error_type": "file_too_large", "file_size": file_size, "max_size": cls.MAX_FILE_SIZE}
                 )
-            
-            # 4. MIME type validation
+
             mime_type = file.content_type
             validation_result['mime_type'] = mime_type
 
@@ -94,23 +89,19 @@ class FileValidator:
                     status_code=400,
                     details={"error_type": "invalid_file_type", "detected_type": mime_type}
                 )
-            
-            # 5. File signature validation
+
             if not cls._validate_pdf_signature(file_content):
                 raise FileValidationError(
                     "Invalid PDF file. File signature does not match PDF format",
                     status_code=400,
                     details={"error_type": "corrupted_pdf"}
                 )
-            
-            # 6. PDF structure validation
+
             pdf_info = cls._validate_pdf_structure(file_content)
             validation_result.update(pdf_info)
-            
-            # 7. Generate file hash for duplicate detection
+
             validation_result['file_hash'] = cls._generate_file_hash(file_content)
-            
-            # 8. Content validation
+
             if not validation_result['has_text']:
                 raise FileValidationError(
                     "PDF appears to be empty or contains no extractable text. Please upload a CV with text content.",
@@ -129,7 +120,6 @@ class FileValidator:
                 detail=f"File validation error: {str(e)}"
             )
         finally:
-            # Ensure file pointer is reset
             await file.seek(0)
     
     @classmethod
@@ -154,30 +144,27 @@ class FileValidator:
         try:
             pdf_file = BytesIO(file_content)
             pdf_reader = PyPDF2.PdfReader(pdf_file)
-            
-            # Check if PDF is encrypted
+
             if pdf_reader.is_encrypted:
                 result['is_encrypted'] = True
                 result['errors'].append("PDF is password protected")
                 return result
-            
-            # Get page count
+
             result['page_count'] = len(pdf_reader.pages)
-            
+
             if result['page_count'] == 0:
                 result['errors'].append("PDF has no pages")
                 return result
-            
-            if result['page_count'] > 10:  # Reasonable limit for CV
+
+            if result['page_count'] > 10:
                 result['errors'].append(f"PDF has too many pages ({result['page_count']}). CVs should typically be 1-3 pages.")
-            
-            # Check for extractable text
+
             extracted_text = ""
             for page_num, page in enumerate(pdf_reader.pages):
                 try:
                     page_text = page.extract_text() or ""
                     extracted_text += page_text
-                    if len(extracted_text.strip()) > 50:  # Minimum text threshold
+                    if len(extracted_text.strip()) > 50:
                         result['has_text'] = True
                         break
                 except Exception as e:

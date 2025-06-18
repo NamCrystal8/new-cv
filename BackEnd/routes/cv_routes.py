@@ -19,7 +19,6 @@ import hashlib
 
 router = APIRouter()
 
-# Constants
 LATEX_OUTPUT_DIR = "output_tex_files"
 
 class CompleteFlowRequest(BaseModel):
@@ -41,15 +40,12 @@ async def analyze_cv_weaknesses(
     Enhanced with comprehensive file validation.
     """
     try:
-        # Comprehensive file validation
         validation_result = await FileValidator.validate_cv_file(file)
-
         print(f"[FILE_VALIDATION] File validated: {file.filename}")
         print(f"[FILE_VALIDATION] Size: {FileValidator.format_file_size(validation_result['file_size'])}")
         print(f"[FILE_VALIDATION] Pages: {validation_result['page_count']}")
         print(f"[FILE_VALIDATION] Has text: {validation_result['has_text']}")
 
-        # Log any warnings (non-fatal issues)
         if validation_result.get('errors'):
             for error in validation_result['errors']:
                 if "too many pages" in error.lower():
@@ -59,13 +55,12 @@ async def analyze_cv_weaknesses(
 
     except FileUploadError as e:
         raise handle_file_upload_error(e)
-    
-    # Check usage limits
+
     can_proceed = await subscription_service.check_usage_limits(user.id, "cv_analysis")
     if not can_proceed:
         usage_stats = await subscription_service.get_usage_stats(user.id)
         raise HTTPException(
-            status_code=429, 
+            status_code=429,
             detail={
                 "message": "Usage limit exceeded. Please upgrade your subscription.",
                 "usage_stats": usage_stats,
@@ -75,31 +70,27 @@ async def analyze_cv_weaknesses(
     
     try:
         pdf_content = await file.read()
-        # Extract CV data from PDF using Gemini service
         try:
             extracted_cv_data = await gemini_service.extract_pdf_text(pdf_content=pdf_content)
             print(f"[DEBUG] Extracted CV data type: {type(extracted_cv_data)}")
-            
+
             if isinstance(extracted_cv_data, dict) and "error" in extracted_cv_data:
                 print(f"[DEBUG] Error in extracted CV data: {extracted_cv_data['error']}")
                 raise Exception(extracted_cv_data["error"])
-                
+
         except Exception as api_error:
             print(f"Error with Gemini API during extraction: {str(api_error)}")
             raise HTTPException(status_code=500, detail=f"Error extracting CV data: {str(api_error)}")
 
-        # Generate a flow ID to track this CV processing
         flow_id = str(uuid.uuid4())
-        
-        # Analyze the CV for weaknesses based on the CV structure
+
         try:
-            # Ensure we have a proper structure to work with
             if not isinstance(extracted_cv_data, dict):
                 extracted_cv_data = {}
-            
+
             if "cv_template" not in extracted_cv_data:
                 extracted_cv_data = gemini_service.ensure_cv_structure(extracted_cv_data)
-            
+
             cv_template = extracted_cv_data.get("cv_template", {})
             sections = cv_template.get("sections", {})
             
@@ -874,9 +865,8 @@ async def complete_cv_flow(
         with open(tex_path, "w", encoding="utf-8") as f:
             f.write(latex_result["latex"])
         
-        # Convert the LaTeX file to PDF
         from routes.pdf_routes import convert_tex_to_pdf
-        pdf_result = convert_tex_to_pdf(tex_filename)
+        convert_tex_to_pdf(tex_filename)
         pdf_filename = tex_filename.replace(".tex", ".pdf")
         pdf_path = os.path.join(LATEX_OUTPUT_DIR, pdf_filename)
         
@@ -1232,9 +1222,8 @@ async def update_cv(
         with open(tex_path, "w", encoding="utf-8") as f:
             f.write(latex_result["latex"])
         
-        # Convert the LaTeX file to PDF
         from routes.pdf_routes import convert_tex_to_pdf
-        pdf_result = convert_tex_to_pdf(tex_filename)
+        convert_tex_to_pdf(tex_filename)
         pdf_filename = tex_filename.replace(".tex", ".pdf")
         pdf_path = os.path.join(LATEX_OUTPUT_DIR, pdf_filename)
         

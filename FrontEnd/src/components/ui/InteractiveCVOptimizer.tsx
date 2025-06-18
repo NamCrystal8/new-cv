@@ -136,7 +136,7 @@ const InteractiveCVOptimizer: React.FC<InteractiveCVOptimizerProps> = ({
     jobAnalysis.recommended_courses?.forEach(course => {
       if (course.skill_addressed &&
           !currentSkillsLower.includes(course.skill_addressed.toLowerCase()) &&
-          !skills.some(skill => skill.name.toLowerCase() === course.skill_addressed.toLowerCase())) {
+          !skills.some(skill => skill.name.toLowerCase() === course.skill_addressed?.toLowerCase())) {
         skills.push({
           name: course.skill_addressed,
           reason: `Learn through: ${course.title}`,
