@@ -28,11 +28,12 @@ import {
   upgradeSubscription
 } from '../hooks/useSubscription';
 import { UpgradeRequest } from '../types/subscription';
+import SubscriptionCancel from '../components/SubscriptionCancel';
 
 const SubscriptionPage: React.FC = () => {
   const { plans, loading: plansLoading } = useSubscriptionPlans();
   const { subscription, loading: subLoading, refetch: refetchSubscription } = useUserSubscription();
-  const { status, loading: statusLoading } = useSubscriptionStatus();
+  const { status, loading: statusLoading, refetch: refetchStatus } = useSubscriptionStatus();
   const { analytics, loading: analyticsLoading } = useAnalytics();
 
   // Extract usage stats from status
@@ -71,6 +72,16 @@ const SubscriptionPage: React.FC = () => {
       });
     } finally {
       setUpgrading(null);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    try {
+      // Refresh subscription data after successful cancellation
+      await refetchSubscription();
+      await refetchStatus();
+    } catch (error) {
+      console.error('Error refreshing subscription data after cancellation:', error);
     }
   };
 
@@ -122,6 +133,9 @@ const SubscriptionPage: React.FC = () => {
   }
 
   const currentPlanName = subscription?.plan?.name || 'Free';
+
+  // Check if user is on a paid plan (not Free tier)
+  const isOnPaidPlan = currentPlanName.toLowerCase() !== 'free' && subscription?.plan;
 
   return (
     <div className="max-w-6xl mx-auto p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 lg:space-y-8">
@@ -296,6 +310,48 @@ const SubscriptionPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
+      )}
+
+      {/* Cancel Subscription Section - Only show for paid plans */}
+      {isOnPaidPlan && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
+        >
+          <Card className="border-red-200 bg-red-50/30 hover:shadow-lg transition-all duration-300 card-entrance">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-red-700">
+                <motion.div
+                  initial={{ rotate: 0 }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, delay: 0.7, ease: "easeInOut" }}
+                >
+                  <CreditCard className="h-4 w-4 sm:h-5 sm:w-5" />
+                </motion.div>
+                Quản Lý Đăng Ký
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base text-red-600">
+                Bạn đang sử dụng gói <strong>{currentPlanName}</strong>. Bạn có thể hủy đăng ký và chuyển về gói miễn phí bất cứ lúc nào.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-600">
+                    Hủy đăng ký sẽ chuyển bạn về gói miễn phí với các giới hạn cơ bản.
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Bạn vẫn có thể sử dụng các tính năng hiện tại cho đến hết chu kỳ thanh toán.
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <SubscriptionCancel onCancel={handleCancelSubscription} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
       )}
 

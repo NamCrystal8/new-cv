@@ -13,8 +13,8 @@ from core.database import get_async_db
 from core.security import current_active_user
 from models.user import User
 from models.subscription import (
-    SubscriptionPlan, UserSubscription, UsageTracking, 
-    CVAnalysisHistory
+    SubscriptionPlan, UserSubscription, UsageTracking,
+    CVAnalysisHistory, SubscriptionTier
 )
 from schemas.subscription import (
     SubscriptionPlanRead, UserSubscriptionRead, UserSubscriptionCreate,
@@ -275,3 +275,74 @@ async def get_subscription_status(
     }
     
     return status_info
+
+
+@router.post("/cancel", response_model=dict)
+async def cancel_subscription(
+    user: User = Depends(current_active_user),
+    subscription_service: SubscriptionService = Depends(get_subscription_service),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Cancel user subscription and return to free tier"""
+    try:
+        # Get current subscription
+        current_subscription = await subscription_service.get_user_subscription(user.id)
+
+        if not current_subscription or not current_subscription.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No active subscription to cancel"
+            )
+
+        # Get the free tier plan (tier = "FREE")
+        result = await db.execute(
+            select(SubscriptionPlan).where(SubscriptionPlan.tier == SubscriptionTier.FREE)
+        )
+        free_plan = result.scalar_one_or_none()
+
+        if not free_plan:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Free tier plan not found"
+            )
+
+        # Update subscription to free tier
+        current_subscription.plan_id = free_plan.id
+        current_subscription.is_active = True  # Keep active but on free tier
+        current_subscription.start_date = date.today()
+        current_subscription.end_date = None  # Free tier has no end date
+
+        # Reset CV analysis status/data for the user's CVs when downgrading
+        # Clear analysis history to reset premium features
+        analysis_history = await db.execute(
+            select(CVAnalysisHistory).where(CVAnalysisHistory.user_id == user.id)
+        )
+        for analysis in analysis_history.scalars().all():
+            await db.delete(analysis)
+
+        # Reset usage tracking for the current month
+        current_usage = await subscription_service.get_or_create_usage_tracking(user.id)
+        current_usage.cv_analyses_count = 0
+        current_usage.job_analyses_count = 0
+        current_usage.cv_downloads_count = 0
+
+        await db.commit()
+
+        return {
+            "success": True,
+            "message": "Subscription cancelled successfully. You have been moved to the free tier.",
+            "plan_name": free_plan.name,
+            "tier": free_plan.tier
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        print(f"Error cancelling subscription: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to cancel subscription: {str(e)}"
+        )

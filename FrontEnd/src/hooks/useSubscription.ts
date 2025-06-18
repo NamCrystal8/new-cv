@@ -245,3 +245,21 @@ export const checkUsageLimits = async (analysisType: string) => {
 
   return response.json();
 };
+
+// Cancel subscription and return to free tier
+export const cancelSubscription = async () => {
+  const apiBaseUrl = getApiBaseUrl();
+  const response = await makeAuthenticatedRequest(`${apiBaseUrl}/subscription/cancel`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to cancel subscription');
+  }
+
+  return response.json();
+};
