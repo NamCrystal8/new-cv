@@ -1,6 +1,6 @@
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LogIn, LogOut, UserPlus, BadgeCheck, FileText, Home, Crown, Shield, ChevronDown, BarChart3, Users, Settings, Code } from "lucide-react";
+import { LogIn, LogOut, UserPlus, FileText, Home, Crown, Shield, ChevronDown, BarChart3, Users, Settings, Code } from "lucide-react";
 import { useAuth } from "@/App";
 import { SubscriptionStatus } from "./SubscriptionStatus";
 import { useState, useEffect } from "react";
@@ -55,7 +55,7 @@ export function AppSidebar() {
         <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-4 h-full">
           {/* App name/logo */}
           <div className="flex items-center gap-2 mb-1 sm:mb-2 text-lg sm:text-xl font-bold text-primary fade-in">
-            <BadgeCheck className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 icon-hover-bounce" />
+            <FileText className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600 icon-hover-bounce" />
             <span className="group-data-[collapsible=icon]:hidden transition-opacity duration-300">Smart CV Builder</span>
           </div>
 

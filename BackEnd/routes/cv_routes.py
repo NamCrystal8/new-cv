@@ -1262,6 +1262,39 @@ async def update_cv(
         import traceback
         print(f"[DEBUG] Stack trace: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error updating CV: {str(e)}")
+@router.delete("/cv/{cv_id}")
+async def delete_user_cv(
+    cv_id: int,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Delete a specific CV by ID (only if it belongs to the current user)
+    """
+    from sqlalchemy import select
+
+    try:
+        # Query to get the specific CV and verify ownership
+        query = select(CV).where(CV.id == cv_id, CV.user_id == user.id)
+        result = await db.execute(query)
+        cv = result.scalars().first()
+
+        if not cv:
+            raise HTTPException(status_code=404, detail="CV not found or you don't have permission to delete it")
+
+        # Delete the CV
+        await db.delete(cv)
+        await db.commit()
+
+        return {"message": "CV deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error deleting CV: {str(e)}")
+        import traceback
+        print(f"[DEBUG] Stack trace: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error deleting CV: {str(e)}")
+
 @router.post("/analyze-cv-with-job-description")
 async def analyze_cv_with_job_description(
     file: UploadFile = File(...),

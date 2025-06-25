@@ -54,7 +54,6 @@ async def fresh_deploy_initialization():
                 plans_result = await db.execute(text("SELECT COUNT(*) FROM subscription_plans"))
                 if plans_result.scalar() == 0:
                     free_plan = SubscriptionPlan(
-                        id=1,
                         name="Free",
                         tier=SubscriptionTier.FREE,
                         price_monthly=0.0,
@@ -68,9 +67,8 @@ async def fresh_deploy_initialization():
                         api_access=False,
                         is_active=True
                     )
-                    
+
                     premium_plan = SubscriptionPlan(
-                        id=2,
                         name="Premium",
                         tier=SubscriptionTier.PREMIUM,
                         price_monthly=9.99,
@@ -84,9 +82,8 @@ async def fresh_deploy_initialization():
                         api_access=False,
                         is_active=True
                     )
-                    
+
                     pro_plan = SubscriptionPlan(
-                        id=3,
                         name="Pro",
                         tier=SubscriptionTier.PRO,
                         price_monthly=19.99,

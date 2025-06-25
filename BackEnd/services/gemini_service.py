@@ -178,7 +178,6 @@ class GeminiService:
             
             EDUCATION SECTION:
             - Missing graduation dates or GPA (if strong)
-            - Lack of relevant coursework for target role
             - Missing honors, awards, or distinctions
             - No mention of thesis, projects, or research
             
@@ -228,7 +227,7 @@ class GeminiService:
             Focus on actionable improvements and professional best practices.
             For each weakness, provide at least one corresponding recommendation.            Guidelines for recommendations:
             1. For Header/Contact Info: Use section="Header" and field should be the exact field name (name, email, phone, location)
-            2. For Education/Experience/Projects: Use field format like "education.0.institution" or "education.0.coursework" for specific fields within items
+            2. For Education/Experience/Projects: Use field format like "education.0.institution" for specific fields within items
             3. For Skills: Use field format like "skills.0.2" where first number is category index and second is skill index
             4. For missing sections: Use field="new_section" and suggested value should indicate what needs to be added
             5. Make recommendations SPECIFIC and ACTIONABLE targeting individual fields, not entire objects
@@ -245,7 +244,7 @@ class GeminiService:
             - Enhancing technical detail and context
             - Strengthening professional presentation
               IMPORTANT FIELD-LEVEL TARGETING RULES:
-            - For education items: Target specific fields like "education.0.coursework", "education.0.gpa", "education.0.honors" (NOT "education.0.url" or "education.0.thesis")
+            - For education items: Target specific fields like  "education.0.gpa", "education.0.honors" (NOT "education.0.url" or "education.0.thesis")
             - For experience items: Target specific fields like "experience.0.achievements", "experience.0.technologies" (NOT "experience.0.url")
             - For projects: Target specific fields like "projects.0.description", "projects.0.technologies", "projects.0.key_contributions" (NOT "projects.0.url")
             - For skills: Target specific skills like "skills.technical.2" or add new categories
@@ -254,7 +253,7 @@ class GeminiService:
             
             CRITICAL PDF VISIBILITY RULES - Only target these field types:
             Header: name, title, contact_info.email.value, contact_info.phone.value, contact_info.location.value
-            Education: institution, location, degree, graduation_date, gpa, coursework, honors
+            Education: institution, location, degree, graduation_date, gpa
             Experience: company, location, title, dates, achievements, technologies  
             Projects: title, description, start_date, end_date, key_contributions, technologies
             Skills: categories.name, categories.items, interests
@@ -275,7 +274,6 @@ class GeminiService:
             
             response_text = response.text
             
-            # Extract JSON from response if needed
             json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
             if json_match:
                 response_text = json_match.group(1)
@@ -296,7 +294,6 @@ class GeminiService:
                     if "id" not in rec or not rec["id"]:
                         rec["id"] = f"rec_{i}"
                     
-                    # Ensure section is standardized (convert any variant to standard names)
                     section_map = {
                         "contact": "Header",
                         "contact information": "Header",
