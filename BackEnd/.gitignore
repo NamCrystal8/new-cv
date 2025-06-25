@@ -1,0 +1,22 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+.pytest_cache/
+
+.vscode/*
+.devcontainer/*
+
+# CV specific files
+output_tex_files/
+my_cv.tex
+cv.tex
+tests/
