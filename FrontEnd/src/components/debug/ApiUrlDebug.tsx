@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { getApiBaseUrl } from '@/utils/api';
-import { shouldUseTokenAuth } from '@/utils/tokenAuth';
 
 const ApiUrlDebug: React.FC = () => {
   const [apiUrl, setApiUrl] = useState<string>('');
@@ -11,7 +10,7 @@ const ApiUrlDebug: React.FC = () => {
   useEffect(() => {
     // Get API configuration
     const url = getApiBaseUrl();
-    const tokenAuth = shouldUseTokenAuth();
+    const tokenAuth = true; // Always use token auth now
     setApiUrl(url);
     setUseTokenAuth(tokenAuth);
 

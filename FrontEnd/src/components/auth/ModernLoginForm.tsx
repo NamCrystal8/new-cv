@@ -5,6 +5,7 @@ import { Eye, EyeOff, Mail, Lock, LogIn, Sparkles } from 'lucide-react';
 import { useAuth } from '@/App';
 import { useToast } from '@/hooks/use-toast';
 import { loginUser } from '@/utils/auth';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,40 +52,40 @@ const ModernLoginForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="flex items-center justify-center p-2 sm:p-4 min-h-[calc(100vh-8rem)] sm:min-h-[calc(100vh-6rem)]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md mx-auto"
       >
         <Card className="backdrop-blur-lg bg-white/80 shadow-2xl border-0 overflow-hidden">
-          <CardHeader className="space-y-6 pb-8 pt-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <CardHeader className="space-y-3 sm:space-y-4 pb-4 sm:pb-6 pt-4 sm:pt-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
             <div className="flex items-center justify-center">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-lg"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-lg"
               >
-                <Sparkles className="w-8 h-8" />
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
               </motion.div>
             </div>
-            <div className="text-center space-y-2">
-              <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-              <CardDescription className="text-blue-100">
+            <div className="text-center space-y-1">
+              <CardTitle className="text-lg sm:text-xl font-bold">Welcome Back</CardTitle>
+              <CardDescription className="text-blue-100 text-xs sm:text-sm">
                 Sign in to your Smart CV Builder account
               </CardDescription>
             </div>
           </CardHeader>
 
-          <CardContent className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="p-3 sm:p-4 lg:p-6">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               <motion.div
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="space-y-2"
+                className="space-y-1"
               >
                 <label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Email Address
@@ -97,7 +98,7 @@ const ModernLoginForm: React.FC = () => {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 transition-all duration-200 focus:ring-2 focus:ring-blue-500/20 border-gray-200"
+                    className="pl-10 h-9 sm:h-10 transition-all duration-300 focus:ring-2 focus:ring-blue-500/20 border-gray-200 text-sm focus-glow hover:border-blue-300"
                     required
                   />
                 </div>
@@ -107,7 +108,7 @@ const ModernLoginForm: React.FC = () => {
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="space-y-2"
+                className="space-y-1"
               >
                 <label htmlFor="password" className="text-sm font-medium text-gray-700">
                   Password
@@ -120,13 +121,13 @@ const ModernLoginForm: React.FC = () => {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12 transition-all duration-200 focus:ring-2 focus:ring-blue-500/20 border-gray-200"
+                    className="pl-10 pr-10 h-9 sm:h-10 transition-all duration-300 focus:ring-2 focus:ring-blue-500/20 border-gray-200 text-sm focus-glow hover:border-blue-300"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-all duration-300 hover:scale-110 active:scale-95 touch-manipulation icon-hover-bounce"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -141,16 +142,17 @@ const ModernLoginForm: React.FC = () => {
                 <Button
                   type="submit"
                   disabled={isLoading || !email || !password}
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                  className="w-full h-9 sm:h-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl touch-manipulation text-sm"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Signing In...
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="hidden sm:inline">Signing In...</span>
+                      <span className="sm:hidden">Loading...</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <LogIn className="w-4 h-4" />
+                      <LogIn className="w-3 h-3 sm:w-4 sm:h-4" />
                       Sign In
                     </div>
                   )}
@@ -161,30 +163,25 @@ const ModernLoginForm: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="text-center space-y-4"
+                className="text-center space-y-2 sm:space-y-3"
               >
-                <div className="text-sm text-gray-600">
+                <div className="text-xs sm:text-sm text-gray-600">
                   Don't have an account?{' '}
                   <Link
                     to="/register"
-                    className="font-semibold text-blue-600 hover:text-blue-700 transition-colors hover:underline"
+                    className="font-semibold text-blue-600 hover:text-blue-700 transition-all duration-300 hover:underline inline-block"
                   >
                     Create one here
                   </Link>
                 </div>
-                
-                <div className="text-xs text-gray-500">
+
+                <div className="text-xs text-gray-500 leading-relaxed">
                   By signing in, you agree to our terms of service and privacy policy.
                 </div>
               </motion.div>
             </form>
           </CardContent>
         </Card>
-
-        {/* Background decoration */}
-        <div className="absolute -z-10 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <div className="w-96 h-96 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl" />
-        </div>
       </motion.div>
     </div>
   );

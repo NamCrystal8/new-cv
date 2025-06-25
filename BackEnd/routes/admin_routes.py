@@ -305,8 +305,14 @@ async def create_subscription_plan(
     admin_service = Depends(get_admin_service)
 ):
     """Create a new subscription plan"""
-    plan = await admin_service.create_subscription_plan(plan_data.model_dump())
-    return plan
+    try:
+        plan = await admin_service.create_subscription_plan(plan_data.model_dump())
+        return plan
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
 
 @router.patch("/plans/{plan_id}")

@@ -14,12 +14,14 @@ import {
   ExperienceEditorNew,
   SkillsEditorNew,
   ProjectsEditorNew,
-  LanguagesEditorNew,
+  InterestsEditorNew,
+  CertificationsEditorNew,
   EducationSection,
   ExperienceSection,
   SkillsSection,
   ProjectsSection,
-  LanguagesSection
+  InterestsSection,
+  CertificationsSection
 } from '../components/cv-editors/new-editors';
 import { Button } from '@/components/ui/button';
 import { preprocessExperienceData } from '../utils/achievementNormalizer';
@@ -59,30 +61,14 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
   completeCvFlow,
   resetFlow
 }) => {
-  // Transform language sections from backend format to frontend format
+  // Transform sections and apply preprocessing
   const transformedSections = (flowResponse.editable_sections || []).map(section => {
-    if (section.id === 'languages' && section.type === 'list') {
-      return {
-        ...section,
-        type: 'languages' as const,
-        items: (section.items || []).map((item: any, index: number) => ({
-          id: item.id || `language_${index}`,
-          name: item.language || item.name || '',
-          level: item.proficiency || item.level || 'Intermediate'
-        })),
-        template: {
-          name: '',
-          level: 'Intermediate'
-        }
-      };
-    }
-    
     // Apply achievement normalization to experience sections
     if (section.id === 'experience' && section.type === 'list') {
       console.log("[ReviewPage] Normalizing achievements for experience section");
       return preprocessExperienceData(section);
     }
-    
+
     return section;
   });
   
@@ -188,36 +174,44 @@ const ReviewPage: React.FC<ReviewPageProps> = ({
                 );
               } else if (section.id === 'projects') {
                 return (
-                  <ProjectsEditorNew 
-                    key={section.id} 
+                  <ProjectsEditorNew
+                    key={section.id}
                     section={section as ProjectsSection}
-                    onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                    onChange={(updatedSection) => updateSection(index, updatedSection)}
+                  />
+                );
+              } else if (section.id === 'certifications') {
+                return (
+                  <CertificationsEditorNew
+                    key={section.id}
+                    section={section as CertificationsSection}
+                    onChange={(updatedSection) => updateSection(index, updatedSection)}
                   />
                 );
               }
               return null;
-            case 'languages':
+            case 'interests':
               return (
-                <LanguagesEditorNew 
-                  key={section.id} 
-                  section={section as LanguagesSection}
-                  onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                <InterestsEditorNew
+                  key={section.id}
+                  section={section as InterestsSection}
+                  onChange={(updatedSection) => updateSection(index, updatedSection)}
                 />
               );
             case 'nested_list':
               return (
-                <SkillsEditorNew 
-                  key={section.id} 
+                <SkillsEditorNew
+                  key={section.id}
                   section={section as SkillsSection}
-                  onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                  onChange={(updatedSection) => updateSection(index, updatedSection)}
                 />
               );
             case 'textarea':
               return (
-                <RawInputEditor 
-                  key={section.id} 
+                <RawInputEditor
+                  key={section.id}
                   section={section as RawInputSection}
-                  onChange={(updatedSection) => updateSection(index, updatedSection)} 
+                  onChange={(updatedSection) => updateSection(index, updatedSection)}
                 />
               );
             default:

@@ -4,37 +4,17 @@ from utils.cv_structure import CV_STRUCTURE
 def get_latex_template() -> str:
     """Returns a basic Harvard-style CV template for fallback situations."""
     return r"""
-\documentclass[letterpaper,11pt]{article}
+\documentclass[11pt]{article}
 
-% Harvard Style CV Template
-% Document formatting
-\usepackage[top=0.75in, bottom=0.75in, left=0.75in, right=0.75in]{geometry}
-\usepackage{graphicx}
-\usepackage{enumitem}
+% Harvard Style CV Template - Compatible with basic LaTeX installations
+\setlength{\parindent}{0pt}
 \usepackage{hyperref}
+\usepackage{enumitem}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage[left=1.06cm,top=1.7cm,right=1.06cm,bottom=0.49cm]{geometry}
 
-% Use basic packages that are guaranteed to be available
-\usepackage{times} % Times font, widely available
-
-% Basic section formatting without titlesec
-\makeatletter
-\renewcommand{\section}[1]{%
-  \vspace{12pt}%
-  \begin{center}%
-    {\Large\bfseries #1}%
-    \vspace{2pt}%
-    \hrule%
-  \end{center}%
-  \vspace{8pt}%
-}
-\makeatother
-
-% Remove paragraph indentation
-\setlength{\parindent}{0pt}
-
-% Customize hyperref settings (basic configuration)
+% Basic hyperref settings
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
@@ -43,36 +23,68 @@ def get_latex_template() -> str:
     pdftitle={Harvard Style CV},
 }
 
+% Custom section formatting to match Harvard style
+\makeatletter
+\renewcommand{\section}[1]{%
+  \vspace{12pt}%
+  \begin{center}%
+    \textbf{#1}%
+  \end{center}%
+  \vspace{0.5pt}%
+}
+\makeatother
+
 \begin{document}
 
 \begin{center}
-    {\Large\textbf{Your Name}}\\[4pt]
-    {\normalsize\textit{Professional Title}}\\[4pt]
+    \textbf{Your Name}\\
     \hrulefill
 \end{center}
+
 \begin{center}
-    Address, City, State ZIP {\large\textbullet} \href{mailto:email@example.com}{email@example.com} {\large\textbullet} \href{tel:+11234567890}{(123) 456-7890}
+    Address, City, State ZIP \textbullet\ \href{mailto:email@example.com}{email@example.com} \textbullet\ \href{tel:+11234567890}{(123) 456-7890}
 \end{center}
+
+\vspace{0.5pt}
 
 \section{Education}
 \textbf{Harvard University} \hfill Cambridge, MA
 
-Degree, Major \hfill Graduation Date
+Degree, Major. GPA 3.8 \hfill Graduation Date
+
+Relevant Coursework: List relevant courses here
+
+\vspace{12pt}
 
 \section{Experience}
 \textbf{Company Name} \hfill Location
 
-\textit{Job Title} \hfill Start Date -- End Date
+\textbf{Job Title} \hfill Start Date -- End Date
 
 \begin{itemize}[noitemsep, topsep=0pt, partopsep=0pt, parsep=0pt]
     \item A brief accomplishment or responsibility
     \item Another accomplishment with quantifiable results
+    \item Quantify where possible
 \end{itemize}
 
-\section{Skills}
-\textbf{Technical:} List of technical skills
+\vspace{12pt}
 
-\textbf{Languages:} List of languages
+\section{Leadership \& Activities}
+
+\textbf{Organization} \hfill City, State
+
+\textbf{Role} \hfill Month Year -- Month Year
+\begin{itemize}[noitemsep, topsep=0pt, partopsep=0pt, parsep=0pt]
+    \item Description of leadership role and accomplishments
+\end{itemize}
+
+\section{Skills \& Interests}
+
+\textbf{Technical:} List computer software and programming languages
+
+\textbf{Language:} List foreign languages and your level of fluency
+
+\textbf{Interests:} List activities you enjoy that may spark interview conversation
 
 \end{document}
 """

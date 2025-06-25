@@ -3,6 +3,7 @@
  */
 
 import { getApiBaseUrl } from './api';
+import { getLocalStorageItem, setLocalStorageItem, removeLocalStorageItem } from './localStorage';
 
 const TOKEN_KEY = 'cv_auth_token';
 
@@ -10,21 +11,21 @@ const TOKEN_KEY = 'cv_auth_token';
  * Store authentication token in localStorage
  */
 export const setAuthToken = (token: string): void => {
-  localStorage.setItem(TOKEN_KEY, token);
+  setLocalStorageItem(TOKEN_KEY, token);
 };
 
 /**
  * Get authentication token from localStorage
  */
 export const getAuthToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY);
+  return getLocalStorageItem(TOKEN_KEY);
 };
 
 /**
  * Remove authentication token from localStorage
  */
 export const removeAuthToken = (): void => {
-  localStorage.removeItem(TOKEN_KEY);
+  removeLocalStorageItem(TOKEN_KEY);
 };
 
 /**
@@ -124,12 +125,10 @@ export const getCurrentUserWithToken = async () => {
 };
 
 /**
- * Check if we should use token-based auth (production cross-domain)
+ * Check if we should use token-based auth (now always true for localStorage compatibility)
  */
 export const shouldUseTokenAuth = (): boolean => {
-  // Use token auth in production when frontend and backend are on different domains
-  const isDevelopment = window.location.hostname === 'localhost' ||
-                       window.location.hostname === '127.0.0.1';
-  
-  return !isDevelopment;
+  // Always use token-based auth with localStorage for better compatibility
+  // This ensures cookies are not used for authentication in any environment
+  return true;
 };

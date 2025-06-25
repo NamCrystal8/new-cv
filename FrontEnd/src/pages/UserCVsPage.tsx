@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { getApiBaseUrl } from '@/utils/api';
+import { authenticatedFetch } from '@/utils/auth';
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
+import { Trash2 } from 'lucide-react';
 
 // Define the interface for CV item from backend
 interface CVItem {
@@ -15,16 +17,16 @@ interface CVItem {
 const UserCVsPage: React.FC = () => {
   const [cvs, setCvs] = useState<CVItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [cvToDelete, setCvToDelete] = useState<CVItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserCVs = async () => {
       setIsLoading(true);
       try {
-        const apiBaseUrl = getApiBaseUrl();
-        const response = await fetch(`${apiBaseUrl}/user-cvs`, {
-          credentials: 'include', // Important for authentication
-        });
+        const response = await authenticatedFetch('/user-cvs');
         if (!response.ok) {
           throw new Error(`Server responded with status ${response.status}`);
         }
@@ -45,6 +47,54 @@ const UserCVsPage: React.FC = () => {
 
     fetchUserCVs();
   }, [toast]);
+
+  // Handle delete CV
+  const handleDeleteClick = (cv: CVItem) => {
+    setCvToDelete(cv);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!cvToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await authenticatedFetch(`/cv/${cvToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete CV');
+      }
+
+      toast({
+        title: "Success",
+        description: "CV deleted successfully.",
+        variant: "default",
+      });
+
+      // Remove the deleted CV from the list
+      setCvs(prevCvs => prevCvs.filter(cv => cv.id !== cvToDelete.id));
+
+      // Close dialog and reset state
+      setDeleteDialogOpen(false);
+      setCvToDelete(null);
+    } catch (error) {
+      console.error('Error deleting CV:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete CV. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setCvToDelete(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -195,12 +245,12 @@ const UserCVsPage: React.FC = () => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-2">
-                    <a 
-                      href={cv.file_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-all duration-200 hover:scale-105"
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                    <a
+                      href={cv.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-all duration-200 hover:scale-105 touch-manipulation min-h-[44px] sm:min-h-[auto]"
                     >
                       <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -208,9 +258,9 @@ const UserCVsPage: React.FC = () => {
                       View
                     </a>
                     {cv.has_structure && (
-                      <Link 
+                      <Link
                         to={`/edit-cv/${cv.id}`}
-                        className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm hover:bg-purple-200 transition-all duration-200 hover:scale-105"
+                        className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm hover:bg-purple-200 transition-all duration-200 hover:scale-105 touch-manipulation min-h-[44px] sm:min-h-[auto]"
                       >
                         <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -218,16 +268,24 @@ const UserCVsPage: React.FC = () => {
                         Edit
                       </Link>
                     )}
-                    <a 
-                      href={cv.file_url} 
+                    <a
+                      href={cv.file_url}
                       download={`CV_${cv.user_cv_number}.pdf`}
-                      className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition-all duration-200 hover:scale-105"
+                      className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200 transition-all duration-200 hover:scale-105 touch-manipulation min-h-[44px] sm:min-h-[auto]"
                     >
                       <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       Download
                     </a>
+                    <button
+                      onClick={() => handleDeleteClick(cv)}
+                      className="inline-flex items-center px-4 py-2 bg-red-100 text-red-700 rounded-full text-sm hover:bg-red-200 transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 touch-manipulation min-h-[44px] sm:min-h-[auto]"
+                      type="button"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
@@ -235,6 +293,20 @@ const UserCVsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete CV"
+        description={`Are you sure you want to delete CV #${cvToDelete?.user_cv_number}? This action cannot be undone and will permanently remove your CV from the system.`}
+        confirmText="Delete CV"
+        cancelText="Cancel"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        variant="destructive"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

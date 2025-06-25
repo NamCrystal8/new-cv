@@ -6,7 +6,7 @@ import { UserManagementTable } from '@/components/admin/UserManagementTable';
 import { CVManagementTable } from '@/components/admin/CVManagementTable';
 import { SubscriptionManagementTable } from '@/components/admin/SubscriptionManagementTable';
 import { PlanManagementTable } from '@/components/admin/PlanManagementTable';
-import { getApiBaseUrl } from '@/utils/api';
+import { authenticatedFetch } from '@/utils/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/App';
 import { useNavigate } from 'react-router-dom';
@@ -29,10 +29,7 @@ const AdminPage: React.FC = () => {
 
     try {
       // Check if user has admin access by trying to access admin endpoint
-      const apiBaseUrl = getApiBaseUrl();
-      const response = await fetch(`${apiBaseUrl}/admin/health`, {
-        credentials: 'include', // Important for authentication
-      });
+      const response = await authenticatedFetch('/admin/health');
 
       if (response.ok) {
         setIsAdmin(true);
@@ -68,26 +65,26 @@ const AdminPage: React.FC = () => {
 
   if (isAdmin === false) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm sm:max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
+            <div className="mx-auto w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
             </div>
-            <CardTitle className="text-red-900">Access Denied</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-red-900 text-lg sm:text-xl">Access Denied</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
               You don't have permission to access the admin panel.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
-            <p className="text-sm text-gray-600 mb-4">
-              This area is restricted to administrators only. If you believe this is an error, 
+            <p className="text-xs sm:text-sm text-gray-600 mb-4 leading-relaxed">
+              This area is restricted to administrators only. If you believe this is an error,
               please contact your system administrator.
             </p>
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="text-blue-600 hover:underline text-sm"
+              className="w-full bg-blue-600 text-white py-2.5 sm:py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base font-medium touch-manipulation"
             >
               Return to Home
             </button>
@@ -98,7 +95,7 @@ const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-[1800px]">
+    <div className="w-full max-w-wide mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
       <Routes>
         {/* Default redirect to dashboard */}
         <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
@@ -107,13 +104,13 @@ const AdminPage: React.FC = () => {
         <Route
           path="/dashboard"
           element={
-            <div className="space-y-8">
-              <div className="mb-8">
-                <div className="flex items-center gap-3 mb-2">
-                  <Shield className="h-8 w-8 text-red-600" />
-                  <h1 className="text-4xl font-bold text-gray-900">Admin Dashboard</h1>
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+              <div className="mb-4 sm:mb-6 lg:mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                  <Shield className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-red-600" />
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Admin Dashboard</h1>
                 </div>
-                <p className="text-lg text-gray-600">Overview of system metrics and analytics</p>
+                <p className="text-sm sm:text-base lg:text-lg text-gray-600">Overview of system metrics and analytics</p>
               </div>
               <AdminDashboard />
             </div>
@@ -124,7 +121,7 @@ const AdminPage: React.FC = () => {
         <Route
           path="/users"
           element={
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
               <UserManagementTable />
             </div>
           }
@@ -134,7 +131,7 @@ const AdminPage: React.FC = () => {
         <Route
           path="/cvs"
           element={
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
               <CVManagementTable />
             </div>
           }
@@ -144,7 +141,7 @@ const AdminPage: React.FC = () => {
         <Route
           path="/subscriptions"
           element={
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
               <SubscriptionManagementTable />
             </div>
           }
@@ -154,7 +151,7 @@ const AdminPage: React.FC = () => {
         <Route
           path="/plans"
           element={
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
               <PlanManagementTable />
             </div>
           }

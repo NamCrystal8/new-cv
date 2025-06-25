@@ -1,6 +1,5 @@
-"""
-Schemas package for the CV application
-"""
+"""Schemas package for the CV application"""
+
 from .user import UserRead, UserCreate, UserUpdate
 from .role import RoleRead, RoleCreate, RoleUpdate
 from .cv import CVRead, CVCreate, CVBase

@@ -3,7 +3,6 @@
  */
 import { getApiBaseUrl } from './api';
 import {
-  shouldUseTokenAuth,
   loginWithToken,
   logoutWithToken,
   getCurrentUserWithToken,
@@ -29,76 +28,25 @@ export interface AuthUser {
  * Login user with email and password
  */
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthUser> => {
-  // Use token-based auth in production, cookie-based in development
-  if (shouldUseTokenAuth()) {
-    await loginWithToken(credentials.email, credentials.password);
-    return await getCurrentUser();
-  } else {
-    // Cookie-based authentication for development
-    const apiBaseUrl = getApiBaseUrl();
-
-    const formData = new URLSearchParams();
-    formData.append('username', credentials.email);
-    formData.append('password', credentials.password);
-
-    const response = await fetch(`${apiBaseUrl}/auth/jwt/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      credentials: 'include', // Essential for cookie-based auth
-      body: formData.toString(),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(getLoginErrorMessage(errorData));
-    }
-
-    // After successful login, get user data
-    return await getCurrentUser();
-  }
+  // Always use token-based authentication with localStorage
+  await loginWithToken(credentials.email, credentials.password);
+  return await getCurrentUser();
 };
 
 /**
  * Get current authenticated user
  */
 export const getCurrentUser = async (): Promise<AuthUser> => {
-  // Use token-based auth in production, cookie-based in development
-  if (shouldUseTokenAuth()) {
-    return await getCurrentUserWithToken();
-  } else {
-    // Cookie-based authentication for development
-    const apiBaseUrl = getApiBaseUrl();
-
-    const response = await fetch(`${apiBaseUrl}/users/me`, {
-      credentials: 'include', // Essential for cookie-based auth
-    });
-
-    if (!response.ok) {
-      throw new Error('Not authenticated');
-    }
-
-    return await response.json();
-  }
+  // Always use token-based authentication with localStorage
+  return await getCurrentUserWithToken();
 };
 
 /**
  * Logout current user
  */
 export const logoutUser = async (): Promise<void> => {
-  // Use token-based auth in production, cookie-based in development
-  if (shouldUseTokenAuth()) {
-    await logoutWithToken();
-  } else {
-    // Cookie-based authentication for development
-    const apiBaseUrl = getApiBaseUrl();
-
-    await fetch(`${apiBaseUrl}/auth/jwt/logout`, {
-      method: 'POST',
-      credentials: 'include', // Essential for cookie-based auth
-    });
-  }
+  // Always use token-based authentication with localStorage
+  await logoutWithToken();
 };
 
 /**
@@ -106,8 +54,8 @@ export const logoutUser = async (): Promise<void> => {
  */
 export const checkAuthStatus = async (): Promise<boolean> => {
   try {
-    // In token-based auth, check if token exists first for performance
-    if (shouldUseTokenAuth() && !hasAuthToken()) {
+    // Check if token exists first for performance
+    if (!hasAuthToken()) {
       return false;
     }
 
@@ -128,25 +76,14 @@ export const authenticatedFetch = async (
   const apiBaseUrl = getApiBaseUrl();
   const url = `${apiBaseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
-  // Use token-based auth in production, cookie-based in development
-  if (shouldUseTokenAuth()) {
-    return fetchWithAuth(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
-  } else {
-    return fetch(url, {
-      ...options,
-      credentials: 'include', // Essential for cookie-based auth
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
-  }
+  // Always use token-based authentication with localStorage
+  return fetchWithAuth(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
 };
 
 /**
@@ -160,23 +97,13 @@ export const authenticatedFormDataFetch = async (
   const apiBaseUrl = getApiBaseUrl();
   const url = `${apiBaseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
-  // Use token-based auth in production, cookie-based in development
-  if (shouldUseTokenAuth()) {
-    return fetchWithAuth(url, {
-      method: 'POST',
-      ...options,
-      body: formData,
-      // Don't set Content-Type for FormData - browser will set it with boundary
-    });
-  } else {
-    return fetch(url, {
-      method: 'POST',
-      ...options,
-      credentials: 'include', // Essential for cookie-based auth
-      body: formData,
-      // Don't set Content-Type for FormData - browser will set it with boundary
-    });
-  }
+  // Always use token-based authentication with localStorage
+  return fetchWithAuth(url, {
+    method: 'POST',
+    ...options,
+    body: formData,
+    // Don't set Content-Type for FormData - browser will set it with boundary
+  });
 };
 
 /**

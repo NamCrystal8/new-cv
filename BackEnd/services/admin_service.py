@@ -568,6 +568,7 @@ class AdminService:
     async def create_subscription_plan(self, plan_data: dict) -> dict:
         """Create a new subscription plan"""
         from models.subscription import SubscriptionPlan, SubscriptionTier
+        from sqlalchemy.exc import IntegrityError
 
         # Convert -1 to None for unlimited values
         cv_analyses = plan_data['cv_analyses_per_month'] if plan_data['cv_analyses_per_month'] != -1 else None
@@ -597,9 +598,33 @@ class AdminService:
             is_active=plan_data.get('is_active', True)
         )
 
-        self.db.add(new_plan)
-        await self.db.commit()
-        await self.db.refresh(new_plan)
+        try:
+            self.db.add(new_plan)
+            await self.db.commit()
+            await self.db.refresh(new_plan)
+        except IntegrityError as e:
+            await self.db.rollback()
+            # Check if it's a duplicate key error
+            if "duplicate key value violates unique constraint" in str(e) and "subscription_plans_pkey" in str(e):
+                # This is likely a sequence issue, try to fix it by getting the next available ID
+                from sqlalchemy import text
+                try:
+                    # Get the maximum ID and reset the sequence
+                    result = await self.db.execute(text("SELECT COALESCE(MAX(id), 0) FROM subscription_plans"))
+                    max_id = result.scalar()
+                    next_id = max_id + 1
+                    await self.db.execute(text(f"ALTER SEQUENCE subscription_plans_id_seq RESTART WITH {next_id}"))
+                    await self.db.commit()
+
+                    # Try creating the plan again
+                    self.db.add(new_plan)
+                    await self.db.commit()
+                    await self.db.refresh(new_plan)
+                except Exception as seq_error:
+                    await self.db.rollback()
+                    raise ValueError(f"Failed to create subscription plan due to ID conflict. Please try again. Error: {str(seq_error)}")
+            else:
+                raise ValueError(f"Failed to create subscription plan: {str(e)}")
 
         return {
             'id': new_plan.id,

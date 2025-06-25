@@ -3,13 +3,17 @@ import ExperienceEditorNew from './ExperienceEditorNew';
 import SkillsEditorNew from './SkillsEditorNew';
 import ProjectsEditorNew from './ProjectsEditorNew';
 import LanguagesEditorNew from './LanguagesEditorNew';
+import InterestsEditorNew from './InterestsEditorNew';
+import CertificationsEditorNew from './CertificationsEditorNew';
 
 export {
   EducationEditorNew,
   ExperienceEditorNew,
   SkillsEditorNew,
   ProjectsEditorNew,
-  LanguagesEditorNew
+  LanguagesEditorNew,
+  InterestsEditorNew,
+  CertificationsEditorNew
 };
 
 // Re-export types
@@ -37,3 +41,12 @@ export type {
   Language,
   LanguagesSection
 } from './LanguagesEditorNew';
+
+export type {
+  InterestsSection
+} from './InterestsEditorNew';
+
+export type {
+  CertificationItem,
+  CertificationsSection
+} from './CertificationsEditorNew';

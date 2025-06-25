@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crown, Zap, Sparkles } from 'lucide-react';
+import { Crown, Zap, Sparkles, FileText, Briefcase, Download } from 'lucide-react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { Badge } from './ui/badge';
 
@@ -46,8 +46,24 @@ export const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ classNam
   };
 
   const usage = status.usage_stats;
-  const jobUsagePercent = usage.job_analyses_used > 0 ?
-    (usage.job_analyses_used / (usage.job_analyses_used + usage.job_analyses_remaining)) * 100 : 0;
+
+  // Ensure all values are numbers with fallbacks
+  const cvUsed = usage.cv_analyses_used || 0;
+  const cvRemaining = usage.cv_analyses_remaining || 0;
+  const jobUsed = usage.job_analyses_used || 0;
+  const jobRemaining = usage.job_analyses_remaining || 0;
+  const storageUsed = usage.cvs_stored || 0;
+  const storageRemaining = usage.cv_storage_remaining || 0;
+
+  // Calculate usage percentages with safety checks
+  const cvTotal = cvUsed + cvRemaining;
+  const jobTotal = jobUsed + jobRemaining;
+  const storageTotal = storageUsed + storageRemaining;
+
+  // Calculate percentages - if total is 0 or used is 0, percentage should be 0
+  const cvUsagePercent = (cvTotal > 0 && cvUsed > 0) ? (cvUsed / cvTotal) * 100 : 0;
+  const jobUsagePercent = (jobTotal > 0 && jobUsed > 0) ? (jobUsed / jobTotal) * 100 : 0;
+  const storageUsagePercent = (storageTotal > 0 && storageUsed > 0) ? (storageUsed / storageTotal) * 100 : 0;
 
   return (
     <div className={`bg-white border border-gray-200 rounded-lg p-3 space-y-3 ${className}`}>
@@ -68,18 +84,59 @@ export const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({ classNam
 
       {/* Usage Stats */}
       <div className="space-y-2">
+        {/* CV Analysis Usage */}
+        <div>
+          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+            <div className="flex items-center gap-1">
+              <FileText className="h-3 w-3" />
+              <span>CV Analyses</span>
+            </div>
+            <span>
+              {cvUsed} / {cvTotal}
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
+            <div
+              className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(cvUsagePercent, 100)}%` }}
+            ></div>
+          </div>
+        </div>
+
         {/* Job Analysis Usage */}
         <div>
-          <div className="flex justify-between text-xs text-gray-600 mb-1">
-            <span>Job Analyses</span>
+          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+            <div className="flex items-center gap-1">
+              <Briefcase className="h-3 w-3" />
+              <span>Job Analyses</span>
+            </div>
             <span>
-              {usage.job_analyses_used} / {usage.job_analyses_used + usage.job_analyses_remaining}
+              {jobUsed} / {jobTotal}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-1.5">
             <div
               className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${Math.min(jobUsagePercent, 100)}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* CV Storage Usage */}
+        <div>
+          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+            <div className="flex items-center gap-1">
+              <Download className="h-3 w-3" />
+              <span>CVs Stored</span>
+            </div>
+            <span>
+              {storageUsed} / {storageTotal}
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-1.5">
+            <div
+              className="bg-purple-500 h-1.5 rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(storageUsagePercent, 100)}%` }}
             ></div>
           </div>
         </div>

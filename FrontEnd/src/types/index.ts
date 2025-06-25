@@ -4,7 +4,9 @@ import {
   ExperienceSection,
   SkillsSection,
   ProjectsSection,
-  LanguagesSection
+  LanguagesSection,
+  InterestsSection,
+  CertificationsSection
 } from '../components/cv-editors/new-editors';
 
 export interface SectionAnalysis {
@@ -68,13 +70,15 @@ export interface RawInputSection {
 }
 
 // Union type for all section types
-export type EditableSection = 
-  | ContactSection 
-  | EducationSection 
-  | ExperienceSection 
-  | SkillsSection 
+export type EditableSection =
+  | ContactSection
+  | EducationSection
+  | ExperienceSection
+  | SkillsSection
   | ProjectsSection
   | LanguagesSection
+  | InterestsSection
+  | CertificationsSection
   | RawInputSection;
 
 export interface FlowResponse {

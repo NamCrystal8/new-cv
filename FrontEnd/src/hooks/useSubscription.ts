@@ -8,18 +8,13 @@ import {
   UpgradeRequest
 } from '../types/subscription';
 import { getApiBaseUrl } from '../utils/api';
-import { shouldUseTokenAuth, fetchWithAuth } from '../utils/tokenAuth';
+import { fetchWithAuth } from '../utils/tokenAuth';
+import { useAuth } from '../App';
 
 // Helper function to make authenticated requests
 const makeAuthenticatedRequest = async (url: string, options: RequestInit = {}): Promise<Response> => {
-  if (shouldUseTokenAuth()) {
-    return fetchWithAuth(url, options);
-  } else {
-    return fetch(url, {
-      ...options,
-      credentials: 'include',
-    });
-  }
+  // Always use token-based authentication with localStorage
+  return fetchWithAuth(url, options);
 };
 
 export const useSubscriptionPlans = () => {
@@ -52,8 +47,16 @@ export const useUserSubscription = () => {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
   const fetchSubscription = async () => {
+    if (!isAuthenticated) {
+      setSubscription(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
@@ -76,7 +79,7 @@ export const useUserSubscription = () => {
 
   useEffect(() => {
     fetchSubscription();
-  }, []);
+  }, [isAuthenticated]);
 
   return { subscription, loading, error, refetch: fetchSubscription };
 };
@@ -85,8 +88,16 @@ export const useUsageStats = () => {
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
   const fetchUsage = async () => {
+    if (!isAuthenticated) {
+      setUsage(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
@@ -109,7 +120,7 @@ export const useUsageStats = () => {
 
   useEffect(() => {
     fetchUsage();
-  }, []);
+  }, [isAuthenticated]);
 
   return { usage, loading, error, refetch: fetchUsage };
 };
@@ -118,8 +129,16 @@ export const useSubscriptionStatus = () => {
   const [status, setStatus] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
   const fetchStatus = async () => {
+    if (!isAuthenticated) {
+      setStatus(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
@@ -142,7 +161,7 @@ export const useSubscriptionStatus = () => {
 
   useEffect(() => {
     fetchStatus();
-  }, []);
+  }, [isAuthenticated]);
 
   return { status, loading, error, refetch: fetchStatus };
 };
@@ -151,8 +170,16 @@ export const useAnalytics = () => {
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
 
   const fetchAnalytics = async () => {
+    if (!isAuthenticated) {
+      setAnalytics(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     try {
       setLoading(true);
       const apiBaseUrl = getApiBaseUrl();
@@ -179,7 +206,7 @@ export const useAnalytics = () => {
 
   useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [isAuthenticated]);
 
   return { analytics, loading, error, refetch: fetchAnalytics };
 };
@@ -214,6 +241,24 @@ export const checkUsageLimits = async (analysisType: string) => {
       throw new Error(JSON.stringify(errorData.detail));
     }
     throw new Error('Failed to check usage limits');
+  }
+
+  return response.json();
+};
+
+// Cancel subscription and return to free tier
+export const cancelSubscription = async () => {
+  const apiBaseUrl = getApiBaseUrl();
+  const response = await makeAuthenticatedRequest(`${apiBaseUrl}/subscription/cancel`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to cancel subscription');
   }
 
   return response.json();

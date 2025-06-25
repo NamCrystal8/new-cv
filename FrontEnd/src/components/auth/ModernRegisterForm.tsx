@@ -109,40 +109,40 @@ const ModernRegisterForm: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="flex items-center justify-center p-2 sm:p-4 min-h-[calc(100vh-8rem)] sm:min-h-[calc(100vh-6rem)]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md mx-auto"
       >
         <Card className="backdrop-blur-lg bg-white/80 shadow-2xl border-0 overflow-hidden">
-          <CardHeader className="space-y-6 pb-8 pt-8 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+          <CardHeader className="space-y-3 sm:space-y-4 pb-4 sm:pb-6 pt-4 sm:pt-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white">
             <div className="flex items-center justify-center">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-lg"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-lg"
               >
-                <Sparkles className="w-8 h-8" />
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
               </motion.div>
             </div>
-            <div className="text-center space-y-2">
-              <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-              <CardDescription className="text-purple-100">
+            <div className="text-center space-y-1">
+              <CardTitle className="text-lg sm:text-xl font-bold">Create Account</CardTitle>
+              <CardDescription className="text-purple-100 text-xs sm:text-sm">
                 Join Smart CV Builder and create amazing resumes
               </CardDescription>
             </div>
           </CardHeader>
 
-          <CardContent className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="p-3 sm:p-4 lg:p-6">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               <motion.div
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="space-y-2"
+                className="space-y-1"
               >
                 <label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Email Address
@@ -155,7 +155,7 @@ const ModernRegisterForm: React.FC = () => {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 transition-all duration-200 focus:ring-2 focus:ring-purple-500/20 border-gray-200"
+                    className="pl-10 h-9 sm:h-10 transition-all duration-300 focus:ring-2 focus:ring-purple-500/20 border-gray-200 text-sm focus-glow hover:border-purple-300"
                     required
                   />
                 </div>
@@ -165,7 +165,7 @@ const ModernRegisterForm: React.FC = () => {
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="space-y-2"
+                className="space-y-1"
               >
                 <label htmlFor="password" className="text-sm font-medium text-gray-700">
                   Password
@@ -178,26 +178,26 @@ const ModernRegisterForm: React.FC = () => {
                     placeholder="Create a password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12 transition-all duration-200 focus:ring-2 focus:ring-purple-500/20 border-gray-200"
+                    className="pl-10 pr-10 h-9 sm:h-10 transition-all duration-300 focus:ring-2 focus:ring-purple-500/20 border-gray-200 text-sm focus-glow hover:border-purple-300"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-600 transition-all duration-300 hover:scale-110 active:scale-95 touch-manipulation icon-hover-bounce"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                
+
                 {/* Password requirements */}
                 {password && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
-                    className="space-y-1 p-3 bg-gray-50 rounded-lg border"
+                    className="space-y-1 p-2 bg-gray-50 rounded-lg border"
                   >
-                    <div className="text-xs font-medium text-gray-600 mb-2">Password Requirements:</div>
+                    <div className="text-xs font-medium text-gray-600 mb-1">Password Requirements:</div>
                     <PasswordRequirement met={passwordValidation.minLength} text="At least 8 characters" />
                     <PasswordRequirement met={passwordValidation.hasUppercase} text="One uppercase letter" />
                     <PasswordRequirement met={passwordValidation.hasLowercase} text="One lowercase letter" />
@@ -211,7 +211,7 @@ const ModernRegisterForm: React.FC = () => {
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="space-y-2"
+                className="space-y-1"
               >
                 <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
                   Confirm Password
@@ -224,7 +224,7 @@ const ModernRegisterForm: React.FC = () => {
                     placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={`pl-10 pr-10 h-12 transition-all duration-200 focus:ring-2 focus:ring-purple-500/20 border-gray-200 ${
+                    className={`pl-10 pr-10 h-9 sm:h-10 transition-all duration-300 focus:ring-2 focus:ring-purple-500/20 border-gray-200 text-sm focus-glow hover:border-purple-300 ${
                       confirmPassword && !doPasswordsMatch ? 'border-red-300 focus:ring-red-500/20' : ''
                     }`}
                     required
@@ -232,7 +232,7 @@ const ModernRegisterForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-600 transition-all duration-300 hover:scale-110 active:scale-95 touch-manipulation icon-hover-bounce"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -259,16 +259,17 @@ const ModernRegisterForm: React.FC = () => {
                 <Button
                   type="submit"
                   disabled={isLoading || !email || !isPasswordValid || !doPasswordsMatch}
-                  className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                  className="w-full h-9 sm:h-10 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl touch-manipulation text-sm"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Creating Account...
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="hidden sm:inline">Creating Account...</span>
+                      <span className="sm:hidden">Creating...</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <UserPlus className="w-4 h-4" />
+                      <UserPlus className="w-3 h-3 sm:w-4 sm:h-4" />
                       Create Account
                     </div>
                   )}
@@ -279,30 +280,25 @@ const ModernRegisterForm: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
-                className="text-center space-y-4"
+                className="text-center space-y-2 sm:space-y-3"
               >
-                <div className="text-sm text-gray-600">
+                <div className="text-xs sm:text-sm text-gray-600">
                   Already have an account?{' '}
                   <Link
                     to="/login"
-                    className="font-semibold text-purple-600 hover:text-purple-700 transition-colors hover:underline"
+                    className="font-semibold text-purple-600 hover:text-purple-700 transition-all duration-300 hover:underline inline-block"
                   >
                     Sign in here
                   </Link>
                 </div>
-                
-                <div className="text-xs text-gray-500">
+
+                <div className="text-xs text-gray-500 leading-relaxed">
                   By creating an account, you agree to our terms of service and privacy policy.
                 </div>
               </motion.div>
             </form>
           </CardContent>
         </Card>
-
-        {/* Background decoration */}
-        <div className="absolute -z-10 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <div className="w-96 h-96 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl" />
-        </div>
       </motion.div>
     </div>
   );

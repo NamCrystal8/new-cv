@@ -19,3 +19,4 @@ __pycache__/
 output_tex_files/
 my_cv.tex
 cv.tex
+tests/
